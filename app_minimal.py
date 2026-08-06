@@ -77,50 +77,67 @@ if not check_password():
 # ============================================================================
 def load_exclusions():
     """Load excluded parts from CSV."""
-    if os.path.exists(EXCLUSIONS_FILE):
-        df = pd.read_csv(EXCLUSIONS_FILE)
-        return set(df["part"].unique())
+    try:
+        if os.path.exists(EXCLUSIONS_FILE) and os.path.getsize(EXCLUSIONS_FILE) > 0:
+            df = pd.read_csv(EXCLUSIONS_FILE)
+            if len(df) > 0 and "part" in df.columns:
+                return set(df["part"].unique())
+    except Exception as e:
+        log.warning(f"Error loading exclusions: {e}")
     return set()
 
 def exclude_part(part, reason):
     """Add a part to exclusions."""
+    os.makedirs(os.path.dirname(EXCLUSIONS_FILE) or ".", exist_ok=True)
     exclusion_data = {
         "part": part,
         "user": OS_USER,
         "timestamp": datetime.now().isoformat(),
         "reason": reason
     }
-    if os.path.exists(EXCLUSIONS_FILE):
-        df = pd.read_csv(EXCLUSIONS_FILE)
-        df = pd.concat([df, pd.DataFrame([exclusion_data])], ignore_index=True)
-    else:
-        df = pd.DataFrame([exclusion_data])
-    df.to_csv(EXCLUSIONS_FILE, index=False)
-    st.success(f"✓ Excluded {part}")
+    try:
+        if os.path.exists(EXCLUSIONS_FILE) and os.path.getsize(EXCLUSIONS_FILE) > 0:
+            df = pd.read_csv(EXCLUSIONS_FILE)
+            df = pd.concat([df, pd.DataFrame([exclusion_data])], ignore_index=True)
+        else:
+            df = pd.DataFrame([exclusion_data])
+        df.to_csv(EXCLUSIONS_FILE, index=False)
+        st.success(f"✓ Excluded {part}")
+    except Exception as e:
+        st.error(f"Error excluding part: {e}")
 
 def load_notes(part):
     """Load notes for a part."""
-    if not os.path.exists(NOTES_FILE):
+    try:
+        if not os.path.exists(NOTES_FILE) or os.path.getsize(NOTES_FILE) == 0:
+            return []
+        notes = []
+        with open(NOTES_FILE, "r") as f:
+            for line in f:
+                if line.strip():
+                    note = json.loads(line)
+                    if note.get("part") == part:
+                        notes.append(note)
+        return notes
+    except Exception as e:
+        log.warning(f"Error loading notes: {e}")
         return []
-    notes = []
-    with open(NOTES_FILE, "r") as f:
-        for line in f:
-            note = json.loads(line)
-            if note.get("part") == part:
-                notes.append(note)
-    return notes
 
 def add_note(part, note_text):
     """Add a note to a part."""
+    os.makedirs(os.path.dirname(NOTES_FILE) or ".", exist_ok=True)
     note_data = {
         "part": part,
         "user": OS_USER,
         "timestamp": datetime.now().isoformat(),
         "note": note_text
     }
-    with open(NOTES_FILE, "a") as f:
-        f.write(json.dumps(note_data) + "\n")
-    st.success("✓ Note added")
+    try:
+        with open(NOTES_FILE, "a") as f:
+            f.write(json.dumps(note_data) + "\n")
+        st.success("✓ Note added")
+    except Exception as e:
+        st.error(f"Error adding note: {e}")
 
 # Load excluded parts
 excluded_parts = load_exclusions()
