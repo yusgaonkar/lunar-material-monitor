@@ -474,16 +474,14 @@ if st.session_state.active_tab == "Shortage Report":
         report_df["Notes"] = report_df["Part"].apply(get_notes_preview)
 
         # Build manual table with clickable action buttons
-        st.subheader("Components Short Within Selected Time Window")
-
         # Prepare data
         col_order = ["CM", "Part", "Description", "Products", "UoM", "Build Coverage",
                      "First Short Date", "Incoming Supply"]
         if include_allocations and "Recommended" in report_df.columns:
             col_order.append("Recommended")
 
-        # Header row
-        header_cols = st.columns([1.2, 1.2, 2, 2, 0.8, 1.5, 1.5, 2, 1.2, 2, 0.8])
+        # Header row (balanced column widths)
+        header_cols = st.columns([0.9, 1.1, 1.8, 2.2, 0.6, 1.2, 1.3, 1.5, 1, 1.5, 0.6])
         header_cols[0].write("**CM**")
         header_cols[1].write("**Part**")
         header_cols[2].write("**Description**")
@@ -504,7 +502,7 @@ if st.session_state.active_tab == "Shortage Report":
             part_is_watched = part in watched_parts
             notes_preview = row["Notes"]
 
-            cols = st.columns([1.2, 1.2, 2, 2, 0.8, 1.5, 1.5, 2, 1.2, 2, 0.8])
+            cols = st.columns([0.9, 1.1, 1.8, 2.2, 0.6, 1.2, 1.3, 1.5, 1, 1.5, 0.6])
 
             # Display data
             cols[0].write(row["CM"])
