@@ -7,7 +7,6 @@ __pycache__/
 
 # Source extracts — confidential (supplier pricing, BOMs, build plans).
 # Never commit these.
-data/*.csv
 !data/build_plan.csv
 !data/plan_to_date.csv
 !data/in_transit.csv
