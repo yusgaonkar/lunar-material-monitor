@@ -473,98 +473,51 @@ if st.session_state.active_tab == "Shortage Report":
 
         report_df["Notes"] = report_df["Part"].apply(get_notes_preview)
 
-        # Build manual table with clickable action buttons - styled to match build plan grid
-        # Prepare data
+        # Quick Actions section (between title and table)
+        st.subheader("Quick Actions")
+        action_cols = st.columns([3, 1, 1, 1])
+        with action_cols[0]:
+            selected_part = st.selectbox(
+                "Select part:",
+                options=sorted(report_df["Part"].unique()),
+                key="actions_part_select",
+                label_visibility="collapsed"
+            )
+        with action_cols[1]:
+            if st.button("🏷️ Exclude", key="quick_exclude", use_container_width=True):
+                dialog_exclude(selected_part)
+        with action_cols[2]:
+            if st.button("➕ Add Note", key="quick_note", use_container_width=True):
+                dialog_add_note(selected_part)
+        with action_cols[3]:
+            part_is_watched = selected_part in watched_parts
+            watch_label = "✓ Watched" if part_is_watched else "👁️ Watch"
+            if st.button(watch_label, key="quick_watch", use_container_width=True):
+                if part_is_watched:
+                    unwatch_part(selected_part)
+                    st.rerun()
+                else:
+                    dialog_watch(selected_part)
+
+        st.divider()
+
+        # Prepare data for clean dataframe display
         col_order = ["CM", "Part", "Description", "Products", "UoM", "Build Coverage",
                      "First Short Date", "Incoming Supply"]
         if include_allocations and "Recommended" in report_df.columns:
             col_order.append("Recommended")
 
-        # Header row (balanced column widths)
-        header_cols = st.columns([0.9, 1.1, 1.8, 2.2, 0.6, 1.2, 1.3, 1.5, 1, 1.5, 0.6], gap="small")
-        with header_cols[0]:
-            st.markdown("<b style='font-size:14px'>CM</b>", unsafe_allow_html=True)
-        with header_cols[1]:
-            st.markdown("<b style='font-size:14px'>Part</b>", unsafe_allow_html=True)
-        with header_cols[2]:
-            st.markdown("<b style='font-size:14px'>Description</b>", unsafe_allow_html=True)
-        with header_cols[3]:
-            st.markdown("<b style='font-size:14px'>Products</b>", unsafe_allow_html=True)
-        with header_cols[4]:
-            st.markdown("<b style='font-size:14px'>UoM</b>", unsafe_allow_html=True)
-        with header_cols[5]:
-            st.markdown("<b style='font-size:14px'>Build Coverage</b>", unsafe_allow_html=True)
-        with header_cols[6]:
-            st.markdown("<b style='font-size:14px'>First Short Date</b>", unsafe_allow_html=True)
-        with header_cols[7]:
-            st.markdown("<b style='font-size:14px'>Incoming Supply</b>", unsafe_allow_html=True)
-        with header_cols[8]:
-            st.markdown("<b style='font-size:14px'>Actions</b>", unsafe_allow_html=True)
-        with header_cols[9]:
-            st.markdown("<b style='font-size:14px'>Notes</b>", unsafe_allow_html=True)
-        with header_cols[10]:
-            st.markdown("<b style='font-size:14px'>Watched</b>", unsafe_allow_html=True)
+        # Add Notes and Watched columns
+        report_df["Watched"] = report_df["Part"].apply(
+            lambda p: "👁️" if p in watched_parts else ""
+        )
 
-        st.divider()
+        # Reorder: add Notes and Watched at the end
+        col_order.extend(["Notes", "Watched"])
+        report_df_display = report_df[[c for c in col_order if c in report_df.columns]]
 
-        # Data rows with alternating background
-        for idx, (_, row) in enumerate(report_df.iterrows()):
-            part = row["Part"]
-            part_is_watched = part in watched_parts
-            notes_preview = row["Notes"]
-
-            # Alternating row background for visual separation
-            if idx % 2 == 0:
-                row_container = st.container(border=False)
-            else:
-                row_container = st.container(border=False)
-
-            with row_container:
-                cols = st.columns([0.9, 1.1, 1.8, 2.2, 0.6, 1.2, 1.3, 1.5, 1, 1.5, 0.6], gap="small")
-
-                # Display data with consistent formatting
-                with cols[0]:
-                    st.text(row["CM"])
-                with cols[1]:
-                    st.text(part)
-                with cols[2]:
-                    st.text(row["Description"][:30])
-                with cols[3]:
-                    st.text(row["Products"][:50])
-                with cols[4]:
-                    st.text(row["UoM"])
-                with cols[5]:
-                    st.text(str(int(row["Build Coverage"])))
-                with cols[6]:
-                    st.text(row["First Short Date"])
-                with cols[7]:
-                    st.text(row["Incoming Supply"])
-
-                # Actions column (3 clickable icons in tight layout)
-                with cols[8]:
-                    action_subcols = st.columns(3, gap="small")
-                    with action_subcols[0]:
-                        if st.button("🏷️", key=f"exclude_{part}", help="Exclude", use_container_width=False):
-                            dialog_exclude(part)
-                    with action_subcols[1]:
-                        if st.button("➕", key=f"note_{part}", help="Add Note", use_container_width=False):
-                            dialog_add_note(part)
-                    with action_subcols[2]:
-                        watch_icon = "✓" if part_is_watched else "👁️"
-                        if st.button(watch_icon, key=f"watch_{part}", help="Watch" if not part_is_watched else "Watched", use_container_width=False):
-                            if part_is_watched:
-                                unwatch_part(part)
-                                st.rerun()
-                            else:
-                                dialog_watch(part)
-
-                # Notes column
-                with cols[9]:
-                    st.text(notes_preview[:80] if notes_preview else "")
-
-                # Watched column
-                with cols[10]:
-                    st.text("👁️" if part_is_watched else "")
+        # Display clean dataframe
+        st.dataframe(report_df_display, use_container_width=True, height=500)
 
         if (report_df["UoM"] == "⚠️").any():
             st.caption("⚠️ = BOM UoM is not 'each' (gm, ml, sheets, etc.) — verify conversion if short qty seems extreme")
