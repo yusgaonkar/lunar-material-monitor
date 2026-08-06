@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+.streamlit/secrets.toml
+
+# Source extracts — confidential (supplier pricing, BOMs, build plans).
+# Never commit these.
+data/*.csv
+!data/build_plan.csv
+!data/plan_to_date.csv
+!data/in_transit.csv
+!data/exclusions.csv
+!data/golden_cases.csv
+data/_unmatched.csv

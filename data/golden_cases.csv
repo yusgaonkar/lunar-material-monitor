@@ -1,0 +1,3 @@
+# Hand-calculated expected results. These are the regression tests — pick parts
+# whose answer you already know and can defend in a room.
+component_lpn,cm,expected_first_shortage_week,expected_shortage_qty,notes

@@ -1,0 +1,45 @@
+Read CLAUDE.md first.
+
+Build src/io.py only. No engine, no UI.
+
+src/io.py already exists with EXPECTED_ROWS populated and verified, plus assert_rows()
+and a STR_COLS map. Build on it — do not replace those.
+
+The real data is already in data/. Verified: bom_stitched 4,379 rows x 25 cols;
+bom_flat 3,619 x 16; stitch_list 18 x 5; onhand 4,770 x 19; onorder 6,075 x 36.
+
+Write one loader per CSV: load_bom_stitched, load_bom_flat, load_stitch_list,
+load_onhand, load_onorder, load_build_plan, load_plan_to_date, load_in_transit,
+load_exclusions. Each must:
+
+- Use dtype=str for every ID / part-number column (STR_COLS already lists them).
+  Never let pandas infer a part number — it mangles 10-08504A and coerces Wurth MPNs
+  to scientific notation. Read numeric columns explicitly with pd.to_numeric.
+- Call assert_rows(filename, len(df)) immediately after read, BEFORE any filtering.
+  This is the truncation guard and it is not optional.
+- Parse dates per column, never with one blanket parser:
+    `Updated at`            MM-DD-YYYY
+    po_created_date, receipt_date, ship_date, _db_created_at, last_modified
+                            ISO YYYY-MM-DD
+- Handle embedded double quotes in item names (18 rows contain characters like
+  .135" Hole Dia). Use the default C parser with proper quoting; verify the row
+  count assertion still passes, which is how you know quoting worked.
+- Filter the one sentinel row from bom_stitched: item_number == 'Custom Parent List',
+  level 0, blank Parent Product LPN. Log that you dropped exactly 1 row. The assertion
+  above runs on the raw count of 4,379; the returned frame will have 4,378. That is
+  intentional — do NOT change EXPECTED_ROWS to make the numbers match.
+- Return verbatim column names from CLAUDE.md section 4. Do NOT rename anything —
+  renaming belongs in normalize.py.
+
+Note the column-name drift between files and do not "helpfully" harmonise it here:
+  On Hand uses  raw_part_number / lpn / item_category
+  On Order uses lunar_lpn_raw / lunar_lpn / item_category_
+  BOM uses      item_number / category_name / procurement_type
+
+Then tests/test_io.py: load every file, assert shape, assert part-number columns are
+dtype object and that '10-08504A' survives intact, assert the sentinel row is gone.
+
+Finally print a load summary table: file, rows, cols, snapshot date, distinct parts.
+All five snapshot dates should read 08-03-2026 — flag it if they disagree.
+
+Do not build: normalisation, the engine, or any UI.

@@ -1,0 +1,16 @@
+# Residual cleanup cases. See CLAUDE.md 5.1 — we validate the already-clean
+# `lpn` / `lunar_lpn` column delivered by LunarDB; we do NOT re-derive it from raw.
+# `clean_in` is the column as delivered. `expected` is after residual cleanup.
+clean_in,source_report,expected,action
+10-005220_old,Lunar Netsuite,10-005220,strip _old
+10-005221_old2,Lunar Netsuite,10-005221,strip _old2
+10-06949C_old,Lunar Netsuite,10-06949C,strip _old
+90-001221_old,Lunar Netsuite,90-001221,strip _old
+10-06527A-I,CM: Celestica MX,10-06527A,strip -I
+10-000054,Lunar Netsuite,10-000054,passthrough
+10-08504A,Lunar Netsuite,10-08504A,passthrough - trailing letter is part of the PN
+10-06647B,CM: Qualitel WA,10-06647B,passthrough - raw was 814-4604 (lookup not a rule)
+90-07675A,CM: Qualitel WA,90-07675A,passthrough - raw was 814-4641
+10-000253,CM: Sienna GA,10-000253,passthrough - raw was C10-000253 REV-02 (consigned)
+3480-0329,CM: Celestica MX,,quarantine - foreign numbering scheme
+8100-0352,CM: Celestica MX,,quarantine - foreign numbering scheme
