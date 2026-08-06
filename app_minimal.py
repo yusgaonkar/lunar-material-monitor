@@ -27,6 +27,7 @@ OS_USER = os.getenv("USER") or os.getenv("USERNAME") or "Unknown"
 # Persistence files
 EXCLUSIONS_FILE = "data/exclusions.csv"
 NOTES_FILE = "data/notes.jsonl"
+WATCHLIST_FILE = "data/watchlist.csv"
 
 st.set_page_config(page_title="Lunar Material Monitor", layout="wide")
 
@@ -139,9 +140,105 @@ def add_note(part, note_text):
     except Exception as e:
         st.error(f"Error adding note: {e}")
 
+def load_watchlist():
+    """Load watched parts from CSV."""
+    try:
+        if os.path.exists(WATCHLIST_FILE) and os.path.getsize(WATCHLIST_FILE) > 0:
+            df = pd.read_csv(WATCHLIST_FILE)
+            if len(df) > 0 and "part" in df.columns:
+                return set(df["part"].unique())
+    except Exception as e:
+        log.warning(f"Error loading watchlist: {e}")
+    return set()
 
-# Load excluded parts
+def watch_part(part, comment):
+    """Add a part to watchlist."""
+    os.makedirs(os.path.dirname(WATCHLIST_FILE) or ".", exist_ok=True)
+    watch_data = {
+        "part": part,
+        "user": OS_USER,
+        "timestamp": datetime.now().isoformat(),
+        "comment": comment
+    }
+    try:
+        if os.path.exists(WATCHLIST_FILE) and os.path.getsize(WATCHLIST_FILE) > 0:
+            df = pd.read_csv(WATCHLIST_FILE)
+            df = pd.concat([df, pd.DataFrame([watch_data])], ignore_index=True)
+        else:
+            df = pd.DataFrame([watch_data])
+        df.to_csv(WATCHLIST_FILE, index=False)
+        st.success(f"✓ Added {part} to watchlist")
+    except Exception as e:
+        st.error(f"Error adding to watchlist: {e}")
+
+def unwatch_part(part):
+    """Remove a part from watchlist."""
+    try:
+        if os.path.exists(WATCHLIST_FILE):
+            df = pd.read_csv(WATCHLIST_FILE)
+            df = df[df["part"] != part]
+            df.to_csv(WATCHLIST_FILE, index=False)
+            st.success(f"✓ Removed {part} from watchlist")
+    except Exception as e:
+        st.error(f"Error removing from watchlist: {e}")
+
+# Load excluded and watched parts
 excluded_parts = load_exclusions()
+watched_parts = load_watchlist()
+
+# ============================================================================
+# DIALOG FUNCTIONS
+# ============================================================================
+@st.dialog("Exclude Part")
+def dialog_exclude(part):
+    """Dialog to exclude a part."""
+    st.write(f"**Part:** {part}")
+    reason = st.text_area("Reason:", key=f"exclude_reason_{part}", height=100)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Exclude", key=f"exclude_confirm_{part}", use_container_width=True):
+            if reason:
+                exclude_part(part, reason)
+                st.rerun()
+            else:
+                st.error("Please provide a reason")
+    with col2:
+        if st.button("Cancel", key=f"exclude_cancel_{part}", use_container_width=True):
+            st.rerun()
+
+@st.dialog("Add Note")
+def dialog_add_note(part):
+    """Dialog to add a note."""
+    st.write(f"**Part:** {part}")
+    note_text = st.text_area("Note:", key=f"note_text_{part}", height=120)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Add Note", key=f"note_confirm_{part}", use_container_width=True):
+            if note_text:
+                add_note(part, note_text)
+                st.rerun()
+            else:
+                st.error("Please enter a note")
+    with col2:
+        if st.button("Cancel", key=f"note_cancel_{part}", use_container_width=True):
+            st.rerun()
+
+@st.dialog("Add to Watchlist")
+def dialog_watch(part):
+    """Dialog to add part to watchlist."""
+    st.write(f"**Part:** {part}")
+    comment = st.text_area("Why watch this part?:", key=f"watch_comment_{part}", height=100)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Add to Watchlist", key=f"watch_confirm_{part}", use_container_width=True):
+            if comment:
+                watch_part(part, comment)
+                st.rerun()
+            else:
+                st.error("Please provide a reason")
+    with col2:
+        if st.button("Cancel", key=f"watch_cancel_{part}", use_container_width=True):
+            st.rerun()
 
 # --- Load and run ---
 @st.cache_data
@@ -181,13 +278,14 @@ include_allocations = st.checkbox("Include Lunar Allocations", value=False,
 
 # --- Common filters ---
 st.subheader("Filters")
-cols = st.columns([2, 2, 2, 1, 1])
+cols = st.columns([2, 2, 2, 1, 1, 1])
 cm_filter = cols[0].selectbox("CM", ["All"] + sorted(s["cm"].unique()))
 prod_filter = cols[1].multiselect("Products", sorted(set(
     p for prods in s["products"].fillna("") for p in prods.split(", ") if p)))
 weeks_window = cols[2].slider("Time window (weeks)", min_value=1, max_value=cfg.horizon_weeks, value=12, step=1)
 show_short_only = cols[3].checkbox("Short only", value=True)
 exclude_uom_issues = cols[4].checkbox("Exclude UoM issues", value=True)
+show_watched_only = cols[5].checkbox("Watched only", value=False)
 
 # Choose between conservative (default) or allocation scenario
 if include_allocations and "summary_with_allocation" in result:
@@ -215,6 +313,10 @@ if show_short_only:
 if exclude_uom_issues:
     uom_mask = filtered["uom"].fillna("ea").str.lower().str.strip().isin(["ea", "each", ""])
     filtered = filtered[uom_mask]
+
+# Filter for watched only
+if show_watched_only:
+    filtered = filtered[filtered["part"].isin(watched_parts)]
 
 # Apply time window: only parts that run out within N weeks
 cutoff = cfg.week0 + pd.Timedelta(weeks=weeks_window)
@@ -371,80 +473,61 @@ if st.session_state.active_tab == "Shortage Report":
 
         report_df["Notes"] = report_df["Part"].apply(get_notes_preview)
 
-        # Display with column order
+        # Display with column order and Actions
         col_order = ["CM", "Part", "Description", "Products", "UoM", "Build Coverage",
                      "First Short Date", "Shortage Qty", "Incoming Supply", "Notes"]
         if include_allocations and "Recommended" in report_df.columns:
             col_order.append("Recommended")
         report_df = report_df[[c for c in col_order if c in report_df.columns]]
 
+        # Add watched indicator
+        report_df["Watched"] = report_df["Part"].apply(
+            lambda p: "👁️" if p in watched_parts else ""
+        )
+
+        # Display table
         st.dataframe(report_df, use_container_width=True, height=500)
 
-        # Inline part management
-        st.divider()
-        col_action, col_buttons = st.columns([2, 1])
+        # Actions table below (clickable buttons)
+        st.subheader("Quick Actions")
+        st.caption("Click an action button to open a dialog")
 
-        with col_action:
-            selected_part = st.selectbox(
-                "Manage part (click 🏷️ to exclude or ➕ to add note):",
-                options=["—"] + sorted(report_df["Part"].unique()),
-                key="manage_part_select",
-                label_visibility="collapsed"
-            )
+        # Build actions table manually with clickable buttons
+        action_cols = st.columns([2, 1, 1, 1, 1])
+        action_cols[0].write("**Part**")
+        action_cols[1].write("**🏷️ Exclude**")
+        action_cols[2].write("**➕ Note**")
+        action_cols[3].write("**👁️ Watch**")
+        action_cols[4].write("")
 
-        if selected_part != "—":
-            # Show inline form based on action button
-            col_exclude, col_note = st.columns(2)
+        for _, row in report_df.iterrows():
+            part = row["Part"]
+            part_is_watched = part in watched_parts
 
-            with col_exclude:
-                if st.button("🏷️ Exclude", key="exclude_btn_shortage", use_container_width=True):
-                    st.session_state.shortage_action = "exclude"
-                    st.session_state.shortage_part = selected_part
+            cols = st.columns([2, 1, 1, 1, 1])
 
-            with col_note:
-                if st.button("➕ Add Note", key="note_btn_shortage", use_container_width=True):
-                    st.session_state.shortage_action = "note"
-                    st.session_state.shortage_part = selected_part
+            with cols[0]:
+                st.write(f"`{part}`")
 
-            # Show form based on selected action
-            if st.session_state.get("shortage_part") == selected_part:
-                if st.session_state.get("shortage_action") == "exclude":
-                    st.warning(f"**Exclude {selected_part}?**")
-                    reason = st.text_input("Reason (e.g., printed labels, not tracked):", key="exclude_reason_shortage")
-                    col_confirm, col_cancel = st.columns(2)
-                    with col_confirm:
-                        if st.button("Confirm Exclude", key="confirm_exclude_shortage", use_container_width=True):
-                            if reason:
-                                exclude_part(selected_part, reason)
-                                st.session_state.pop("shortage_action", None)
-                                st.session_state.pop("shortage_part", None)
-                                st.rerun()
-                            else:
-                                st.error("Please provide a reason")
-                    with col_cancel:
-                        if st.button("Cancel", key="cancel_exclude_shortage", use_container_width=True):
-                            st.session_state.pop("shortage_action", None)
-                            st.session_state.pop("shortage_part", None)
-                            st.rerun()
+            with cols[1]:
+                if st.button("Exclude", key=f"exclude_trigger_{part}", use_container_width=True):
+                    dialog_exclude(part)
 
-                elif st.session_state.get("shortage_action") == "note":
-                    st.info(f"**Add note to {selected_part}**")
-                    note_text = st.text_area("Note:", key="note_text_shortage", height=80)
-                    col_confirm, col_cancel = st.columns(2)
-                    with col_confirm:
-                        if st.button("Add Note", key="confirm_note_shortage", use_container_width=True):
-                            if note_text:
-                                add_note(selected_part, note_text)
-                                st.session_state.pop("shortage_action", None)
-                                st.session_state.pop("shortage_part", None)
-                                st.rerun()
-                            else:
-                                st.error("Please enter a note")
-                    with col_cancel:
-                        if st.button("Cancel", key="cancel_note_shortage", use_container_width=True):
-                            st.session_state.pop("shortage_action", None)
-                            st.session_state.pop("shortage_part", None)
-                            st.rerun()
+            with cols[2]:
+                if st.button("Add Note", key=f"note_trigger_{part}", use_container_width=True):
+                    dialog_add_note(part)
+
+            with cols[3]:
+                watch_btn_label = "Remove" if part_is_watched else "Watch"
+                if st.button(watch_btn_label, key=f"watch_trigger_{part}", use_container_width=True):
+                    if part_is_watched:
+                        unwatch_part(part)
+                    else:
+                        dialog_watch(part)
+
+            with cols[4]:
+                if row["Notes"]:
+                    st.caption(row["Notes"])
 
         if (report_df["UoM"] == "⚠️").any():
             st.caption("⚠️ = BOM UoM is not 'each' (gm, ml, sheets, etc.) — verify conversion if short qty seems extreme")
