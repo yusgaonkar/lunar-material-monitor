@@ -139,63 +139,6 @@ def add_note(part, note_text):
     except Exception as e:
         st.error(f"Error adding note: {e}")
 
-# ============================================================================
-# DIALOG FUNCTIONS (Modal windows for part management)
-# ============================================================================
-@st.dialog("Exclude Part from Report")
-def open_exclude_dialog(part):
-    """Dialog to exclude a part."""
-    st.write(f"**Part:** {part}")
-    reason = st.text_area("Reason for exclusion (e.g., printed labels, not tracked):",
-                         key=f"exclude_reason_{part}", height=100)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Exclude", key=f"confirm_exclude_{part}", use_container_width=True):
-            if reason:
-                exclude_part(part, reason)
-                st.rerun()
-            else:
-                st.error("Please provide a reason")
-    with col2:
-        if st.button("Cancel", key=f"cancel_exclude_{part}", use_container_width=True):
-            st.rerun()
-
-@st.dialog("Add Planner Note")
-def open_note_dialog(part):
-    """Dialog to add a note."""
-    st.write(f"**Part:** {part}")
-    note_text = st.text_area("Your note:",
-                            key=f"note_text_{part}", height=150)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Add Note", key=f"confirm_note_{part}", use_container_width=True):
-            if note_text:
-                add_note(part, note_text)
-                st.rerun()
-            else:
-                st.error("Please enter a note")
-    with col2:
-        if st.button("Cancel", key=f"cancel_note_{part}", use_container_width=True):
-            st.rerun()
-
-@st.dialog("View Notes History")
-def open_view_notes_dialog(part):
-    """Dialog to view notes for a part."""
-    st.write(f"**Part:** {part}")
-    notes = load_notes(part)
-
-    if notes:
-        for i, note in enumerate(notes):
-            with st.container(border=True):
-                st.caption(f"**{note['user']}** — {note['timestamp'][:10]} {note['timestamp'][11:16]}")
-                st.write(note["note"])
-    else:
-        st.info(f"No notes yet for {part}")
-
-    if st.button("Close", key=f"close_notes_{part}", use_container_width=True):
-        st.rerun()
 
 # Load excluded parts
 excluded_parts = load_exclusions()
@@ -417,51 +360,91 @@ if st.session_state.active_tab == "Shortage Report":
 
         report_df = pd.DataFrame(report)
 
+        # Add Notes column showing preview
+        def get_notes_preview(part):
+            notes = load_notes(part)
+            if not notes:
+                return ""
+            first_note = notes[0]["note"][:60]  # First 60 chars
+            count_str = f" (+{len(notes)-1})" if len(notes) > 1 else ""
+            return f"📝 {first_note}...{count_str}" if len(notes[0]["note"]) > 60 else f"📝 {first_note}{count_str}"
+
+        report_df["Notes"] = report_df["Part"].apply(get_notes_preview)
+
         # Display with column order
         col_order = ["CM", "Part", "Description", "Products", "UoM", "Build Coverage",
-                     "First Short Date", "Shortage Qty", "Incoming Supply"]
+                     "First Short Date", "Shortage Qty", "Incoming Supply", "Notes"]
         if include_allocations and "Recommended" in report_df.columns:
             col_order.append("Recommended")
         report_df = report_df[[c for c in col_order if c in report_df.columns]]
 
-        # Add Notes and Actions columns
-        report_df["Notes"] = report_df["Part"].apply(
-            lambda p: f"📝 {len(load_notes(p))}" if len(load_notes(p)) > 0 else ""
-        )
-        report_df["Actions"] = report_df["Part"].apply(
-            lambda p: f"🏷️ 📋"
-        )
-
         st.dataframe(report_df, use_container_width=True, height=500)
 
-        # Display action buttons for each part
+        # Inline part management
         st.divider()
-        st.subheader("Part Management")
+        col_action, col_buttons = st.columns([2, 1])
 
-        # Create columns for part selection and action buttons
-        part_col, action_col = st.columns([2, 1])
-        with part_col:
+        with col_action:
             selected_part = st.selectbox(
-                "Select part to manage:",
-                options=sorted(report_df["Part"].unique()),
+                "Manage part (click 🏷️ to exclude or ➕ to add note):",
+                options=["—"] + sorted(report_df["Part"].unique()),
                 key="manage_part_select",
                 label_visibility="collapsed"
             )
 
-        with action_col:
-            col_exclude, col_note, col_view = st.columns(3)
+        if selected_part != "—":
+            # Show inline form based on action button
+            col_exclude, col_note = st.columns(2)
+
             with col_exclude:
-                if st.button("🏷️ Exclude", key="exclude_trigger", use_container_width=True,
-                            help="Exclude this part from the report"):
-                    open_exclude_dialog(selected_part)
+                if st.button("🏷️ Exclude", key="exclude_btn_shortage", use_container_width=True):
+                    st.session_state.shortage_action = "exclude"
+                    st.session_state.shortage_part = selected_part
+
             with col_note:
-                if st.button("➕ Add Note", key="note_trigger", use_container_width=True,
-                            help="Add a planner note"):
-                    open_note_dialog(selected_part)
-            with col_view:
-                if st.button("📖 View Notes", key="view_trigger", use_container_width=True,
-                            help="View all notes for this part"):
-                    open_view_notes_dialog(selected_part)
+                if st.button("➕ Add Note", key="note_btn_shortage", use_container_width=True):
+                    st.session_state.shortage_action = "note"
+                    st.session_state.shortage_part = selected_part
+
+            # Show form based on selected action
+            if st.session_state.get("shortage_part") == selected_part:
+                if st.session_state.get("shortage_action") == "exclude":
+                    st.warning(f"**Exclude {selected_part}?**")
+                    reason = st.text_input("Reason (e.g., printed labels, not tracked):", key="exclude_reason_shortage")
+                    col_confirm, col_cancel = st.columns(2)
+                    with col_confirm:
+                        if st.button("Confirm Exclude", key="confirm_exclude_shortage", use_container_width=True):
+                            if reason:
+                                exclude_part(selected_part, reason)
+                                st.session_state.pop("shortage_action", None)
+                                st.session_state.pop("shortage_part", None)
+                                st.rerun()
+                            else:
+                                st.error("Please provide a reason")
+                    with col_cancel:
+                        if st.button("Cancel", key="cancel_exclude_shortage", use_container_width=True):
+                            st.session_state.pop("shortage_action", None)
+                            st.session_state.pop("shortage_part", None)
+                            st.rerun()
+
+                elif st.session_state.get("shortage_action") == "note":
+                    st.info(f"**Add note to {selected_part}**")
+                    note_text = st.text_area("Note:", key="note_text_shortage", height=80)
+                    col_confirm, col_cancel = st.columns(2)
+                    with col_confirm:
+                        if st.button("Add Note", key="confirm_note_shortage", use_container_width=True):
+                            if note_text:
+                                add_note(selected_part, note_text)
+                                st.session_state.pop("shortage_action", None)
+                                st.session_state.pop("shortage_part", None)
+                                st.rerun()
+                            else:
+                                st.error("Please enter a note")
+                    with col_cancel:
+                        if st.button("Cancel", key="cancel_note_shortage", use_container_width=True):
+                            st.session_state.pop("shortage_action", None)
+                            st.session_state.pop("shortage_part", None)
+                            st.rerun()
 
         if (report_df["UoM"] == "⚠️").any():
             st.caption("⚠️ = BOM UoM is not 'each' (gm, ml, sheets, etc.) — verify conversion if short qty seems extreme")
@@ -513,25 +496,22 @@ elif st.session_state.active_tab == "Drill-Down Grid":
                 ].iloc[0]
                 desc = part_desc["description"][:50]
 
-                # Demand row (with Notes and Actions)
+                # Demand row
                 demand_row = {"CM": cm, "Part": part, "Description": desc, "Metric": "Demand"}
-                note_count = len(load_notes(part))
-                demand_row["Notes"] = f"📝 {note_count}" if note_count > 0 else ""
-                demand_row["Actions"] = "🏷️ 📋"
                 for _, pab_row in part_pab.iterrows():
                     week_key = pab_row["period"].strftime("%Y-%m-%d")
                     demand_row[week_key] = int(pab_row["demand"])
                 grid_data.append(demand_row)
 
                 # Supply row
-                supply_row = {"CM": cm, "Part": part, "Description": desc, "Metric": "Supply", "Notes": "", "Actions": ""}
+                supply_row = {"CM": cm, "Part": part, "Description": desc, "Metric": "Supply"}
                 for _, pab_row in part_pab.iterrows():
                     week_key = pab_row["period"].strftime("%Y-%m-%d")
                     supply_row[week_key] = int(pab_row["receipts"])
                 grid_data.append(supply_row)
 
                 # Inventory row (will be color-coded)
-                inv_row = {"CM": cm, "Part": part, "Description": desc, "Metric": "Inventory", "Notes": "", "Actions": ""}
+                inv_row = {"CM": cm, "Part": part, "Description": desc, "Metric": "Inventory"}
                 for _, pab_row in part_pab.iterrows():
                     week_key = pab_row["period"].strftime("%Y-%m-%d")
                     inv_row[week_key] = int(pab_row["pab"])
@@ -569,41 +549,70 @@ elif st.session_state.active_tab == "Drill-Down Grid":
             else:
                 st.info("No data to display.")
 
-        # Part management section
+        # Inline part management
         st.divider()
-        st.subheader("Part Management")
+        available_parts = sorted([f"{r[0]}@{r[1]}" for r in parts_to_show.values])
+        if len(available_parts) > 0:
+            selected_drill_part = st.selectbox(
+                "Manage part (click 🏷️ to exclude or ➕ to add note):",
+                options=["—"] + available_parts,
+                key="manage_drill_part_select",
+                label_visibility="collapsed"
+            )
 
-        # Create columns for part selection and action buttons
-        part_col, action_col = st.columns([2, 1])
-        with part_col:
-            available_parts = sorted([f"{r[0]}@{r[1]}" for r in parts_to_show.values])
-            if len(available_parts) > 0:
-                selected_drill_part = st.selectbox(
-                    "Select part to manage:",
-                    options=available_parts,
-                    key="manage_drill_part_select",
-                    label_visibility="collapsed"
-                )
+            if selected_drill_part != "—":
                 drill_cm, drill_part = selected_drill_part.split("@")
-            else:
-                st.info("No parts available for management")
-                drill_cm, drill_part = None, None
+                col_exclude, col_note = st.columns(2)
 
-        if drill_cm and drill_part:
-            with action_col:
-                col_exclude, col_note, col_view = st.columns(3)
                 with col_exclude:
-                    if st.button("🏷️ Exclude", key="drill_exclude_trigger", use_container_width=True,
-                                help="Exclude this part from the report"):
-                        open_exclude_dialog(drill_part)
+                    if st.button("🏷️ Exclude", key="exclude_btn_drill", use_container_width=True):
+                        st.session_state.drill_action = "exclude"
+                        st.session_state.drill_part = drill_part
+
                 with col_note:
-                    if st.button("➕ Add Note", key="drill_note_trigger", use_container_width=True,
-                                help="Add a planner note"):
-                        open_note_dialog(drill_part)
-                with col_view:
-                    if st.button("📖 View Notes", key="drill_view_trigger", use_container_width=True,
-                                help="View all notes for this part"):
-                        open_view_notes_dialog(drill_part)
+                    if st.button("➕ Add Note", key="note_btn_drill", use_container_width=True):
+                        st.session_state.drill_action = "note"
+                        st.session_state.drill_part = drill_part
+
+                # Show form based on selected action
+                if st.session_state.get("drill_part") == drill_part:
+                    if st.session_state.get("drill_action") == "exclude":
+                        st.warning(f"**Exclude {drill_part}?**")
+                        reason = st.text_input("Reason (e.g., printed labels, not tracked):", key="exclude_reason_drill")
+                        col_confirm, col_cancel = st.columns(2)
+                        with col_confirm:
+                            if st.button("Confirm Exclude", key="confirm_exclude_drill", use_container_width=True):
+                                if reason:
+                                    exclude_part(drill_part, reason)
+                                    st.session_state.pop("drill_action", None)
+                                    st.session_state.pop("drill_part", None)
+                                    st.rerun()
+                                else:
+                                    st.error("Please provide a reason")
+                        with col_cancel:
+                            if st.button("Cancel", key="cancel_exclude_drill", use_container_width=True):
+                                st.session_state.pop("drill_action", None)
+                                st.session_state.pop("drill_part", None)
+                                st.rerun()
+
+                    elif st.session_state.get("drill_action") == "note":
+                        st.info(f"**Add note to {drill_part}**")
+                        note_text = st.text_area("Note:", key="note_text_drill", height=80)
+                        col_confirm, col_cancel = st.columns(2)
+                        with col_confirm:
+                            if st.button("Add Note", key="confirm_note_drill", use_container_width=True):
+                                if note_text:
+                                    add_note(drill_part, note_text)
+                                    st.session_state.pop("drill_action", None)
+                                    st.session_state.pop("drill_part", None)
+                                    st.rerun()
+                                else:
+                                    st.error("Please enter a note")
+                        with col_cancel:
+                            if st.button("Cancel", key="cancel_note_drill", use_container_width=True):
+                                st.session_state.pop("drill_action", None)
+                                st.session_state.pop("drill_part", None)
+                                st.rerun()
 
         # Optional: show one part's full timeline
         st.subheader("Detailed Timeline (Select a Part)")
@@ -702,50 +711,87 @@ elif st.session_state.active_tab == "Excess Monitor":
                 })
 
             report_df = pd.DataFrame(report)
+
+            # Add Notes column showing preview
+            def get_notes_preview_excess(part):
+                notes = load_notes(part)
+                if not notes:
+                    return ""
+                first_note = notes[0]["note"][:60]
+                count_str = f" (+{len(notes)-1})" if len(notes) > 1 else ""
+                return f"📝 {first_note}...{count_str}" if len(notes[0]["note"]) > 60 else f"📝 {first_note}{count_str}"
+
+            report_df["Notes"] = report_df["Part"].apply(get_notes_preview_excess)
+
             col_order = [
                 "CM", "Part", "Description", "Products", "Last Demand",
-                "Excess Qty", "Excess Cost", "Suggested Cancellations"
+                "Excess Qty", "Excess Cost", "Suggested Cancellations", "Notes"
             ]
             report_df = report_df[[c for c in col_order if c in report_df.columns]]
 
-            # Add Notes and Actions columns
-            report_df["Notes"] = report_df["Part"].apply(
-                lambda p: f"📝 {len(load_notes(p))}" if len(load_notes(p)) > 0 else ""
-            )
-            report_df["Actions"] = report_df["Part"].apply(
-                lambda p: f"🏷️ 📋"
-            )
-
             st.dataframe(report_df, use_container_width=True, height=500)
 
-            # Part management section
+            # Inline part management
             st.divider()
-            st.subheader("Part Management")
+            selected_excess_part = st.selectbox(
+                "Manage part (click 🏷️ to exclude or ➕ to add note):",
+                options=["—"] + sorted(report_df["Part"].unique()),
+                key="manage_excess_part_select",
+                label_visibility="collapsed"
+            )
 
-            # Create columns for part selection and action buttons
-            part_col, action_col = st.columns([2, 1])
-            with part_col:
-                selected_excess_part = st.selectbox(
-                    "Select part to manage:",
-                    options=sorted(report_df["Part"].unique()),
-                    key="manage_excess_part_select",
-                    label_visibility="collapsed"
-                )
+            if selected_excess_part != "—":
+                col_exclude, col_note = st.columns(2)
 
-            with action_col:
-                col_exclude, col_note, col_view = st.columns(3)
                 with col_exclude:
-                    if st.button("🏷️ Exclude", key="excess_exclude_trigger", use_container_width=True,
-                                help="Exclude this part from the report"):
-                        open_exclude_dialog(selected_excess_part)
+                    if st.button("🏷️ Exclude", key="exclude_btn_excess", use_container_width=True):
+                        st.session_state.excess_action = "exclude"
+                        st.session_state.excess_part = selected_excess_part
+
                 with col_note:
-                    if st.button("➕ Add Note", key="excess_note_trigger", use_container_width=True,
-                                help="Add a planner note"):
-                        open_note_dialog(selected_excess_part)
-                with col_view:
-                    if st.button("📖 View Notes", key="excess_view_trigger", use_container_width=True,
-                                help="View all notes for this part"):
-                        open_view_notes_dialog(selected_excess_part)
+                    if st.button("➕ Add Note", key="note_btn_excess", use_container_width=True):
+                        st.session_state.excess_action = "note"
+                        st.session_state.excess_part = selected_excess_part
+
+                # Show form based on selected action
+                if st.session_state.get("excess_part") == selected_excess_part:
+                    if st.session_state.get("excess_action") == "exclude":
+                        st.warning(f"**Exclude {selected_excess_part}?**")
+                        reason = st.text_input("Reason (e.g., printed labels, not tracked):", key="exclude_reason_excess")
+                        col_confirm, col_cancel = st.columns(2)
+                        with col_confirm:
+                            if st.button("Confirm Exclude", key="confirm_exclude_excess", use_container_width=True):
+                                if reason:
+                                    exclude_part(selected_excess_part, reason)
+                                    st.session_state.pop("excess_action", None)
+                                    st.session_state.pop("excess_part", None)
+                                    st.rerun()
+                                else:
+                                    st.error("Please provide a reason")
+                        with col_cancel:
+                            if st.button("Cancel", key="cancel_exclude_excess", use_container_width=True):
+                                st.session_state.pop("excess_action", None)
+                                st.session_state.pop("excess_part", None)
+                                st.rerun()
+
+                    elif st.session_state.get("excess_action") == "note":
+                        st.info(f"**Add note to {selected_excess_part}**")
+                        note_text = st.text_area("Note:", key="note_text_excess", height=80)
+                        col_confirm, col_cancel = st.columns(2)
+                        with col_confirm:
+                            if st.button("Add Note", key="confirm_note_excess", use_container_width=True):
+                                if note_text:
+                                    add_note(selected_excess_part, note_text)
+                                    st.session_state.pop("excess_action", None)
+                                    st.session_state.pop("excess_part", None)
+                                    st.rerun()
+                                else:
+                                    st.error("Please enter a note")
+                        with col_cancel:
+                            if st.button("Cancel", key="cancel_note_excess", use_container_width=True):
+                                st.session_state.pop("excess_action", None)
+                                st.session_state.pop("excess_part", None)
+                                st.rerun()
 
             st.write(f"**Total: {len(report)} parts with excess supply**")
 
