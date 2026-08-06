@@ -240,6 +240,23 @@ def dialog_watch(part):
         if st.button("Cancel", key=f"watch_cancel_{part}", use_container_width=True):
             st.rerun()
 
+@st.dialog("Notes History")
+def dialog_view_notes(part):
+    """Dialog to view full notes history for a part."""
+    st.write(f"**Part:** {part}")
+    notes = load_notes(part)
+
+    if notes:
+        for note in notes:
+            with st.container(border=True):
+                st.caption(f"**{note['user']}** — {note['timestamp'][:10]} {note['timestamp'][11:16]}")
+                st.write(note["note"])
+    else:
+        st.info(f"No notes yet for {part}")
+
+    if st.button("Close", key=f"close_notes_{part}", use_container_width=True):
+        st.rerun()
+
 # --- Load and run ---
 @st.cache_data
 def load_and_run():
@@ -475,7 +492,7 @@ if st.session_state.active_tab == "Shortage Report":
 
         # Quick Actions section (between title and table)
         st.subheader("Quick Actions")
-        action_cols = st.columns([3, 1, 1, 1])
+        action_cols = st.columns([3, 1, 1, 1, 1])
         with action_cols[0]:
             selected_part = st.selectbox(
                 "Select part:",
@@ -490,6 +507,9 @@ if st.session_state.active_tab == "Shortage Report":
             if st.button("➕ Add Note", key="quick_note", use_container_width=True):
                 dialog_add_note(selected_part)
         with action_cols[3]:
+            if st.button("📖 View Notes", key="quick_view_notes", use_container_width=True):
+                dialog_view_notes(selected_part)
+        with action_cols[4]:
             part_is_watched = selected_part in watched_parts
             watch_label = "✓ Watched" if part_is_watched else "👁️ Watch"
             if st.button(watch_label, key="quick_watch", use_container_width=True):
@@ -508,6 +528,16 @@ if st.session_state.active_tab == "Shortage Report":
             col_order.append("Recommended")
 
         # Add Notes and Watched columns
+        def format_notes(part):
+            """Format notes with → indicator if notes exist."""
+            notes = load_notes(part)
+            if not notes:
+                return ""
+            first_note = notes[0]["note"][:60]
+            arrow = " →" if len(notes) > 0 else ""
+            return f"📝 {first_note}...{arrow}" if len(notes[0]["note"]) > 60 else f"📝 {first_note}{arrow}"
+
+        report_df["Notes"] = report_df["Part"].apply(format_notes)
         report_df["Watched"] = report_df["Part"].apply(
             lambda p: "👁️" if p in watched_parts else ""
         )
