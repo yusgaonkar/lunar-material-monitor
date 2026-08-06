@@ -276,6 +276,7 @@ excess = result["excess"]
 
 # --- Header ---
 st.title("🌙 Lunar Material Monitor")
+st.warning("⚠️ **PILOT / NOT IN PRODUCTION** — Data not yet validated. Use for planning only.")
 st.caption(f"Component runout tracking | Snapshot: {result['snapshot'].date()} | Week 0: {cfg.week0.date()}")
 
 # --- Session state for tab persistence ---
@@ -507,7 +508,7 @@ if st.session_state.active_tab == "Shortage Report":
             if st.button("➕ Add Note", key="quick_note", use_container_width=True):
                 dialog_add_note(selected_part)
         with action_cols[3]:
-            if st.button("📖 View Notes", key="quick_view_notes", use_container_width=True):
+            if st.button("📖 View Notes History", key="quick_view_notes", use_container_width=True):
                 dialog_view_notes(selected_part)
         with action_cols[4]:
             part_is_watched = selected_part in watched_parts
@@ -529,13 +530,14 @@ if st.session_state.active_tab == "Shortage Report":
 
         # Add Notes and Watched columns
         def format_notes(part):
-            """Format notes with → indicator if notes exist."""
+            """Format latest note with → indicator if notes exist."""
             notes = load_notes(part)
             if not notes:
                 return ""
-            first_note = notes[0]["note"][:60]
+            # Get latest note (last in list)
+            latest_note = notes[-1]["note"][:60]
             arrow = " →" if len(notes) > 0 else ""
-            return f"📝 {first_note}...{arrow}" if len(notes[0]["note"]) > 60 else f"📝 {first_note}{arrow}"
+            return f"📝 {latest_note}...{arrow}" if len(notes[-1]["note"]) > 60 else f"📝 {latest_note}{arrow}"
 
         report_df["Notes"] = report_df["Part"].apply(format_notes)
         report_df["Watched"] = report_df["Part"].apply(
