@@ -473,61 +473,71 @@ if st.session_state.active_tab == "Shortage Report":
 
         report_df["Notes"] = report_df["Part"].apply(get_notes_preview)
 
-        # Display with column order and Actions
+        # Build manual table with clickable action buttons
+        st.subheader("Components Short Within Selected Time Window")
+
+        # Prepare data
         col_order = ["CM", "Part", "Description", "Products", "UoM", "Build Coverage",
-                     "First Short Date", "Shortage Qty", "Incoming Supply", "Notes"]
+                     "First Short Date", "Incoming Supply"]
         if include_allocations and "Recommended" in report_df.columns:
             col_order.append("Recommended")
-        report_df = report_df[[c for c in col_order if c in report_df.columns]]
 
-        # Add watched indicator
-        report_df["Watched"] = report_df["Part"].apply(
-            lambda p: "👁️" if p in watched_parts else ""
-        )
+        # Header row
+        header_cols = st.columns([1.2, 1.2, 2, 2, 0.8, 1.5, 1.5, 2, 1.2, 2, 0.8])
+        header_cols[0].write("**CM**")
+        header_cols[1].write("**Part**")
+        header_cols[2].write("**Description**")
+        header_cols[3].write("**Products**")
+        header_cols[4].write("**UoM**")
+        header_cols[5].write("**Build Coverage**")
+        header_cols[6].write("**First Short Date**")
+        header_cols[7].write("**Incoming Supply**")
+        header_cols[8].write("**Actions**")
+        header_cols[9].write("**Notes**")
+        header_cols[10].write("**Watched**")
 
-        # Display table
-        st.dataframe(report_df, use_container_width=True, height=500)
+        st.divider()
 
-        # Actions table below (clickable buttons)
-        st.subheader("Quick Actions")
-        st.caption("Click an action button to open a dialog")
-
-        # Build actions table manually with clickable buttons
-        action_cols = st.columns([2, 1, 1, 1, 1])
-        action_cols[0].write("**Part**")
-        action_cols[1].write("**🏷️ Exclude**")
-        action_cols[2].write("**➕ Note**")
-        action_cols[3].write("**👁️ Watch**")
-        action_cols[4].write("")
-
+        # Data rows
         for _, row in report_df.iterrows():
             part = row["Part"]
             part_is_watched = part in watched_parts
+            notes_preview = row["Notes"]
 
-            cols = st.columns([2, 1, 1, 1, 1])
+            cols = st.columns([1.2, 1.2, 2, 2, 0.8, 1.5, 1.5, 2, 1.2, 2, 0.8])
 
-            with cols[0]:
-                st.write(f"`{part}`")
+            # Display data
+            cols[0].write(row["CM"])
+            cols[1].write(f"`{part}`")
+            cols[2].write(row["Description"])
+            cols[3].write(row["Products"])
+            cols[4].write(row["UoM"])
+            cols[5].write(str(int(row["Build Coverage"])))
+            cols[6].write(row["First Short Date"])
+            cols[7].write(row["Incoming Supply"])
 
-            with cols[1]:
-                if st.button("Exclude", key=f"exclude_trigger_{part}", use_container_width=True):
+            # Actions column (3 clickable icons)
+            action_subcols = cols[8].columns(3)
+            with action_subcols[0]:
+                if st.button("🏷️", key=f"exclude_{part}", help="Exclude", use_container_width=True):
                     dialog_exclude(part)
-
-            with cols[2]:
-                if st.button("Add Note", key=f"note_trigger_{part}", use_container_width=True):
+            with action_subcols[1]:
+                if st.button("➕", key=f"note_{part}", help="Add Note", use_container_width=True):
                     dialog_add_note(part)
-
-            with cols[3]:
-                watch_btn_label = "Remove" if part_is_watched else "Watch"
-                if st.button(watch_btn_label, key=f"watch_trigger_{part}", use_container_width=True):
+            with action_subcols[2]:
+                watch_icon = "✓" if part_is_watched else "👁️"
+                if st.button(watch_icon, key=f"watch_{part}", help="Watch" if not part_is_watched else "Watched", use_container_width=True):
                     if part_is_watched:
                         unwatch_part(part)
+                        st.rerun()
                     else:
                         dialog_watch(part)
 
-            with cols[4]:
-                if row["Notes"]:
-                    st.caption(row["Notes"])
+            # Notes column
+            cols[9].write(notes_preview)
+
+            # Watched column
+            cols[10].write("👁️" if part_is_watched else "")
 
         if (report_df["UoM"] == "⚠️").any():
             st.caption("⚠️ = BOM UoM is not 'each' (gm, ml, sheets, etc.) — verify conversion if short qty seems extreme")
