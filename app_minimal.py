@@ -8,6 +8,9 @@ To add password protection when deploying:
 """
 
 import logging
+import os
+from datetime import datetime
+import json
 
 import streamlit as st
 import pandas as pd
@@ -17,6 +20,13 @@ from src import io as lio, engine as eng
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger(__name__)
+
+# Get OS username
+OS_USER = os.getenv("USER") or os.getenv("USERNAME") or "Unknown"
+
+# Persistence files
+EXCLUSIONS_FILE = "data/exclusions.csv"
+NOTES_FILE = "data/notes.jsonl"
 
 st.set_page_config(page_title="Lunar Material Monitor", layout="wide")
 
@@ -61,6 +71,59 @@ def check_password():
 
 if not check_password():
     st.stop()  # Do not continue if password is not correct
+
+# ============================================================================
+# PERSISTENCE HELPERS
+# ============================================================================
+def load_exclusions():
+    """Load excluded parts from CSV."""
+    if os.path.exists(EXCLUSIONS_FILE):
+        df = pd.read_csv(EXCLUSIONS_FILE)
+        return set(df["part"].unique())
+    return set()
+
+def exclude_part(part, reason):
+    """Add a part to exclusions."""
+    exclusion_data = {
+        "part": part,
+        "user": OS_USER,
+        "timestamp": datetime.now().isoformat(),
+        "reason": reason
+    }
+    if os.path.exists(EXCLUSIONS_FILE):
+        df = pd.read_csv(EXCLUSIONS_FILE)
+        df = pd.concat([df, pd.DataFrame([exclusion_data])], ignore_index=True)
+    else:
+        df = pd.DataFrame([exclusion_data])
+    df.to_csv(EXCLUSIONS_FILE, index=False)
+    st.success(f"✓ Excluded {part}")
+
+def load_notes(part):
+    """Load notes for a part."""
+    if not os.path.exists(NOTES_FILE):
+        return []
+    notes = []
+    with open(NOTES_FILE, "r") as f:
+        for line in f:
+            note = json.loads(line)
+            if note.get("part") == part:
+                notes.append(note)
+    return notes
+
+def add_note(part, note_text):
+    """Add a note to a part."""
+    note_data = {
+        "part": part,
+        "user": OS_USER,
+        "timestamp": datetime.now().isoformat(),
+        "note": note_text
+    }
+    with open(NOTES_FILE, "a") as f:
+        f.write(json.dumps(note_data) + "\n")
+    st.success("✓ Note added")
+
+# Load excluded parts
+excluded_parts = load_exclusions()
 
 # --- Load and run ---
 @st.cache_data
@@ -118,6 +181,11 @@ else:
 
 # Filter data
 filtered = summary_to_use.copy()
+
+# Exclude parts that are on the exclusion list
+if len(excluded_parts) > 0:
+    filtered = filtered[~filtered["part"].isin(excluded_parts)]
+
 if cm_filter != "All":
     filtered = filtered[filtered["cm"] == cm_filter]
 if prod_filter:
@@ -282,6 +350,61 @@ if st.session_state.active_tab == "Shortage Report":
         report_df = report_df[[c for c in col_order if c in report_df.columns]]
 
         st.dataframe(report_df, use_container_width=True, height=500)
+
+        # Exclusion and notes section
+        st.divider()
+        st.subheader("Part Management")
+
+        col1, col2 = st.columns([2, 2])
+        with col1:
+            st.write("**Exclude a part** (e.g., printed labels)")
+            exclude_part_input = st.selectbox(
+                "Select part to exclude:",
+                options=report_df["Part"].unique(),
+                key="exclude_select",
+                label_visibility="collapsed"
+            )
+            exclude_reason = st.text_input("Reason for exclusion (e.g., not tracked as inventory):", key="exclude_reason")
+            if st.button("Exclude Part", key="exclude_btn"):
+                if exclude_reason:
+                    exclude_part(exclude_part_input, exclude_reason)
+                    st.rerun()
+                else:
+                    st.error("Please provide a reason for exclusion")
+
+        with col2:
+            st.write("**Add planner note** to a part")
+            note_part_input = st.selectbox(
+                "Select part for note:",
+                options=report_df["Part"].unique(),
+                key="note_select",
+                label_visibility="collapsed"
+            )
+            note_text = st.text_area("Note:", key="note_text", height=80)
+            if st.button("Add Note", key="note_btn"):
+                if note_text:
+                    add_note(note_part_input, note_text)
+                    st.rerun()
+                else:
+                    st.error("Please enter a note")
+
+        # Display notes for selected part
+        st.divider()
+        st.subheader("Part Notes History")
+        view_part = st.selectbox(
+            "View notes for part:",
+            options=report_df["Part"].unique(),
+            key="view_notes_select",
+            label_visibility="collapsed"
+        )
+        notes = load_notes(view_part)
+        if notes:
+            for note in notes:
+                with st.container(border=True):
+                    st.caption(f"**{note['user']}** — {note['timestamp'][:10]} {note['timestamp'][11:16]}")
+                    st.write(note["note"])
+        else:
+            st.info(f"No notes for {view_part}")
         if (report_df["UoM"] == "⚠️").any():
             st.caption("⚠️ = BOM UoM is not 'each' (gm, ml, sheets, etc.) — verify conversion if short qty seems extreme")
         st.write(f"**Total: {len(report)} parts short**")
