@@ -275,7 +275,7 @@ demand_detail = result["demand_detail"]
 excess = result["excess"]
 
 # --- Header ---
-st.title("🌙 Lunar Material Monitor")
+st.title("Lunar Material Monitor")
 st.warning("⚠️ **PILOT / NOT IN PRODUCTION** — Data not yet validated. Use for planning only.")
 st.caption(f"Component runout tracking | Snapshot: {result['snapshot'].date()} | Week 0: {cfg.week0.date()}")
 
