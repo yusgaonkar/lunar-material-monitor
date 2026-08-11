@@ -290,20 +290,33 @@ active_tab = st.radio("", ["Shortage Report", "Drill-Down Grid", "Excess Monitor
                        key="tab_selector")
 st.session_state.active_tab = active_tab
 
-# --- Scenario toggle ---
-include_allocations = st.checkbox("Include Lunar Allocations", value=False,
-                                  help="Recalculate with Lunar inventory allocations, shows on drill-down")
-
-# --- Common filters ---
+# --- Filters ---
 st.subheader("Filters")
-cols = st.columns([2, 2, 2, 1, 1, 1])
-cm_filter = cols[0].selectbox("CM", ["All"] + sorted(s["cm"].unique()))
-prod_filter = cols[1].multiselect("Products", sorted(set(
+
+# Row 1: CM, Products, Part Number
+cols_row1 = st.columns([2, 2.5, 2.5])
+cm_filter = cols_row1[0].selectbox("CM", ["All"] + sorted(s["cm"].unique()))
+
+prod_filter = cols_row1[1].multiselect("Products", sorted(set(
     p for prods in s["products"].fillna("") for p in prods.split(", ") if p)))
-weeks_window = cols[2].slider("Time window (weeks)", min_value=1, max_value=cfg.horizon_weeks, value=12, step=1)
-show_short_only = cols[3].checkbox("Short only", value=True)
-exclude_uom_issues = cols[4].checkbox("Exclude UoM issues", value=True)
-show_watched_only = cols[5].checkbox("Watched only", value=False)
+
+# NEW: Part Number filter
+part_filter = cols_row1[2].multiselect("Part Number", sorted(s["part"].unique()))
+
+# Row 2: Time window (slider + numeric input) + checkboxes
+cols_row2 = st.columns([1.5, 0.8, 1, 1, 1, 1])
+
+weeks_window = cols_row2[0].slider("Time window (weeks)", min_value=1, max_value=cfg.horizon_weeks,
+                                    value=12, step=1, label_visibility="collapsed")
+weeks_numeric = cols_row2[1].number_input("weeks", min_value=1, max_value=cfg.horizon_weeks,
+                                          value=weeks_window, step=1, label_visibility="collapsed")
+weeks_window = weeks_numeric  # Use numeric input if user typed something
+
+show_short_only = cols_row2[2].checkbox("Short only", value=True)
+exclude_uom_issues = cols_row2[3].checkbox("Exclude UoM", value=True)
+show_watched_only = cols_row2[4].checkbox("Watched only", value=False)
+include_allocations = cols_row2[5].checkbox("Lunar Alloc", value=False,
+                                            help="Recalculate with Lunar inventory allocations")
 
 # Choose between conservative (default) or allocation scenario
 if include_allocations and "summary_with_allocation" in result:
@@ -324,6 +337,8 @@ if cm_filter != "All":
     filtered = filtered[filtered["cm"] == cm_filter]
 if prod_filter:
     filtered = filtered[filtered["products"].str.contains("|".join(prod_filter), na=False)]
+if part_filter:
+    filtered = filtered[filtered["part"].isin(part_filter)]
 if show_short_only:
     filtered = filtered[filtered["is_shortage"]]
 
