@@ -293,44 +293,40 @@ st.session_state.active_tab = active_tab
 # --- Filters ---
 st.subheader("Filters")
 
-# Row 1: CM, Products, Part Number
-cols_row1 = st.columns([2, 2.5, 2.5])
-cm_filter = cols_row1[0].selectbox("CM", ["All"] + sorted(s["cm"].unique()))
+# Main filters on left (75%) + Checkboxes on right (25%)
+col_left, col_right = st.columns([0.75, 0.25], gap="medium")
 
-prod_filter = cols_row1[1].multiselect("Products", sorted(set(
-    p for prods in s["products"].fillna("") for p in prods.split(", ") if p)))
+# LEFT COLUMN: CM, Products, Part Number, Planning Horizon
+with col_left:
+    filter_cols = st.columns([1, 1.2, 1.2, 1.3])
 
-# NEW: Part Number filter
-part_filter = cols_row1[2].multiselect("Part Number", sorted(s["part"].unique()))
+    cm_filter = filter_cols[0].selectbox("CM", ["All"] + sorted(s["cm"].unique()),
+                                         label_visibility="collapsed")
 
-# Row 2: Time window (number input + slider synced) + checkboxes
-cols_row2 = st.columns([0.6, 1.2, 1, 1, 1, 1])
+    prod_filter = filter_cols[1].multiselect("Products", sorted(set(
+        p for prods in s["products"].fillna("") for p in prods.split(", ") if p)),
+        label_visibility="collapsed")
 
-# Number input (left) - controls the slider
-weeks_window = cols_row2[0].number_input(
-    "Time window (weeks)",
-    min_value=1,
-    max_value=cfg.horizon_weeks,
-    value=12,
-    step=1,
-    label_visibility="collapsed"
-)
+    part_filter = filter_cols[2].multiselect("Part Number", sorted(s["part"].unique()),
+                                             label_visibility="collapsed")
 
-# Slider (synced to number input)
-weeks_window = cols_row2[1].slider(
-    "Time window (weeks)",
-    min_value=1,
-    max_value=cfg.horizon_weeks,
-    value=weeks_window,
-    step=1,
-    label_visibility="collapsed"
-)
+    weeks_window = filter_cols[3].slider(
+        "Planning Horizon (weeks)",
+        min_value=1,
+        max_value=cfg.horizon_weeks,
+        value=12,
+        step=1,
+        label_visibility="collapsed"
+    )
 
-show_short_only = cols_row2[2].checkbox("Short only", value=True)
-exclude_uom_issues = cols_row2[3].checkbox("Exclude UoM", value=True)
-show_watched_only = cols_row2[4].checkbox("Watched only", value=False)
-include_allocations = cols_row2[5].checkbox("Lunar Alloc", value=False,
-                                            help="Recalculate with Lunar inventory allocations")
+# RIGHT COLUMN: Stacked checkboxes
+with col_right:
+    st.write("")  # Spacing for alignment
+    show_short_only = st.checkbox("Short only", value=True)
+    exclude_uom_issues = st.checkbox("Exclude UoM", value=True)
+    show_watched_only = st.checkbox("Watched only", value=False)
+    include_allocations = st.checkbox("Lunar Alloc", value=False,
+                                      help="Recalculate with Lunar inventory allocations")
 
 # Choose between conservative (default) or allocation scenario
 if include_allocations and "summary_with_allocation" in result:
