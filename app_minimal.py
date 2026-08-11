@@ -293,33 +293,29 @@ st.session_state.active_tab = active_tab
 # --- Filters ---
 st.subheader("Filters")
 
-# Main filters on left (75%) + Checkboxes on right (25%)
-col_left, col_right = st.columns([0.75, 0.25], gap="medium")
+# Main filters on left + Checkboxes on extreme right
+col_left, col_right = st.columns([5.5, 1.5], gap="large")
 
 # LEFT COLUMN: CM, Products, Part Number, Planning Horizon
 with col_left:
-    filter_cols = st.columns([1, 1.2, 1.2, 1.3])
+    filter_cols = st.columns([1, 1.5, 1.5, 1.8])
 
-    cm_filter = filter_cols[0].selectbox("CM", ["All"] + sorted(s["cm"].unique()),
-                                         label_visibility="collapsed")
+    cm_filter = filter_cols[0].selectbox("CM", ["All"] + sorted(s["cm"].unique()))
 
     prod_filter = filter_cols[1].multiselect("Products", sorted(set(
-        p for prods in s["products"].fillna("") for p in prods.split(", ") if p)),
-        label_visibility="collapsed")
+        p for prods in s["products"].fillna("") for p in prods.split(", ") if p)))
 
-    part_filter = filter_cols[2].multiselect("Part Number", sorted(s["part"].unique()),
-                                             label_visibility="collapsed")
+    part_filter = filter_cols[2].multiselect("Part Number", sorted(s["part"].unique()))
 
     weeks_window = filter_cols[3].slider(
         "Planning Horizon (weeks)",
         min_value=1,
         max_value=cfg.horizon_weeks,
         value=12,
-        step=1,
-        label_visibility="collapsed"
+        step=1
     )
 
-# RIGHT COLUMN: Stacked checkboxes
+# RIGHT COLUMN: Stacked checkboxes on extreme right
 with col_right:
     st.write("")  # Spacing for alignment
     show_short_only = st.checkbox("Short only", value=True)
