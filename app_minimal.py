@@ -472,10 +472,6 @@ if st.session_state.active_tab == "Shortage Report":
                     prod_with_usage.append(prod)
             products_str = ", ".join(prod_with_usage)
 
-            # UoM flag — only if BOM UoM is not "ea" or "each"
-            uom = str(row.get("uom", "ea")).lower().strip()
-            uom_flag = "⚠️" if uom not in ("ea", "each", "") else ""
-
             # Handle NaN description
             desc = row["description"] if pd.notna(row["description"]) else "—"
             desc = str(desc)[:40] if desc != "—" else "—"
@@ -488,9 +484,11 @@ if st.session_state.active_tab == "Shortage Report":
                 "Build Coverage": int(row["blocks_buildable"]),
                 "First Short Date": row["first_shortage_date"].strftime("%Y-%m-%d") if pd.notna(row["first_shortage_date"]) else "—",
                 "Shortage Type": row.get("shortage_type", "—"),
+                "Raw Inventory": int(row.get("raw_inventory", 0)),
+                "WIP Inventory": int(row.get("wip_inventory", 0)),
+                "Total Inventory": int(row.get("raw_inventory", 0) + row.get("wip_inventory", 0)),
                 "Shortage Qty": int(row["shortage_qty"]) if pd.notna(row["shortage_qty"]) else 0,
                 "Incoming Supply": supply_str,
-                "UoM": uom_flag if uom_flag else "✓",
             }
 
             # Add allocation recommendation if toggle is on
@@ -557,8 +555,9 @@ if st.session_state.active_tab == "Shortage Report":
         st.divider()
 
         # Prepare data for clean dataframe display
-        col_order = ["CM", "Part", "Description", "Products", "UoM", "Build Coverage",
-                     "First Short Date", "Shortage Type", "Incoming Supply"]
+        col_order = ["CM", "Part", "Description", "Products", "Build Coverage",
+                     "First Short Date", "Shortage Type", "Raw Inventory", "WIP Inventory",
+                     "Total Inventory", "Incoming Supply"]
         if include_allocations and "Recommended" in report_df.columns:
             col_order.append("Recommended")
 
@@ -585,8 +584,6 @@ if st.session_state.active_tab == "Shortage Report":
         # Display clean dataframe
         st.dataframe(report_df_display, use_container_width=True, height=500)
 
-        if (report_df["UoM"] == "⚠️").any():
-            st.caption("⚠️ = BOM UoM is not 'each' (gm, ml, sheets, etc.) — verify conversion if short qty seems extreme")
         st.write(f"**Total: {len(report)} parts short**")
 
 # ============================================================================

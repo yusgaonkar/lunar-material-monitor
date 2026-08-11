@@ -296,8 +296,66 @@ def scheduled_receipts(oo_eta: pd.DataFrame, cfg: Config):
     )
 
 
-def opening_inventory(cm_avail: pd.DataFrame, wip: pd.DataFrame):
-    """CM-owned raw on-hand + WIP. Negatives floored at zero but counted.
+def calc_wip_fg(bom: pd.DataFrame, cm_avail: pd.DataFrame, products: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WIP finished goods: completed assemblies at CM not yet ASNd.
+
+    For each part, find all top-level products that use it.
+    Extended usage = total usage path through BOM tree.
+    WIP_FG = (On-hand qty of top-level product at CM) × (Extended usage in product)
+
+    Returns: (cm, part) → wip_fg_qty
+    """
+    # Get top-level products only; products DF has columns: product, cm, alias, description
+    top_level = products[products['cm'].notna()].copy()
+
+    wip_fg_list = []
+
+    for _, part_row in cm_avail[['cm', 'part']].drop_duplicates().iterrows():
+        part = part_row['part']
+        cm = part_row['cm']
+
+        total_wip_fg = 0.0
+
+        # Find all top-level products at this CM
+        for _, prod_row in top_level[top_level['cm'] == cm].iterrows():
+            prod_lpn = prod_row['product']  # product column (renamed from Parent Product LPN)
+
+            # Find all occurrences of this part in this product's BOM
+            part_in_prod = bom[
+                (bom['item_number'] == part) &
+                (bom['Parent Product LPN'] == prod_lpn)
+            ]
+
+            if len(part_in_prod) == 0:
+                continue
+
+            # Extended usage = sum of Usage Qty across all BOM paths
+            extended_usage = part_in_prod['Usage Qty'].sum()
+
+            # Get on-hand qty of the top-level product at this CM
+            prod_onhand = cm_avail[
+                (cm_avail['part'] == prod_lpn) &
+                (cm_avail['cm'] == cm)
+            ]
+
+            if len(prod_onhand) > 0:
+                prod_qty = prod_onhand.iloc[0]['cm_available']
+                wip_fg_contribution = prod_qty * extended_usage
+                total_wip_fg += wip_fg_contribution
+
+        wip_fg_list.append({
+            'cm': cm,
+            'part': part,
+            'wip_fg': total_wip_fg
+        })
+
+    return pd.DataFrame(wip_fg_list) if wip_fg_list else pd.DataFrame(columns=['cm', 'part', 'wip_fg'])
+
+
+def opening_inventory(cm_avail: pd.DataFrame, wip: pd.DataFrame, wip_fg: pd.DataFrame = None):
+    """CM-owned raw on-hand + WIP sub-assy + WIP finished goods.
+
+    opening = cm_available (raw) + wip_consumed (sub-assy WIP) + wip_fg (FG at CM)
 
     Lunar-owned stock is NOT added: it already appears as an open CM PO, and
     counting both inflates availability (CLAUDE.md 5.2). Lunar inventory reaches
@@ -305,9 +363,22 @@ def opening_inventory(cm_avail: pd.DataFrame, wip: pd.DataFrame):
     """
     opening = cm_avail.merge(wip, on=["cm", "part"], how="outer")
     opening[["cm_available", "wip"]] = opening[["cm_available", "wip"]].fillna(0.0)
+
+    # Add WIP FG if provided
+    if wip_fg is not None and len(wip_fg) > 0:
+        opening = opening.merge(wip_fg[['cm', 'part', 'wip_fg']], on=['cm', 'part'], how='left')
+        opening['wip_fg'] = opening['wip_fg'].fillna(0.0)
+    else:
+        opening['wip_fg'] = 0.0
+
+    # Store breakdown for audit trail
+    opening['raw_inventory'] = opening['cm_available']
+    opening['wip_inventory'] = opening['wip'] + opening['wip_fg']
+
     negatives = opening[opening["cm_available"] < 0].copy()
     opening["cm_available"] = opening["cm_available"].clip(lower=0.0)
-    opening["opening"] = opening["cm_available"] + opening["wip"]
+    opening["opening"] = opening["cm_available"] + opening["wip"] + opening["wip_fg"]
+
     return opening, negatives
 
 
@@ -375,7 +446,7 @@ def compute_runout(demand, opening, receipts, cfg: Config):
     summary = (
         keys.merge(first, on=["cm", "part"], how="left")
         .merge(worst, on=["cm", "part"], how="left")
-        .merge(opening[["cm", "part", "opening", "cm_available", "wip"]],
+        .merge(opening[["cm", "part", "opening", "cm_available", "wip", "raw_inventory", "wip_inventory"]],
                on=["cm", "part"], how="left")
     )
     summary["shortage_qty"] = (-summary["min_pab"]).clip(lower=0.0)
@@ -740,9 +811,11 @@ def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
 
     oo_eta = add_eta(norm["onorder"])
     receipts, past_due, undated = scheduled_receipts(oo_eta, cfg)
+    # Calculate WIP finished goods: completed top-level assemblies at CM not yet ASNd
+    wip_fg_df = calc_wip_fg(bom, norm["cm_available"], products_full)
     # Use wip_all (from ALL products) for opening inventory, not just filtered demand
     opening, negatives = opening_inventory(
-        norm["cm_available"], wip_all)
+        norm["cm_available"], wip_all, wip_fg_df)
     states = part_states(demand, norm["onhand"], oo_eta)
 
     keep = set(products["cm"])
