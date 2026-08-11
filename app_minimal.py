@@ -357,11 +357,23 @@ if exclude_uom_issues:
 if show_watched_only:
     filtered = filtered[filtered["part"].isin(watched_parts)]
 
-# Apply time window: only parts that run out within N weeks
+# Apply time window: show if shortage within window OR on-hand insufficient within window
 cutoff = cfg.week0 + pd.Timedelta(weeks=weeks_window)
+
+# For each part, check if demand within time window exceeds on-hand
+demand_by_part_cm = demand_detail[demand_detail["period"] <= cutoff].groupby(["cm", "part"], as_index=False)["qty"].sum()
+demand_by_part_cm.columns = ["cm", "part", "demand_in_window"]
+
+filtered = filtered.merge(demand_by_part_cm, on=["cm", "part"], how="left")
+filtered["demand_in_window"] = filtered["demand_in_window"].fillna(0)
+
+# Show if: first_shortage within window OR on-hand < demand within window
 filtered = filtered[
-    (filtered["first_shortage_date"].isna()) | (filtered["first_shortage_date"] <= cutoff)
+    (filtered["first_shortage_date"].isna()) |
+    (filtered["first_shortage_date"] <= cutoff) |
+    (filtered["cm_available"] < filtered["demand_in_window"])
 ]
+filtered = filtered.drop(columns=["demand_in_window"])
 filtered = filtered.sort_values("first_shortage_date", na_position="last")
 
 # Add note if using allocations
@@ -475,6 +487,8 @@ if st.session_state.active_tab == "Shortage Report":
                 "Products": products_str,
                 "Build Coverage": int(row["blocks_buildable"]),
                 "First Short Date": row["first_shortage_date"].strftime("%Y-%m-%d") if pd.notna(row["first_shortage_date"]) else "—",
+                "Shortage Type": row.get("shortage_type", "—"),
+                "On-Hand Short": "✓ YES" if row.get("on_hand_short", False) else "—",
                 "Shortage Qty": int(row["shortage_qty"]) if pd.notna(row["shortage_qty"]) else 0,
                 "Incoming Supply": supply_str,
                 "UoM": uom_flag if uom_flag else "✓",
@@ -545,7 +559,7 @@ if st.session_state.active_tab == "Shortage Report":
 
         # Prepare data for clean dataframe display
         col_order = ["CM", "Part", "Description", "Products", "UoM", "Build Coverage",
-                     "First Short Date", "Incoming Supply"]
+                     "First Short Date", "Shortage Type", "On-Hand Short", "Incoming Supply"]
         if include_allocations and "Recommended" in report_df.columns:
             col_order.append("Recommended")
 
