@@ -413,6 +413,91 @@ def coverage(summary: pd.DataFrame, usage: pd.DataFrame, products: pd.DataFrame)
     return out
 
 
+def classify_shortage_type(summary: pd.DataFrame, pab: pd.DataFrame, receipts: pd.DataFrame) -> pd.DataFrame:
+    """Classify shortage types based on on-hand coverage and supply position.
+
+    New columns added:
+    - on_hand_short: True if cm_available (no WIP) < total future demand
+    - shortage_type: Why it's short (if on_hand_short=True)
+      * "On-hand covers" — on-hand alone sufficient (no shortage)
+      * "Incoming supply covers" — on-hand short but in first demand period, PAB never negative
+      * "Supply gap" — on-hand + all on-order insufficient; PAB goes negative
+      * "Delivery timing gap" — PAB recovers after going negative (supply arrives late)
+
+    Logic:
+    - on_hand_short = cm_available < shortage_qty (first shortage period demand)
+    - shortage_type = check first shortage period PAB vs later recovery
+    - Existing PAB/is_short logic unchanged; this is additive
+    """
+    out = summary.copy()
+
+    shortage_types = []
+    on_hand_short_list = []
+
+    for idx, row in out.iterrows():
+        cm = row["cm"]
+        part = row["part"]
+        cm_available = row["cm_available"]  # Raw on-hand, no WIP
+        first_shortage_date = row.get("first_shortage_date")
+
+        # on_hand_short: Does RAW ON-HAND (cm_available, no WIP) show shortage in first 4 weeks?
+        part_pab = pab[(pab["cm"] == cm) & (pab["part"] == part)].sort_values("period")
+
+        # Calculate total demand in first 4 periods (estimated from PAB changes)
+        on_hand_short = False
+        if not part_pab.empty:
+            first_4_weeks = part_pab.head(4)
+            if len(first_4_weeks) > 0:
+                # Total demand = opening - (min PAB in first 4 weeks) - safety buffer
+                total_demand_4wks = first_4_weeks["opening"].iloc[0] - first_4_weeks["pab"].min()
+                on_hand_short = cm_available < total_demand_4wks
+
+        on_hand_short_list.append(on_hand_short)
+        part_pab = pab[(pab["cm"] == cm) & (pab["part"] == part)].sort_values("period")  # Re-fetch for classification
+
+        # Classify based on on_hand_short + overall PAB trajectory
+        if not on_hand_short:
+            # No shortage in near term (first 4 weeks)
+            shortage_types.append("On-hand covers")
+            continue
+
+        # on_hand_short = True: on-hand insufficient in first 4 weeks
+        # Check if incoming supply resolves or if there's a deeper supply gap
+        min_pab = row.get("min_pab", 0)
+
+        if part_pab.empty:
+            shortage_types.append("Supply gap")
+            continue
+
+        # Check PAB trajectory
+        pab_first_4 = part_pab.head(4)
+        pab_after_4 = part_pab.iloc[4:] if len(part_pab) > 4 else pd.DataFrame()
+
+        min_pab_first_4 = pab_first_4["pab"].min() if len(pab_first_4) > 0 else 0
+        recovers_after = (pab_after_4["pab"] >= 0).any() if not pab_after_4.empty else False
+
+        # Classify based on near-term (first 4 weeks) and overall PAB
+        if on_hand_short and min_pab_first_4 >= 0:
+            # On-hand insufficient but PAB never negative in first 4 weeks
+            # (incoming supply arrives in time to resolve shortage)
+            shortage_types.append("Incoming supply covers")
+        elif on_hand_short and min_pab_first_4 < 0 and recovers_after:
+            # On-hand short, PAB goes negative in first 4, but recovers later
+            # (timing mismatch: supply arrives after demand peak)
+            shortage_types.append("Delivery timing gap")
+        elif on_hand_short:
+            # On-hand short and PAB stays negative (supply insufficient)
+            shortage_types.append("Supply gap")
+        else:
+            # On-hand sufficient for near term
+            shortage_types.append("On-hand covers")
+
+    out["on_hand_short"] = on_hand_short_list
+    out["shortage_type"] = shortage_types
+
+    return out
+
+
 # --- allocation scenario (what-if: assume Lunar inventory is pulled) --------
 
 def apply_allocation_scenario(result: dict, lunar_allocatable: pd.DataFrame,
@@ -686,6 +771,7 @@ def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
 
     pab, summary = compute_runout(demand, opening, receipts, cfg)
     summary = coverage(summary, usage, products_full)
+    summary = classify_shortage_type(summary, pab, receipts)
     summary = (
         summary.merge(states, on=["cm", "part"], how="left")
         .merge(past_due, on=["cm", "part"], how="left")
