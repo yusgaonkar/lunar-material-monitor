@@ -385,16 +385,31 @@ def compute_runout(demand, opening, receipts, cfg: Config):
     return grid, summary
 
 
-def coverage(summary: pd.DataFrame, usage: pd.DataFrame) -> pd.DataFrame:
-    """blocks_buildable = floor(available / per-unit usage).
+def coverage(summary: pd.DataFrame, usage: pd.DataFrame, products: pd.DataFrame) -> pd.DataFrame:
+    """blocks_buildable = floor(opening / total_usage_at_cm).
 
-    Uses the maximum per-unit usage across products, which is the binding
-    constraint for whichever product consumes the most.
+    For a given CM, calculates how many complete units can be built before
+    running out of this part. Uses total usage from all products at that CM,
+    not maximum usage (which would be a bottleneck analysis).
+
+    Takes the BOM usage table (product, part, usage), merges with products
+    to get CM, then sums unique usage values per (cm, part).
     """
-    u = usage.groupby("part", as_index=False)["usage"].max()
-    out = summary.merge(u, on="part", how="left")
+    # Start with usage table (product, part, sourcing_flat_qty)
+    # Merge with products to get CM
+    usage_with_cm = usage.merge(products[["product", "cm"]], on="product", how="left")
+
+    # Sum unique usage values per (cm, part)
+    # Group by (cm, part) and sum the usage (each product appears once)
+    total_usage = (
+        usage_with_cm.groupby(["cm", "part"], as_index=False)["usage"]
+        .sum()
+        .rename(columns={"usage": "total_usage"})
+    )
+
+    out = summary.merge(total_usage, on=["cm", "part"], how="left")
     out["blocks_buildable"] = np.floor(
-        out["opening"].fillna(0) / out["usage"].replace(0, np.nan))
+        out["opening"].fillna(0) / out["total_usage"].replace(0, np.nan))
     return out
 
 
@@ -493,7 +508,9 @@ def apply_allocation_scenario(result: dict, lunar_allocatable: pd.DataFrame,
     summary_alloc["fully_covered"] = summary_alloc["fully_covered"].fillna(False)
 
     # Add coverage metrics (blocks_buildable)
-    summary_alloc = coverage(summary_alloc, usage)
+    # Note: in allocation scenario, we use the original products from result
+    products_full = result.get("products", pd.DataFrame())
+    summary_alloc = coverage(summary_alloc, usage, products_full)
 
     # For parts that are fully covered by allocation, keep them as "shortages" but mark status
     # For parts that still have shortages after allocation, show the new shortage info
@@ -631,7 +648,14 @@ def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
     cfg = cfg or Config(snapshot=snap)
 
     norm = nz.normalize_all(frames["onhand.csv"], frames["onorder.csv"], bom)
-    products = product_master(frames["stitch_list.csv"])
+
+    # CRITICAL: Calculate WIP from ALL products before filtering, so opening inventory
+    # reflects the true stock constraint regardless of which products are in demand.
+    products_full = product_master(frames["stitch_list.csv"])
+    wip_all = wip_supply(bom, products_full)
+
+    # Now filter products for demand calculations (e.g., Celestica exclusion)
+    products = products_full.copy()
     if not cfg.include_celestica:
         products = products[products["cm"] != "Celestica"]
 
@@ -644,8 +668,9 @@ def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
 
     oo_eta = add_eta(norm["onorder"])
     receipts, past_due, undated = scheduled_receipts(oo_eta, cfg)
+    # Use wip_all (from ALL products) for opening inventory, not just filtered demand
     opening, negatives = opening_inventory(
-        norm["cm_available"], wip_supply(bom, products))
+        norm["cm_available"], wip_all)
     states = part_states(demand, norm["onhand"], oo_eta)
 
     keep = set(products["cm"])
@@ -660,7 +685,7 @@ def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
         receipts = receipts[~receipts["part"].isin(drop)]
 
     pab, summary = compute_runout(demand, opening, receipts, cfg)
-    summary = coverage(summary, usage)
+    summary = coverage(summary, usage, products_full)
     summary = (
         summary.merge(states, on=["cm", "part"], how="left")
         .merge(past_due, on=["cm", "part"], how="left")
