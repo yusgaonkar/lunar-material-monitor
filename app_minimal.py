@@ -488,7 +488,6 @@ if st.session_state.active_tab == "Shortage Report":
                 "Build Coverage": int(row["blocks_buildable"]),
                 "First Short Date": row["first_shortage_date"].strftime("%Y-%m-%d") if pd.notna(row["first_shortage_date"]) else "—",
                 "Shortage Type": row.get("shortage_type", "—"),
-                "On-Hand Short": "✓ YES" if row.get("on_hand_short", False) else "—",
                 "Shortage Qty": int(row["shortage_qty"]) if pd.notna(row["shortage_qty"]) else 0,
                 "Incoming Supply": supply_str,
                 "UoM": uom_flag if uom_flag else "✓",
@@ -559,7 +558,7 @@ if st.session_state.active_tab == "Shortage Report":
 
         # Prepare data for clean dataframe display
         col_order = ["CM", "Part", "Description", "Products", "UoM", "Build Coverage",
-                     "First Short Date", "Shortage Type", "On-Hand Short", "Incoming Supply"]
+                     "First Short Date", "Shortage Type", "Incoming Supply"]
         if include_allocations and "Recommended" in report_df.columns:
             col_order.append("Recommended")
 
