@@ -303,14 +303,28 @@ prod_filter = cols_row1[1].multiselect("Products", sorted(set(
 # NEW: Part Number filter
 part_filter = cols_row1[2].multiselect("Part Number", sorted(s["part"].unique()))
 
-# Row 2: Time window (slider + numeric input) + checkboxes
-cols_row2 = st.columns([1.5, 0.8, 1, 1, 1, 1])
+# Row 2: Time window (number input + slider synced) + checkboxes
+cols_row2 = st.columns([0.6, 1.2, 1, 1, 1, 1])
 
-weeks_window = cols_row2[0].slider("Time window (weeks)", min_value=1, max_value=cfg.horizon_weeks,
-                                    value=12, step=1, label_visibility="collapsed")
-weeks_numeric = cols_row2[1].number_input("weeks", min_value=1, max_value=cfg.horizon_weeks,
-                                          value=weeks_window, step=1, label_visibility="collapsed")
-weeks_window = weeks_numeric  # Use numeric input if user typed something
+# Number input (left) - controls the slider
+weeks_window = cols_row2[0].number_input(
+    "Time window (weeks)",
+    min_value=1,
+    max_value=cfg.horizon_weeks,
+    value=12,
+    step=1,
+    label_visibility="collapsed"
+)
+
+# Slider (synced to number input)
+weeks_window = cols_row2[1].slider(
+    "Time window (weeks)",
+    min_value=1,
+    max_value=cfg.horizon_weeks,
+    value=weeks_window,
+    step=1,
+    label_visibility="collapsed"
+)
 
 show_short_only = cols_row2[2].checkbox("Short only", value=True)
 exclude_uom_issues = cols_row2[3].checkbox("Exclude UoM", value=True)
