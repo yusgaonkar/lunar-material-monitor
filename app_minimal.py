@@ -257,6 +257,32 @@ def dialog_view_notes(part):
     if st.button("Close", key=f"close_notes_{part}", use_container_width=True):
         st.rerun()
 
+
+# --- Helper functions ---
+def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
+    """Find all buy parts (Sourcing_Flat_Qty > 0) under a product in the BOM."""
+    buy_parts = set()
+    visited = set()
+
+    def traverse(parent_lpn):
+        if parent_lpn in visited:
+            return
+        visited.add(parent_lpn)
+
+        children = bom[bom["Parent Product LPN"] == parent_lpn]
+        for _, child_row in children.iterrows():
+            child_lpn = child_row["item_number"]
+            sourcing_qty = pd.to_numeric(child_row["Sourcing Flat Qty"], errors="coerce") or 0
+
+            if sourcing_qty > 0:
+                buy_parts.add(child_lpn)
+
+            traverse(child_lpn)
+
+    traverse(product_lpn)
+    return buy_parts
+
+
 # --- Load and run ---
 @st.cache_data
 def load_and_run():
@@ -396,30 +422,6 @@ if include_allocations:
             "Recommendation column shows PO quantities needed from Lunar to resolve each shortage.")
 
 # --- Build plan grid (filtered by CM and products) ---
-def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
-    """Find all buy parts (Sourcing_Flat_Qty > 0) under a product in the BOM."""
-    buy_parts = set()
-    visited = set()
-
-    def traverse(parent_lpn):
-        if parent_lpn in visited:
-            return
-        visited.add(parent_lpn)
-
-        children = bom[bom["Parent Product LPN"] == parent_lpn]
-        for _, child_row in children.iterrows():
-            child_lpn = child_row["item_number"]
-            sourcing_qty = pd.to_numeric(child_row["Sourcing Flat Qty"], errors="coerce") or 0
-
-            if sourcing_qty > 0:
-                buy_parts.add(child_lpn)
-
-            traverse(child_lpn)
-
-    traverse(product_lpn)
-    return buy_parts
-
-
 def get_build_plan_grid(bp, demand_det, cm_filt, prod_filt, weeks_cutoff):
     """Returns a pivot table: products x weeks with total column."""
     bp_filt = bp[bp["period_start"] <= weeks_cutoff].copy()
