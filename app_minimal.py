@@ -754,6 +754,8 @@ elif st.session_state.active_tab == "Drill-Down Grid":
         if filter_option == "Only PCBA parts":
             # Show only 30- PCBA parts
             parts_to_show = parts_to_show[parts_to_show["part"].str.startswith("30-", na=False)]
+            if len(parts_to_show) == 0:
+                st.info(f"No 30- PCBA parts in shortages. Check PCBA Build Plan table above for pull-forward demand.")
 
         pab_filtered = pab_to_use[
             (pab_to_use["period"] <= cutoff) &
@@ -763,7 +765,7 @@ elif st.session_state.active_tab == "Drill-Down Grid":
         ].copy()
 
         if len(pab_filtered) == 0:
-            st.info("No PAB data for selected filters.")
+            st.info("No PAB data for selected filters." + (f" (Note: {len(parts_to_show)} 30- parts found but no PAB data)" if filter_option == "Only PCBA parts" else ""))
         else:
             # Build 3-row grid for each part
             grid_data = []
