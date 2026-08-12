@@ -310,18 +310,30 @@ def build_pcba_pull_forward_plan(remaining: pd.DataFrame, bom: pd.DataFrame, pro
                 pcba_lpn = pcba_row["item_number"]
                 flat_qty = pd.to_numeric(pcba_row["Flat Qty"], errors="coerce") or 1.0
 
-                # Create pull-forward demand at 30- level
-                for _, plan_row in prod_plan.iterrows():
-                    pf_demand = plan_row["qty"] * flat_qty
-                    # Shift demand back 4 weeks for PCBA-level procurement
-                    pf_period = plan_row["period"] - pd.Timedelta(weeks=4)
+                # Find all buy parts (Sourcing Flat Qty > 0) that are descendants of this PCBA
+                # Use Parent PCBA LPN to find children, since 30-PCBAs have Sourcing Flat Qty = 0
+                pcba_bom = bom[bom["Parent PCBA LPN"] == pcba_lpn]
+                buy_parts = pcba_bom[
+                    (pd.to_numeric(pcba_bom["Sourcing Flat Qty"], errors="coerce").fillna(0) > 0)
+                ][["item_number", "Sourcing Flat Qty"]].drop_duplicates("item_number")
 
-                    pf_rows.append({
-                        "product": pcba_lpn,
-                        "period": pf_period,
-                        "qty": pf_demand,
-                        "demand_source": "PCBA_PullForward"
-                    })
+                # For each buy part under the PCBA, create pull-forward demand
+                for _, buy_row in buy_parts.iterrows():
+                    buy_part_lpn = buy_row["item_number"]
+                    buy_part_usage = pd.to_numeric(buy_row["Sourcing Flat Qty"], errors="coerce") or 1.0
+                    combined_usage = flat_qty * buy_part_usage
+
+                    for _, plan_row in prod_plan.iterrows():
+                        pf_demand = plan_row["qty"] * combined_usage
+                        # Shift demand back 4 weeks for PCBA-level procurement
+                        pf_period = plan_row["period"] - pd.Timedelta(weeks=4)
+
+                        pf_rows.append({
+                            "product": buy_part_lpn,
+                            "period": pf_period,
+                            "qty": pf_demand,
+                            "demand_source": "PCBA_PullForward"
+                        })
 
     # PATH 2: 10- PCBAs with direct build plans (e.g., 10-06103C, 10-06105C at Qualitel)
     if len(pcba_products) > 0:
