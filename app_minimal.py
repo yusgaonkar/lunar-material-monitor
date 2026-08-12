@@ -303,8 +303,8 @@ with col_left:
 
     cm_filter = filter_cols[0].selectbox("CM", ["All"] + sorted(s["cm"].unique()))
 
-    prod_filter = filter_cols[1].multiselect("Products", sorted(set(
-        p for prods in s["products"].fillna("") for p in prods.split(", ") if p)))
+    # Filter products: only show 90- top-level products from the products master
+    prod_filter = filter_cols[1].multiselect("Products", sorted(result["products"]["alias"].unique()))
 
     part_filter = filter_cols[2].multiselect("Part Number", sorted(s["part"].unique()))
 
