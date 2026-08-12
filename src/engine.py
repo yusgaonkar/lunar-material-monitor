@@ -253,7 +253,7 @@ def explode_demand(remaining, usage, products):
     return total, detail
 
 
-def build_pcba_pull_forward_plan(bp: pd.DataFrame, bom: pd.DataFrame) -> pd.DataFrame:
+def build_pcba_pull_forward_plan(remaining: pd.DataFrame, bom: pd.DataFrame, products: pd.DataFrame) -> pd.DataFrame:
     """Create pull-forward build plan for PCBAs before explosion.
 
     For each PCBA in each top-level product:
@@ -265,10 +265,13 @@ def build_pcba_pull_forward_plan(bp: pd.DataFrame, bom: pd.DataFrame) -> pd.Data
     automatically inherit the pull-forward tag and shifted dates.
     """
     pcba_rows = []
-    min_period = bp["period_start"].min()
+    min_period = remaining["period"].min()
 
-    # Get BOM structure
-    for product_lpn in bp["product_lpn"].unique():
+    # Map product LPN to product (both needed for BOM lookup)
+    product_map = products[["product", "description"]].drop_duplicates().set_index("product")
+
+    # Get BOM structure for each product in remaining
+    for product_lpn in remaining["product"].unique():
         prod_bom = bom[bom["Parent Product LPN"] == product_lpn]
 
         # Find all 30- PCBAs directly under this product
@@ -285,14 +288,14 @@ def build_pcba_pull_forward_plan(bp: pd.DataFrame, bom: pd.DataFrame) -> pd.Data
             flat_qty = pd.to_numeric(pcba_row["Flat Qty"], errors="coerce") or 1.0
 
             # Get build plan for this product
-            prod_plan = bp[bp["product_lpn"] == product_lpn]
+            prod_plan = remaining[remaining["product"] == product_lpn]
 
             for _, plan_row in prod_plan.iterrows():
                 # Pull-forward demand: use Flat_Qty (workaround for make-part issue)
                 pcba_qty = plan_row["qty"] * flat_qty
 
                 # Shift period back 4 weeks
-                original_period = pd.to_datetime(plan_row["period_start"])
+                original_period = pd.to_datetime(plan_row["period"])
                 shifted_period = original_period - pd.Timedelta(weeks=4)
 
                 # Clamp to min_period if shifted goes before snapshot
@@ -300,9 +303,8 @@ def build_pcba_pull_forward_plan(bp: pd.DataFrame, bom: pd.DataFrame) -> pd.Data
                     shifted_period = min_period
 
                 pcba_rows.append({
-                    "product_lpn": product_lpn,
-                    "period_start": shifted_period,
-                    "period_end": shifted_period + pd.Timedelta(weeks=1),
+                    "product": product_lpn,
+                    "period": shifted_period,
                     "qty": pcba_qty,
                     "demand_source": "PCBA_PullForward"
                 })
@@ -1023,7 +1025,7 @@ def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
     # This ensures all descendants inherit the pull-forward tag and shifted dates
     remaining_with_source = remaining.assign(demand_source="Build Plan")
 
-    pcba_pf = build_pcba_pull_forward_plan(remaining, bom)
+    pcba_pf = build_pcba_pull_forward_plan(remaining, bom, products)
     if len(pcba_pf) > 0:
         # Combine regular + pull-forward build plan
         remaining_combined = pd.concat([remaining_with_source, pcba_pf], ignore_index=True)
