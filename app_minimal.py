@@ -420,7 +420,80 @@ def get_build_plan_grid(bp, demand_det, cm_filt, prod_filt, weeks_cutoff):
 
     return pivot
 
+
+def get_toplevel_build_plan(demand_det, cm_filt, prod_filt, weeks_cutoff):
+    """Returns top-level (90-) products with Build Plan demand as pivot table."""
+    # Filter for 90- products with 'Build Plan' demand_source
+    dd = demand_det[
+        (demand_det["product"].str.startswith("90-", na=False)) &
+        (demand_det["demand_source"] == "Build Plan") &
+        (demand_det["period"] <= weeks_cutoff)
+    ].copy()
+
+    if len(dd) == 0:
+        return None
+
+    # Apply CM and product filters
+    if cm_filt != "All":
+        dd = dd[dd["cm"] == cm_filt]
+    if prod_filt:
+        dd = dd[dd["alias"].isin(prod_filt)]
+
+    if len(dd) == 0:
+        return None
+
+    # Pivot: products x weeks
+    dd["period_str"] = dd["period"].dt.strftime("%Y-%m-%d")
+    dd["Product"] = dd["product"] + " - " + dd["alias"].fillna("")
+
+    pivot = dd.pivot_table(
+        index="Product", columns="period_str", values="demand", aggfunc="sum", fill_value=0
+    ).astype(int)
+
+    pivot["Total"] = pivot.sum(axis=1).astype(int)
+    pivot = pivot.sort_values("Total", ascending=False)
+
+    return pivot
+
+
+def get_pcba_build_plan(demand_det, cm_filt, prod_filt, weeks_cutoff):
+    """Returns PCBA (30-) products with PCBA_PullForward demand as pivot table."""
+    # Filter for 30- products with 'PCBA_PullForward' demand_source
+    dd = demand_det[
+        (demand_det["part"].str.startswith("30-", na=False)) &
+        (demand_det["demand_source"] == "PCBA_PullForward") &
+        (demand_det["period"] <= weeks_cutoff)
+    ].copy()
+
+    if len(dd) == 0:
+        return None
+
+    # Apply CM and product filters
+    if cm_filt != "All":
+        dd = dd[dd["cm"] == cm_filt]
+    if prod_filt:
+        dd = dd[dd["alias"].isin(prod_filt)]
+
+    if len(dd) == 0:
+        return None
+
+    # Pivot: PCBAs x weeks
+    dd["period_str"] = dd["period"].dt.strftime("%Y-%m-%d")
+    dd["PCBA"] = dd["part"] + " - " + dd["description"].fillna("")
+
+    pivot = dd.pivot_table(
+        index="PCBA", columns="period_str", values="demand", aggfunc="sum", fill_value=0
+    ).astype(int)
+
+    pivot["Total"] = pivot.sum(axis=1).astype(int)
+    pivot = pivot.sort_values("Total", ascending=False)
+
+    return pivot
+
+
 build_plan_grid = get_build_plan_grid(build_plan, demand_detail, cm_filter, prod_filter, cutoff)
+toplevel_plan = get_toplevel_build_plan(demand_detail, cm_filter, prod_filter, cutoff)
+pcba_plan = get_pcba_build_plan(demand_detail, cm_filter, prod_filter, cutoff)
 
 # ============================================================================
 # RENDER ACTIVE TAB
@@ -591,19 +664,47 @@ if st.session_state.active_tab == "Shortage Report":
 # ============================================================================
 elif st.session_state.active_tab == "Drill-Down Grid":
     st.subheader("Build Plan (Filtered)")
-    if build_plan_grid is not None and len(build_plan_grid) > 0:
-        st.caption(f"Products planned by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
-        st.dataframe(build_plan_grid, use_container_width=True)
-    else:
-        st.info("No build plan data for selected filters.")
 
+    # Collapsible build plan sections
+    col1, col2 = st.columns(2)
+
+    with col1:
+        with st.expander("▼ Top-Level Products", expanded=True):
+            if toplevel_plan is not None and len(toplevel_plan) > 0:
+                st.caption(f"90- products with Build Plan demand by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
+                st.dataframe(toplevel_plan, use_container_width=True)
+            else:
+                st.info("No top-level products planned for selected filters.")
+
+    with col2:
+        with st.expander("▼ PCBA Build Plan", expanded=True):
+            if pcba_plan is not None and len(pcba_plan) > 0:
+                st.caption(f"30- PCBA parts with 4-week pull-forward by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
+                st.dataframe(pcba_plan, use_container_width=True)
+            else:
+                st.info("No PCBA parts in pull-forward for selected filters.")
+
+    st.divider()
+
+    # Filter toggle: All parts vs Only PCBA parts
     st.subheader("Demand, Supply & Inventory by Week")
+    filter_option = st.radio(
+        "Show:",
+        ["All parts", "Only PCBA parts"],
+        horizontal=True,
+        key="demand_source_filter"
+    )
     st.caption("3 rows per part: Demand | Supply | Inventory (color-coded: green=positive, red=negative)")
 
     if len(filtered) == 0:
         st.info("No shortages to display.")
     else:
         parts_to_show = filtered[["cm", "part"]].drop_duplicates()
+
+        # Apply demand_source filter
+        if filter_option == "Only PCBA parts":
+            # Show only 30- PCBA parts
+            parts_to_show = parts_to_show[parts_to_show["part"].str.startswith("30-", na=False)]
 
         pab_filtered = pab_to_use[
             (pab_to_use["period"] <= cutoff) &
@@ -632,22 +733,47 @@ elif st.session_state.active_tab == "Drill-Down Grid":
                 ].iloc[0]
                 desc = part_desc["description"][:50]
 
+                # Get demand_source for this part
+                part_demand_source = demand_detail[
+                    (demand_detail["cm"] == cm) & (demand_detail["part"] == part)
+                ]["demand_source"].iloc[0] if len(
+                    demand_detail[(demand_detail["cm"] == cm) & (demand_detail["part"] == part)]
+                ) > 0 else "Unknown"
+
                 # Demand row
-                demand_row = {"CM": cm, "Part": part, "Description": desc, "Metric": "Demand"}
+                demand_row = {
+                    "CM": cm,
+                    "Part": part,
+                    "Description": desc,
+                    "Source": part_demand_source,
+                    "Metric": "Demand"
+                }
                 for _, pab_row in part_pab.iterrows():
                     week_key = pab_row["period"].strftime("%Y-%m-%d")
                     demand_row[week_key] = int(pab_row["demand"])
                 grid_data.append(demand_row)
 
                 # Supply row
-                supply_row = {"CM": cm, "Part": part, "Description": desc, "Metric": "Supply"}
+                supply_row = {
+                    "CM": cm,
+                    "Part": part,
+                    "Description": desc,
+                    "Source": part_demand_source,
+                    "Metric": "Supply"
+                }
                 for _, pab_row in part_pab.iterrows():
                     week_key = pab_row["period"].strftime("%Y-%m-%d")
                     supply_row[week_key] = int(pab_row["receipts"])
                 grid_data.append(supply_row)
 
                 # Inventory row (will be color-coded)
-                inv_row = {"CM": cm, "Part": part, "Description": desc, "Metric": "Inventory"}
+                inv_row = {
+                    "CM": cm,
+                    "Part": part,
+                    "Description": desc,
+                    "Source": part_demand_source,
+                    "Metric": "Inventory"
+                }
                 for _, pab_row in part_pab.iterrows():
                     week_key = pab_row["period"].strftime("%Y-%m-%d")
                     inv_row[week_key] = int(pab_row["pab"])
@@ -663,7 +789,7 @@ elif st.session_state.active_tab == "Drill-Down Grid":
 
                     colors = []
                     for col in row.index:
-                        if col in ["CM", "Part", "Description", "Metric"]:
+                        if col in ["CM", "Part", "Description", "Source", "Metric"]:
                             colors.append("")
                         else:
                             val = row[col]
