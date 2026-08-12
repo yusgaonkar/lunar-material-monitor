@@ -245,106 +245,119 @@ def explode_demand(remaining, usage, products):
     return total, detail
 
 
-def apply_pcba_pull_forward(demand_detail: pd.DataFrame, pcba_map: dict) -> pd.DataFrame:
-    """Generate 4-week pull-forward demand for PCBA-containing products.
+def get_pcba_descendants(pcba_lpn: str, bom: pd.DataFrame) -> set:
+    """Find all buy parts (Sourcing_Flat_Qty > 0) that are descendants of a PCBA.
 
-    For each product that uses PCBAs (e.g., Bridge using 30-005747):
-    - Create shifted demand: shift all periods back by 4 weeks
-    - Weeks that shift before min_period (snapshot week) get clamped to min_period
-    - All clamped weeks sum into min_period (week 0)
+    Traverses the BOM tree recursively to find all parts at any level under the PCBA.
+    Only returns parts that are buy parts (Sourcing_Flat_Qty > 0).
+    """
+    descendants = set()
+    visited = set()
+
+    def traverse(parent_lpn):
+        if parent_lpn in visited:
+            return
+        visited.add(parent_lpn)
+
+        # Find direct children where parent_lpn matches "Parent Product LPN"
+        children = bom[bom["Parent Product LPN"] == parent_lpn]
+
+        for _, child_row in children.iterrows():
+            child_lpn = child_row["item_number"]
+            sourcing_qty = pd.to_numeric(child_row["Sourcing Flat Qty"], errors="coerce") or 0
+
+            # If this child is a buy part, add it
+            if sourcing_qty > 0:
+                descendants.add(child_lpn)
+
+            # Recurse to find children of this child (even if not a buy part)
+            traverse(child_lpn)
+
+    traverse(pcba_lpn)
+    return descendants
+
+
+def apply_pcba_pull_forward(demand_detail: pd.DataFrame, pcba_map: dict, bom: pd.DataFrame) -> pd.DataFrame:
+    """Generate 4-week pull-forward demand for descendants of PCBAs.
+
+    For each PCBA in a product:
+    - Find all buy parts that are descendants of the PCBA in the BOM
+    - Shift their demand back 4 weeks
     - Mark with demand_source='PCBA_PullForward'
-    - Delete original 'Build Plan' rows for this product
+    - Keep original rows for non-PCBA descendants as 'Build Plan'
 
     Inputs:
         demand_detail: from explode_demand(), has columns
                       [cm, part, product, alias, period, qty, usage, demand, ...]
-                      period is a datetime (Monday of week)
         pcba_map: {pcba_lpn: [parent_product_lpn, ...]}
+        bom: BOM dataframe with Parent Product LPN, item_number, Sourcing Flat Qty
 
     Returns:
-        demand_detail with demand_source column, PCBAs shifted, originals deleted for PCBA products
+        demand_detail with demand_source column, PCBA descendants shifted back 4 weeks
     """
-    # Start with all demand marked as 'Build Plan'
     out = demand_detail.copy()
     out['demand_source'] = 'Build Plan'
 
-    # Identify products that use PCBAs
-    pcba_products = set()
-    for pcba_lpn, parents in pcba_map.items():
-        pcba_products.update(parents)
+    # Get all unique periods across all data
+    all_periods = sorted(out['period'].unique())
+    if len(all_periods) == 0:
+        return out
+    min_period = all_periods[0]
+    shift_days = 28  # 4 weeks
 
-    # For each PCBA-containing product, create shifted demand
+    # For each PCBA, find its descendants and shift them
     shifted_rows = []
-    for product in pcba_products:
-        product_demand = out[out['product'] == product].copy()
-        if len(product_demand) == 0:
+    rows_to_remove = []
+
+    for pcba_lpn, parent_products in pcba_map.items():
+        # Get all buy parts that are descendants of this PCBA
+        descendants = get_pcba_descendants(pcba_lpn, bom)
+
+        if not descendants:
             continue
 
-        # Get all unique periods for this product to find min (week 0/snapshot)
-        all_periods = sorted(product_demand['period'].unique())
-        if len(all_periods) == 0:
-            continue
-        min_period = all_periods[0]
-        shift_days = 28  # 4 weeks
+        # For each parent product that uses this PCBA
+        for parent_product in parent_products:
+            # Find rows in demand_detail that are:
+            # - for this product
+            # - for a part that is a descendant of this PCBA
+            product_demand = out[
+                (out['product'] == parent_product) &
+                (out['part'].isin(descendants))
+            ].copy()
 
-        # Group by (cm, part) and shift each group
-        for (cm, part), group in product_demand.groupby(['cm', 'part']):
-            # Only shift 30- PCBA parts, not other components
-            if not str(part).startswith('30-'):
+            if len(product_demand) == 0:
                 continue
 
-            group = group.sort_values('period').reset_index(drop=True)
-            periods = sorted(group['period'].unique())
+            # Shift each row back 4 weeks
+            for idx, row in product_demand.iterrows():
+                # Mark for removal (we'll create shifted version)
+                rows_to_remove.append(idx)
 
-            # Build shifted demand rows
-            # Collect demands for clamping (weeks that shift before min_period)
-            clamped_demand = 0.0
-            clamped_qty = 0.0
+                # Shift period back 4 weeks
+                shifted_period = pd.to_datetime(row['period']) - pd.Timedelta(days=shift_days)
 
-            for original_period in periods:
-                row = group[group['period'] == original_period].iloc[0]
-                # Shift back 4 weeks
-                shifted_period = pd.to_datetime(original_period) - pd.Timedelta(days=shift_days)
-
+                # Clamp to min_period if needed
                 if shifted_period < min_period:
-                    # Clamp to min_period (week 0): accumulate demand
-                    clamped_demand += row['demand']
-                    clamped_qty += row['qty']
-                else:
-                    # Regular shifted row
-                    shifted_rows.append({
-                        'cm': cm,
-                        'part': part,
-                        'product': product,
-                        'alias': row['alias'],
-                        'period': shifted_period,
-                        'qty': row['qty'],
-                        'usage': row['usage'],
-                        'demand': row['demand'],
-                        'description': row['description'],
-                        'category': row['category'],
-                        'demand_source': 'PCBA_PullForward'
-                    })
+                    shifted_period = min_period
 
-            # Add clamped row (week 0) if there's any clamped demand
-            if clamped_demand > 0:
-                first_row = group.iloc[0]
                 shifted_rows.append({
-                    'cm': cm,
-                    'part': part,
-                    'product': product,
-                    'alias': first_row['alias'],
-                    'period': min_period,
-                    'qty': clamped_qty,
-                    'usage': first_row['usage'],
-                    'demand': clamped_demand,
-                    'description': first_row['description'],
-                    'category': first_row['category'],
+                    'cm': row['cm'],
+                    'part': row['part'],
+                    'product': row['product'],
+                    'alias': row['alias'],
+                    'period': shifted_period,
+                    'qty': row['qty'],
+                    'usage': row['usage'],
+                    'demand': row['demand'],
+                    'description': row.get('description', ''),
+                    'category': row.get('category', ''),
                     'demand_source': 'PCBA_PullForward'
                 })
 
-    # Delete original 'Build Plan' rows for PCBA-containing products
-    out = out[~out['product'].isin(pcba_products)].copy()
+    # Remove original rows for PCBA descendants
+    if rows_to_remove:
+        out = out.drop(rows_to_remove, errors='ignore')
 
     # Add shifted rows
     if shifted_rows:
@@ -944,7 +957,7 @@ def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
     # Apply PCBA pull-forward: shift demand 4 weeks earlier for PCBA-containing products
     pcba_map = identify_pcba_parts(bom)
     if pcba_map:
-        demand_detail = apply_pcba_pull_forward(demand_detail, pcba_map)
+        demand_detail = apply_pcba_pull_forward(demand_detail, pcba_map, bom)
         # Recalculate aggregated demand from modified demand_detail
         demand = demand_detail.groupby(["cm", "part", "period"], as_index=False)["demand"].sum()
 

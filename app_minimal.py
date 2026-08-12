@@ -274,6 +274,7 @@ pab = result["pab"]
 receipts = result["receipts"]
 demand_detail = result["demand_detail"]
 excess = result["excess"]
+products = result["products"]
 
 # --- Header ---
 st.title("Lunar Material Monitor")
@@ -342,8 +343,20 @@ if len(excluded_parts) > 0:
 
 if cm_filter != "All":
     filtered = filtered[filtered["cm"] == cm_filter]
+
+# Product filter: show only buy parts under selected products
 if prod_filter:
-    filtered = filtered[filtered["products"].str.contains("|".join(prod_filter), na=False)]
+    # Get all product LPNs for selected aliases
+    selected_products = products[products["alias"].isin(prod_filter)]["product"].unique()
+
+    # Get all buy parts under these products
+    parts_in_products = set()
+    for product_lpn in selected_products:
+        parts_in_products.update(get_buy_parts_under_product(product_lpn, bom_stitched))
+
+    # Filter to show only parts in selected products
+    filtered = filtered[filtered["part"].isin(parts_in_products)]
+
 if part_filter:
     filtered = filtered[filtered["part"].isin(part_filter)]
 if show_short_only:
@@ -383,6 +396,30 @@ if include_allocations:
             "Recommendation column shows PO quantities needed from Lunar to resolve each shortage.")
 
 # --- Build plan grid (filtered by CM and products) ---
+def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
+    """Find all buy parts (Sourcing_Flat_Qty > 0) under a product in the BOM."""
+    buy_parts = set()
+    visited = set()
+
+    def traverse(parent_lpn):
+        if parent_lpn in visited:
+            return
+        visited.add(parent_lpn)
+
+        children = bom[bom["Parent Product LPN"] == parent_lpn]
+        for _, child_row in children.iterrows():
+            child_lpn = child_row["item_number"]
+            sourcing_qty = pd.to_numeric(child_row["Sourcing Flat Qty"], errors="coerce") or 0
+
+            if sourcing_qty > 0:
+                buy_parts.add(child_lpn)
+
+            traverse(child_lpn)
+
+    traverse(product_lpn)
+    return buy_parts
+
+
 def get_build_plan_grid(bp, demand_det, cm_filt, prod_filt, weeks_cutoff):
     """Returns a pivot table: products x weeks with total column."""
     bp_filt = bp[bp["period_start"] <= weeks_cutoff].copy()
@@ -404,7 +441,7 @@ def get_build_plan_grid(bp, demand_det, cm_filt, prod_filt, weeks_cutoff):
         return None
 
     # Add product descriptions
-    prod_desc = demand_det[["product", "alias"]].drop_duplicates().rename(
+    prod_desc = products[["product", "alias"]].drop_duplicates().rename(
         columns={"product": "product_lpn", "alias": "Product"})
     bp_filt = bp_filt.merge(prod_desc, on="product_lpn", how="left")
     bp_filt["Product"] = bp_filt["product_lpn"] + " - " + bp_filt["Product"].fillna("")
@@ -422,28 +459,27 @@ def get_build_plan_grid(bp, demand_det, cm_filt, prod_filt, weeks_cutoff):
     return pivot
 
 
-def get_toplevel_build_plan(bp, demand_det, cm_filt, prod_filt, weeks_cutoff):
+def get_toplevel_build_plan(bp, products, cm_filt, prod_filt, weeks_cutoff):
     """Returns top-level (90-) products with regular build plan (no pull-forward)."""
     bp_filt = bp[bp["period_start"] <= weeks_cutoff].copy()
 
-    # Filter by CM: get products in that CM from demand_detail
+    # Filter by CM: get products in that CM from products master
     if cm_filt != "All":
-        prods_in_cm = set(demand_det[demand_det["cm"] == cm_filt]["product"].unique())
+        prods_in_cm = set(products[products["cm"] == cm_filt]["product"].unique())
         bp_filt = bp_filt[bp_filt["product_lpn"].isin(prods_in_cm)]
 
-    # Filter by products
+    # Filter by products: use products master alias mapping
     if prod_filt:
-        prods_for_alias = set()
-        for alias in prod_filt:
-            matching = demand_det[demand_det["alias"] == alias]["product"].unique()
-            prods_for_alias.update(matching)
+        prods_for_alias = set(
+            products[products["alias"].isin(prod_filt)]["product"].unique()
+        )
         bp_filt = bp_filt[bp_filt["product_lpn"].isin(prods_for_alias)]
 
     if len(bp_filt) == 0:
         return None
 
     # Add product descriptions
-    prod_desc = demand_det[["product", "alias"]].drop_duplicates().rename(
+    prod_desc = products[["product", "alias"]].drop_duplicates().rename(
         columns={"product": "product_lpn", "alias": "Product"})
     bp_filt = bp_filt.merge(prod_desc, on="product_lpn", how="left")
     bp_filt["Product"] = bp_filt["product_lpn"] + " - " + bp_filt["Product"].fillna("")
@@ -460,23 +496,22 @@ def get_toplevel_build_plan(bp, demand_det, cm_filt, prod_filt, weeks_cutoff):
     return pivot
 
 
-def get_pcba_build_plan(bp, bom, demand_det, cm_filt, prod_filt, weeks_cutoff):
+def get_pcba_build_plan(bp, bom, products, cm_filt, prod_filt, weeks_cutoff):
     """Returns PCBA (30-) pull-forward demand: shift build plan 4 weeks back, use BOM Flat Qty."""
     bp_filt = bp.copy()
     bp_filt["period_start"] = pd.to_datetime(bp_filt["period_start"])
     bp_filt = bp_filt[bp_filt["period_start"] <= weeks_cutoff]
 
-    # Get products in selected CM
+    # Get products in selected CM from products master
     if cm_filt != "All":
-        prods_in_cm = set(demand_det[demand_det["cm"] == cm_filt]["product"].unique())
+        prods_in_cm = set(products[products["cm"] == cm_filt]["product"].unique())
         bp_filt = bp_filt[bp_filt["product_lpn"].isin(prods_in_cm)]
 
-    # Filter by products
+    # Filter by products: use products master alias mapping
     if prod_filt:
-        prods_for_alias = set()
-        for alias in prod_filt:
-            matching = demand_det[demand_det["alias"] == alias]["product"].unique()
-            prods_for_alias.update(matching)
+        prods_for_alias = set(
+            products[products["alias"].isin(prod_filt)]["product"].unique()
+        )
         bp_filt = bp_filt[bp_filt["product_lpn"].isin(prods_for_alias)]
 
     if len(bp_filt) == 0:
@@ -541,8 +576,8 @@ def get_pcba_build_plan(bp, bom, demand_det, cm_filt, prod_filt, weeks_cutoff):
 
 
 build_plan_grid = get_build_plan_grid(build_plan, demand_detail, cm_filter, prod_filter, cutoff)
-toplevel_plan = get_toplevel_build_plan(build_plan, demand_detail, cm_filter, prod_filter, cutoff)
-pcba_plan = get_pcba_build_plan(build_plan, bom_stitched, demand_detail, cm_filter, prod_filter, cutoff)
+toplevel_plan = get_toplevel_build_plan(build_plan, products, cm_filter, prod_filter, cutoff)
+pcba_plan = get_pcba_build_plan(build_plan, bom_stitched, products, cm_filter, prod_filter, cutoff)
 
 # ============================================================================
 # RENDER ACTIVE TAB
@@ -752,14 +787,14 @@ elif st.session_state.active_tab == "Drill-Down Grid":
 
         # Apply demand_source filter
         if filter_option == "Only PCBA parts":
-            # Show only 30- PCBA parts from demand_detail (not just shortages)
+            # Show only parts with demand_source='PCBA_PullForward'
             pcba_parts_available = demand_detail[
-                demand_detail["part"].str.startswith("30-", na=False)
+                demand_detail["demand_source"] == "PCBA_PullForward"
             ][["cm", "part"]].drop_duplicates()
             parts_to_show = pcba_parts_available
 
             if len(parts_to_show) == 0:
-                st.info("No 30- PCBA parts in demand data.")
+                st.info("No PCBA pull-forward parts in demand data.")
 
         pab_filtered = pab_to_use[
             (pab_to_use["period"] <= cutoff) &
