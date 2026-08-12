@@ -48,7 +48,7 @@ def check_password():
 
     def password_entered():
         """Checks whether a password entered by the user is correct."""
-        if st.session_state["password"] == app_password:
+        if st.session_state.get("password") == app_password:
             st.session_state["password_correct"] = True
             del st.session_state["password"]  # clear password from session
         else:
