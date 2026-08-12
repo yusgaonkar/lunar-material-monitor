@@ -94,18 +94,31 @@ def product_master(stitch_list: pd.DataFrame) -> pd.DataFrame:
 
 
 def identify_pcba_parts(bom: pd.DataFrame) -> dict:
-    """Map each 30- PCBA part to all top-level (90-) products that contain it.
+    """Map each PCBA part (any make part with buy children) to its parent products.
+
+    A PCBA is any part where:
+    - Sourcing_Flat_Qty = 0 (it's not a buy part)
+    - It has children where Sourcing_Flat_Qty > 0 (it has buy parts as descendants)
 
     Returns:
-        dict: {pcba_lpn: [product_lpn, ...]}
-        Example: {'30-005747': ['90-06801A', '90-06889C']}
+        dict: {pcba_lpn: [parent_product_lpn, ...]}
+        Example: {'30-005747': ['90-06801A'], '10-06105C': ['90-06889C']}
     """
-    # Find all 30- parts in the BOM
-    pcba_rows = bom[bom['item_number'].str.startswith('30-', na=False)].copy()
+    # Find all parts with Sourcing_Flat_Qty = 0 (make parts)
+    make_parts = bom[pd.to_numeric(bom['Sourcing Flat Qty'], errors='coerce') == 0]['item_number'].unique()
 
-    # For each PCBA, find all parent 90- products that contain it
+    # Filter to those that have buy children
+    pcbas = []
+    for part in make_parts:
+        children = bom[bom['Parent Product LPN'] == part]
+        if len(children) > 0:
+            has_buy_child = any(pd.to_numeric(children['Sourcing Flat Qty'], errors='coerce') > 0)
+            if has_buy_child:
+                pcbas.append(part)
+
+    # For each PCBA, find all parent products that contain it (direct parent only)
     pcba_map = {}
-    for pcba_lpn in pcba_rows['item_number'].unique():
+    for pcba_lpn in pcbas:
         # Get all products where this PCBA appears
         parents = bom[bom['item_number'] == pcba_lpn]['Parent Product LPN'].unique()
         # Keep only 90- (top-level) products
@@ -256,63 +269,71 @@ def explode_demand(remaining, usage, products):
 def build_pcba_pull_forward_plan(remaining: pd.DataFrame, bom: pd.DataFrame, products: pd.DataFrame) -> pd.DataFrame:
     """Create pull-forward build plan for PCBAs before explosion.
 
-    For each PCBA in each top-level product:
-    - Calculate demand using Flat_Qty (not Sourcing_Flat_Qty which is 0 for make parts)
-    - Shift period back 4 weeks
-    - Mark with demand_source='PCBA_PullForward'
+    Handles TWO paths:
+    1. 30- PCBAs under 90- products: Creates demand at 30- level from 90- build plans
+    2. 10- PCBAs with direct build plans: Creates demand at 10- level (e.g., 10-06103C, 10-06105C)
 
-    This merged with regular build plan and then exploded, so all descendants
-    automatically inherit the pull-forward tag and shifted dates.
+    Transformation: shift demand back 4 weeks for PCBA-level procurement.
+    All original weekly periods are mapped to (period - 4 weeks), with earliest dates clamped to 4 weeks before snapshot.
     """
-    pcba_rows = []
-    min_period = remaining["period"].min()
+    if len(remaining) == 0:
+        return pd.DataFrame()
 
-    # Map product LPN to product (both needed for BOM lookup)
-    product_map = products[["product", "description"]].drop_duplicates().set_index("product")
+    # Separate into 90- and non-90- products
+    top_level_products = remaining[remaining["product"].str.startswith("90-", na=False)].copy()
+    pcba_products = remaining[~remaining["product"].str.startswith("90-", na=False)].copy()
 
-    # Get BOM structure for each product in remaining
-    for product_lpn in remaining["product"].unique():
-        prod_bom = bom[bom["Parent Product LPN"] == product_lpn]
+    pf_rows = []
 
-        # Find all 30- PCBAs directly under this product
-        pcbas = prod_bom[prod_bom["item_number"].str.startswith("30-", na=False)][
-            ["item_number", "Flat Qty"]
-        ].drop_duplicates("item_number")
+    # PATH 1: 30- PCBAs from 90- products
+    if len(top_level_products) > 0:
+        for product_lpn in top_level_products["product"].unique():
+            prod_plan = top_level_products[top_level_products["product"] == product_lpn]
 
-        if len(pcbas) == 0:
-            continue
+            # Find 30- PCBAs under this product using LEVEL-based hierarchy
+            prod_bom = bom[bom["Parent Product LPN"] == product_lpn]
+            pcbas_30 = prod_bom[prod_bom["item_number"].str.startswith("30-", na=False)][
+                ["item_number", "Flat Qty"]
+            ].drop_duplicates("item_number")
 
-        # For each PCBA, create pull-forward demand rows
-        for _, pcba_row in pcbas.iterrows():
-            pcba_lpn = pcba_row["item_number"]
-            flat_qty = pd.to_numeric(pcba_row["Flat Qty"], errors="coerce") or 1.0
+            for _, pcba_row in pcbas_30.iterrows():
+                pcba_lpn = pcba_row["item_number"]
+                flat_qty = pd.to_numeric(pcba_row["Flat Qty"], errors="coerce") or 1.0
 
-            # Get build plan for this product
-            prod_plan = remaining[remaining["product"] == product_lpn]
+                # Create pull-forward demand at 30- level
+                for _, plan_row in prod_plan.iterrows():
+                    pf_demand = plan_row["qty"] * flat_qty
+                    # Shift demand back 4 weeks for PCBA-level procurement
+                    pf_period = plan_row["period"] - pd.Timedelta(weeks=4)
+
+                    pf_rows.append({
+                        "product": pcba_lpn,
+                        "period": pf_period,
+                        "qty": pf_demand,
+                        "demand_source": "PCBA_PullForward"
+                    })
+
+    # PATH 2: 10- PCBAs with direct build plans (e.g., 10-06103C, 10-06105C at Qualitel)
+    if len(pcba_products) > 0:
+        for product_lpn in pcba_products["product"].unique():
+            prod_plan = pcba_products[pcba_products["product"] == product_lpn]
 
             for _, plan_row in prod_plan.iterrows():
-                # Pull-forward demand: use Flat_Qty (workaround for make-part issue)
-                pcba_qty = plan_row["qty"] * flat_qty
+                pf_demand = plan_row["qty"]
+                # Shift demand back 4 weeks for coated PCBA-level procurement
+                pf_period = plan_row["period"] - pd.Timedelta(weeks=4)
 
-                # Shift period back 4 weeks
-                original_period = pd.to_datetime(plan_row["period"])
-                shifted_period = original_period - pd.Timedelta(weeks=4)
-
-                # Clamp to min_period if shifted goes before snapshot
-                if shifted_period < min_period:
-                    shifted_period = min_period
-
-                pcba_rows.append({
+                pf_rows.append({
                     "product": product_lpn,
-                    "period": shifted_period,
-                    "qty": pcba_qty,
+                    "period": pf_period,
+                    "qty": pf_demand,
                     "demand_source": "PCBA_PullForward"
                 })
 
-    if not pcba_rows:
+    if not pf_rows:
         return pd.DataFrame()
 
-    return pd.DataFrame(pcba_rows)
+    return pd.DataFrame(pf_rows)
 
 
 def get_pcba_descendants(pcba_lpn: str, bom: pd.DataFrame) -> set:
