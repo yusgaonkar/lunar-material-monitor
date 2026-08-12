@@ -283,6 +283,12 @@ def build_pcba_pull_forward_plan(remaining: pd.DataFrame, bom: pd.DataFrame, pro
     top_level_products = remaining[remaining["product"].str.startswith("90-", na=False)].copy()
     pcba_products = remaining[~remaining["product"].str.startswith("90-", na=False)].copy()
 
+    print(f"DEBUG: build_pcba_pull_forward_plan called")
+    print(f"  Top-level (90-) products: {len(top_level_products)}")
+    print(f"  PCBA (non-90-) products: {len(pcba_products)}")
+    print(f"  Top-level product LPNs: {top_level_products['product'].unique().tolist()}")
+    print(f"  PCBA product LPNs: {pcba_products['product'].unique().tolist()}")
+
     pf_rows = []
 
     # PATH 1: 30- PCBAs from 90- products
@@ -295,6 +301,10 @@ def build_pcba_pull_forward_plan(remaining: pd.DataFrame, bom: pd.DataFrame, pro
             pcbas_30 = prod_bom[prod_bom["item_number"].str.startswith("30-", na=False)][
                 ["item_number", "Flat Qty"]
             ].drop_duplicates("item_number")
+
+            print(f"  PATH 1 - Product {product_lpn}: found {len(pcbas_30)} PCBAs")
+            if len(pcbas_30) > 0:
+                print(f"    PCBAs: {pcbas_30['item_number'].tolist()}")
 
             for _, pcba_row in pcbas_30.iterrows():
                 pcba_lpn = pcba_row["item_number"]
@@ -330,10 +340,15 @@ def build_pcba_pull_forward_plan(remaining: pd.DataFrame, bom: pd.DataFrame, pro
                     "demand_source": "PCBA_PullForward"
                 })
 
+    print(f"  Total PF rows created: {len(pf_rows)}")
+
     if not pf_rows:
         return pd.DataFrame()
 
-    return pd.DataFrame(pf_rows)
+    pf_df = pd.DataFrame(pf_rows)
+    print(f"  PF DataFrame columns: {pf_df.columns.tolist()}")
+    print(f"  PF demand_source values: {pf_df['demand_source'].unique().tolist()}")
+    return pf_df
 
 
 def get_pcba_descendants(pcba_lpn: str, bom: pd.DataFrame) -> set:
@@ -648,7 +663,16 @@ def compute_runout(demand, opening, receipts, cfg: Config):
     Returns (pab, summary). `pab` is the drill-down grid; `summary` is one row per
     (cm, part) with the runout date and shortage quantity.
     """
-    periods = pd.DataFrame({"period": cfg.periods()})
+    # Include pulled-forward demand periods (may go before cfg.week0)
+    min_demand_period = demand["period"].min() if len(demand) > 0 else cfg.week0
+    min_receipts_period = receipts["period"].min() if len(receipts) > 0 else cfg.week0
+    min_period = min(min_demand_period, min_receipts_period)
+
+    # Create period list starting from min_period to include pull-forward
+    weeks_before = ((cfg.week0 - min_period).days // 7)
+    all_periods = [min_period + pd.Timedelta(weeks=i) for i in range(weeks_before + cfg.horizon_weeks)]
+    periods = pd.DataFrame({"period": all_periods})
+
     # Only parts that carry demand. A part with supply and no demand is not a
     # planning object — including it would bury 21 real shortages under ~2,000
     # rows of inventory that nothing consumes.
