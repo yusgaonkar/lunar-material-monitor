@@ -233,16 +233,84 @@ def explode_demand(remaining, usage, products):
     The split is not decoration. A component shared across products at one CM is
     short because of TOTAL demand; showing only one product's contribution makes
     a starved part look healthy. The UI needs both.
+
+    Preserves demand_source column if present (for PCBA pull-forward tracking).
     """
     detail = (
         remaining.merge(usage, on="product", how="inner")
         .merge(products[["product", "cm", "alias"]], on="product", how="left")
     )
     detail["demand"] = detail["qty"] * detail["usage"]
-    detail = detail[["cm", "part", "product", "alias", "period",
-                     "qty", "usage", "demand", "description", "category"]]
+
+    # Preserve demand_source if it exists
+    cols_to_keep = ["cm", "part", "product", "alias", "period",
+                    "qty", "usage", "demand", "description", "category"]
+    if "demand_source" in detail.columns:
+        cols_to_keep.append("demand_source")
+
+    detail = detail[cols_to_keep]
     total = detail.groupby(["cm", "part", "period"], as_index=False)["demand"].sum()
     return total, detail
+
+
+def build_pcba_pull_forward_plan(bp: pd.DataFrame, bom: pd.DataFrame) -> pd.DataFrame:
+    """Create pull-forward build plan for PCBAs before explosion.
+
+    For each PCBA in each top-level product:
+    - Calculate demand using Flat_Qty (not Sourcing_Flat_Qty which is 0 for make parts)
+    - Shift period back 4 weeks
+    - Mark with demand_source='PCBA_PullForward'
+
+    This merged with regular build plan and then exploded, so all descendants
+    automatically inherit the pull-forward tag and shifted dates.
+    """
+    pcba_rows = []
+    min_period = bp["period_start"].min()
+
+    # Get BOM structure
+    for product_lpn in bp["product_lpn"].unique():
+        prod_bom = bom[bom["Parent Product LPN"] == product_lpn]
+
+        # Find all 30- PCBAs directly under this product
+        pcbas = prod_bom[prod_bom["item_number"].str.startswith("30-", na=False)][
+            ["item_number", "Flat Qty"]
+        ].drop_duplicates("item_number")
+
+        if len(pcbas) == 0:
+            continue
+
+        # For each PCBA, create pull-forward demand rows
+        for _, pcba_row in pcbas.iterrows():
+            pcba_lpn = pcba_row["item_number"]
+            flat_qty = pd.to_numeric(pcba_row["Flat Qty"], errors="coerce") or 1.0
+
+            # Get build plan for this product
+            prod_plan = bp[bp["product_lpn"] == product_lpn]
+
+            for _, plan_row in prod_plan.iterrows():
+                # Pull-forward demand: use Flat_Qty (workaround for make-part issue)
+                pcba_qty = plan_row["qty"] * flat_qty
+
+                # Shift period back 4 weeks
+                original_period = pd.to_datetime(plan_row["period_start"])
+                shifted_period = original_period - pd.Timedelta(weeks=4)
+
+                # Clamp to min_period if shifted goes before snapshot
+                if shifted_period < min_period:
+                    shifted_period = min_period
+
+                pcba_rows.append({
+                    "product_lpn": product_lpn,
+                    "period_start": shifted_period,
+                    "period_end": shifted_period + pd.Timedelta(weeks=1),
+                    "qty": pcba_qty,
+                    "demand_source": "PCBA_PullForward"
+                })
+
+    if not pcba_rows:
+        return pd.DataFrame()
+
+    return pd.DataFrame(pcba_rows)
 
 
 def get_pcba_descendants(pcba_lpn: str, bom: pd.DataFrame) -> set:
@@ -951,15 +1019,19 @@ def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
         frames["build_plan.csv"], frames["plan_to_date.csv"],
         frames["in_transit.csv"], products, cfg)
 
-    usage = sourcing_usage(bom)
-    demand, demand_detail = explode_demand(remaining, usage, products)
+    # Create PCBA pull-forward build plan before explosion
+    # This ensures all descendants inherit the pull-forward tag and shifted dates
+    remaining_with_source = remaining.assign(demand_source="Build Plan")
 
-    # Apply PCBA pull-forward: shift demand 4 weeks earlier for PCBA-containing products
-    pcba_map = identify_pcba_parts(bom)
-    if pcba_map:
-        demand_detail = apply_pcba_pull_forward(demand_detail, pcba_map, bom)
-        # Recalculate aggregated demand from modified demand_detail
-        demand = demand_detail.groupby(["cm", "part", "period"], as_index=False)["demand"].sum()
+    pcba_pf = build_pcba_pull_forward_plan(remaining, bom)
+    if len(pcba_pf) > 0:
+        # Combine regular + pull-forward build plan
+        remaining_combined = pd.concat([remaining_with_source, pcba_pf], ignore_index=True)
+    else:
+        remaining_combined = remaining_with_source
+
+    usage = sourcing_usage(bom)
+    demand, demand_detail = explode_demand(remaining_combined, usage, products)
 
     oo_eta = add_eta(norm["onorder"])
     receipts, past_due, undated = scheduled_receipts(oo_eta, cfg)
