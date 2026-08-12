@@ -555,9 +555,9 @@ if st.session_state.active_tab == "Shortage Report":
         st.divider()
 
         # Prepare data for clean dataframe display
-        col_order = ["CM", "Part", "Description", "Products", "Build Coverage",
-                     "First Short Date", "Shortage Type", "Raw Inventory", "WIP Inventory",
-                     "Total Inventory", "Incoming Supply"]
+        col_order = ["CM", "Part", "Description", "Products", "Raw Inventory", "WIP Inventory",
+                     "Total Inventory", "Build Coverage", "First Short Date", "Shortage Type",
+                     "Incoming Supply"]
         if include_allocations and "Recommended" in report_df.columns:
             col_order.append("Recommended")
 
