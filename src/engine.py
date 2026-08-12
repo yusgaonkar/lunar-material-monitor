@@ -289,6 +289,10 @@ def apply_pcba_pull_forward(demand_detail: pd.DataFrame, pcba_map: dict) -> pd.D
 
         # Group by (cm, part) and shift each group
         for (cm, part), group in product_demand.groupby(['cm', 'part']):
+            # Only shift 30- PCBA parts, not other components
+            if not str(part).startswith('30-'):
+                continue
+
             group = group.sort_values('period').reset_index(drop=True)
             periods = sorted(group['period'].unique())
 
