@@ -73,6 +73,18 @@ def _week(s: pd.Series) -> pd.Series:
     return (d - pd.to_timedelta(d.dt.weekday, unit="D")).dt.normalize()
 
 
+def _count_working_days(start_date: pd.Timestamp, end_date: pd.Timestamp) -> int:
+    """Count working days (Mon-Fri) between start and end dates, inclusive."""
+    dates = pd.date_range(start_date, end_date, freq='D')
+    return (dates.weekday < 5).sum()
+
+
+def _count_remaining_working_days_in_month(snapshot: pd.Timestamp) -> int:
+    """Count remaining working days (Mon-Fri) in the month from snapshot onward."""
+    month_end = (snapshot + pd.offsets.MonthEnd(0)).normalize()
+    return _count_working_days(snapshot, month_end)
+
+
 # --- product master -----------------------------------------------------------
 
 def product_master(stitch_list: pd.DataFrame) -> pd.DataFrame:
@@ -138,36 +150,59 @@ def remaining_builds(
     products: pd.DataFrame,
     cfg: Config,
 ):
-    """Forward plan bucketed to weeks, plus backlog loaded into the first period.
+    """Forward plan spread across daily working days, plus backlog loaded into snapshot day.
 
-    Returns (remaining, backlog_detail). `backlog_detail` is 18 rows a human can
-    check — plan, received, in transit, backlog — and it should be shown in the UI
-    next to the build plan editor. A wrong plan_to_date shifts every runout date in
-    that product's BOM the same way and nothing looks anomalous (CLAUDE.md 6).
+    Returns (remaining, backlog_detail). `remaining` is now at daily grain instead of weekly.
+    `backlog_detail` is 18 rows a human can check — plan, received, in transit, backlog —
+    and it should be shown in the UI next to the build plan editor. A wrong plan_to_date
+    shifts every runout date in that product's BOM the same way and nothing looks anomalous
+    (CLAUDE.md 6).
 
-    A monthly plan row is spread evenly over the days of its month, then summed
-    into weekly buckets, so a month boundary falling mid-week apportions correctly.
+    A monthly plan row is spread evenly over the days of its month. No weekly bucketing.
     """
     bp = build_plan.copy()
     bp["period_start"] = pd.to_datetime(bp["period_start"], errors="coerce")
     bp["qty"] = pd.to_numeric(bp["qty"], errors="coerce").fillna(0.0)
     bp = bp[(bp["qty"] != 0) & bp["period_start"].notna()]
 
+    # Working days logic: allocate monthly qty across remaining working days in month from snapshot
+    snapshot = cfg.snapshot
     daily = []
+
     for row in bp.itertuples(index=False):
-        start = row.period_start
-        days = pd.date_range(start, start + pd.offsets.MonthEnd(0), freq="D")
-        if len(days) == 0:
+        if row.qty == 0:
             continue
-        daily.append(pd.DataFrame({
-            "product": row.product_lpn, "day": days, "qty": row.qty / len(days),
-        }))
+
+        period_start = row.period_start
+        month_end = (period_start + pd.offsets.MonthEnd(0)).normalize()
+
+        # For the snapshot month, count working days from snapshot onward
+        # For other months, count working days from the 1st of the month
+        if period_start.month == snapshot.month and period_start.year == snapshot.year:
+            count_start = snapshot
+        else:
+            count_start = period_start
+
+        # Count working days (Mon-Fri) from count_start to month end
+        remaining_working_days = _count_working_days(count_start, month_end)
+
+        # Daily rate = monthly qty / remaining working days
+        daily_rate = row.qty / remaining_working_days if remaining_working_days > 0 else 0
+
+        # Allocate to each working day from count_start to month end
+        all_days = pd.date_range(count_start, month_end, freq="D")
+        for day in all_days:
+            if day.weekday() < 5:  # Mon-Fri only
+                daily.append({
+                    "product": row.product_lpn,
+                    "day": day,
+                    "qty": daily_rate,
+                })
 
     if daily:
-        d = pd.concat(daily, ignore_index=True)
-        d["period"] = _week(d["day"])
-        fwd = d.groupby(["product", "period"], as_index=False)["qty"].sum()
-        fwd = fwd[fwd["period"] >= cfg.week0]
+        fwd = pd.DataFrame(daily)
+        # CHANGE: Keep daily grain instead of weekly bucketing
+        fwd = fwd.rename(columns={"day": "period"})
     else:
         fwd = pd.DataFrame(columns=["product", "period", "qty"])
 
@@ -201,14 +236,13 @@ def remaining_builds(
     b["ahead_of_plan"] = (-b["backlog_raw"]).clip(lower=0.0)
     b["backlog"] = b["backlog_raw"].clip(lower=0.0)
 
+    # CHANGE: Load backlog into snapshot date (actual day), not week0 (Monday)
     first = b.loc[b["backlog"] > 0, ["product", "backlog"]].copy()
-    first["period"] = cfg.week0
+    first["period"] = cfg.snapshot.normalize()
     first = first.rename(columns={"backlog": "qty"})
 
-    remaining = (
-        pd.concat([fwd, first[["product", "period", "qty"]]], ignore_index=True)
-        .groupby(["product", "period"], as_index=False)["qty"].sum()
-    )
+    # No groupby needed; daily frame already has (product, period) uniqueness by day
+    remaining = pd.concat([fwd, first[["product", "period", "qty"]]], ignore_index=True)
     return remaining, b
 
 
@@ -255,11 +289,8 @@ def explode_demand(remaining, usage, products):
     )
     detail["demand"] = detail["qty"] * detail["usage"]
 
-    # Preserve demand_source if it exists
     cols_to_keep = ["cm", "part", "product", "alias", "period",
                     "qty", "usage", "demand", "description", "category"]
-    if "demand_source" in detail.columns:
-        cols_to_keep.append("demand_source")
 
     detail = detail[cols_to_keep]
     total = detail.groupby(["cm", "part", "period"], as_index=False)["demand"].sum()
@@ -532,6 +563,8 @@ def scheduled_receipts(oo_eta: pd.DataFrame, cfg: Config):
     Three buckets, three visual states. Undated supply is real material that we
     refuse to count because we cannot place it in time — never added to the
     balance, and never rendered the same as "no supply exists" (CLAUDE.md 5.3).
+
+    CHANGE: Now bucketing to daily grain instead of weekly.
     """
     oo = oo_eta[
         (oo_eta["quantity_open"] > 0)
@@ -540,9 +573,11 @@ def scheduled_receipts(oo_eta: pd.DataFrame, cfg: Config):
 
     undated = oo[oo["_eta"].isna()]
     dated = oo[oo["_eta"].notna()]
-    past = dated[dated["_eta"] < cfg.week0]
-    future = dated[dated["_eta"] >= cfg.week0].copy()
-    future["period"] = _week(future["_eta"])
+    # CHANGE: Compare to snapshot (current day) instead of week0 (Monday of week)
+    past = dated[dated["_eta"] < cfg.snapshot]
+    future = dated[dated["_eta"] >= cfg.snapshot].copy()
+    # CHANGE: Keep daily grain - normalize to date instead of _week() to Monday
+    future["period"] = future["_eta"].dt.normalize()
 
     def g(d, *keys):
         if len(d) == 0:
@@ -667,22 +702,25 @@ def part_states(demand, oh_norm, oo_eta) -> pd.DataFrame:
 # --- runout -------------------------------------------------------------------
 
 def compute_runout(demand, opening, receipts, cfg: Config):
-    """Projected available balance per period, and the per-part summary.
+    """Projected available balance per day, and the per-part summary.
 
         PAB[t] = PAB[t-1] + receipts[t] - demand[t]
         PAB[0] = opening inventory
 
     Returns (pab, summary). `pab` is the drill-down grid; `summary` is one row per
     (cm, part) with the runout date and shortage quantity.
+
+    CHANGE: Now computing daily PAB instead of weekly.
     """
-    # Include pulled-forward demand periods (may go before cfg.week0)
-    min_demand_period = demand["period"].min() if len(demand) > 0 else cfg.week0
-    min_receipts_period = receipts["period"].min() if len(receipts) > 0 else cfg.week0
+    # Include pulled-forward demand periods (may go before cfg.snapshot)
+    min_demand_period = demand["period"].min() if len(demand) > 0 else cfg.snapshot
+    min_receipts_period = receipts["period"].min() if len(receipts) > 0 else cfg.snapshot
     min_period = min(min_demand_period, min_receipts_period)
 
-    # Create period list starting from min_period to include pull-forward
-    weeks_before = ((cfg.week0 - min_period).days // 7)
-    all_periods = [min_period + pd.Timedelta(weeks=i) for i in range(weeks_before + cfg.horizon_weeks)]
+    # CHANGE: Create daily period list. Horizon is in weeks but we need daily dates.
+    # Start from min_period, go forward horizon_weeks * 5 working days
+    total_days = cfg.horizon_weeks * 7  # 7 days per week to be conservative
+    all_periods = [min_period + pd.Timedelta(days=i) for i in range(total_days)]
     periods = pd.DataFrame({"period": all_periods})
 
     # Only parts that carry demand. A part with supply and no demand is not a
@@ -723,8 +761,10 @@ def compute_runout(demand, opening, receipts, cfg: Config):
     )
     summary["shortage_qty"] = (-summary["min_pab"]).clip(lower=0.0)
     summary["is_short"] = summary["first_shortage_date"].notna()
-    summary["weeks_of_cover"] = (
-        (summary["first_shortage_date"] - cfg.week0).dt.days // 7)
+    # CHANGE: Calculate days_of_cover instead of weeks (will convert to weeks in aggregation)
+    summary["days_of_cover"] = (
+        (summary["first_shortage_date"] - cfg.snapshot).dt.days)
+    summary["weeks_of_cover"] = (summary["days_of_cover"] / 7).round(1)
     return grid, summary
 
 
@@ -1048,6 +1088,49 @@ def compute_excess(demand_detail: pd.DataFrame, onorder_with_eta: pd.DataFrame,
     return output
 
 
+# --- daily to weekly aggregation for reporting ---
+
+def weekly_demand(demand_daily: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate daily demand to weekly (by Monday of each week)."""
+    if len(demand_daily) == 0:
+        return demand_daily.copy()
+
+    out = demand_daily.copy()
+    out["week_start"] = _week(out["period"])
+    return (
+        out.groupby(["cm", "part", "week_start"], as_index=False)["demand"].sum()
+        .rename(columns={"week_start": "period"})
+    )
+
+
+def weekly_pab(pab_daily: pd.DataFrame) -> pd.DataFrame:
+    """Extract PAB values at week boundaries (Mondays) from daily PAB."""
+    if len(pab_daily) == 0:
+        return pab_daily.copy()
+
+    out = pab_daily.copy()
+    out["week_start"] = _week(out["period"])
+    out["is_week_boundary"] = out["period"] == out["week_start"]
+
+    # Keep only week boundaries (Mondays), and for each week, take the last day's PAB
+    weekly = out[out["is_week_boundary"]].copy()
+    return weekly[["cm", "part", "period", "demand", "receipts", "pab"]].rename(
+        columns={"period": "period"})
+
+
+def weekly_receipts(receipts_daily: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate daily receipts to weekly (by Monday of each week)."""
+    if len(receipts_daily) == 0:
+        return receipts_daily.copy()
+
+    out = receipts_daily.copy()
+    out["week_start"] = _week(out["period"])
+    return (
+        out.groupby(["cm", "part", "week_start"], as_index=False)["receipts"].sum()
+        .rename(columns={"week_start": "period"})
+    )
+
+
 # --- orchestration ------------------------------------------------------------
 
 def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
@@ -1078,19 +1161,24 @@ def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
         frames["build_plan.csv"], frames["plan_to_date.csv"],
         frames["in_transit.csv"], products, cfg)
 
-    # Create PCBA pull-forward build plan before explosion
-    # This ensures all descendants inherit the pull-forward tag and shifted dates
+    # Regular demand explosion (no pull-forward yet)
     remaining_with_source = remaining.assign(demand_source="Build Plan")
-
-    pcba_pf = build_pcba_pull_forward_plan(remaining, bom, products)
-    if len(pcba_pf) > 0:
-        # Combine regular + pull-forward build plan
-        remaining_combined = pd.concat([remaining_with_source, pcba_pf], ignore_index=True)
-    else:
-        remaining_combined = remaining_with_source
-
     usage = sourcing_usage(bom)
-    demand, demand_detail = explode_demand(remaining_combined, usage, products)
+    demand, demand_detail = explode_demand(remaining_with_source, usage, products)
+
+    # Apply PCBA pull-forward: shift demand 28 days (4 weeks) earlier for parts with Parent PCBA LPN
+    # Identify parts that have ANY non-empty Parent PCBA LPN (use set to avoid duplicate rows)
+    parts_with_pcba = set(
+        bom[(bom["Parent PCBA LPN"].notna()) & (bom["Parent PCBA LPN"] != "")]["item_number"].unique()
+    )
+
+    # CHANGE: Shift demand 28 days (4 weeks) earlier for parts with Parent PCBA LPN (daily grain)
+    has_pcba_parent = demand["part"].isin(parts_with_pcba)
+    demand.loc[has_pcba_parent, "period"] = demand.loc[has_pcba_parent, "period"] - pd.Timedelta(days=28)
+
+    # Same for demand_detail
+    has_pcba_parent_detail = demand_detail["part"].isin(parts_with_pcba)
+    demand_detail.loc[has_pcba_parent_detail, "period"] = demand_detail.loc[has_pcba_parent_detail, "period"] - pd.Timedelta(days=28)
 
     oo_eta = add_eta(norm["onorder"])
     receipts, past_due, undated = scheduled_receipts(oo_eta, cfg)
