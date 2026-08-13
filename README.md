@@ -19,3 +19,4 @@ automatically each session.
 ## Before anything works
 
 Populate `data/` — see `data/README.md` for the export checklist.
+# Updated Thu Aug 13 15:28:42 IST 2026

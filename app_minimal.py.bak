@@ -260,15 +260,20 @@ def dialog_view_notes(part):
 
 # --- Helper functions ---
 def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
-    """Find all buy parts (Sourcing_Flat_Qty > 0) under a product in the BOM."""
+    """Find all buy parts (Sourcing_Flat_Qty > 0) under a product in the BOM.
+
+    Traverses both Parent Product LPN (for products) and Parent PCBA LPN (for PCBAs)
+    to find all descendants.
+    """
     buy_parts = set()
     visited = set()
 
-    def traverse(parent_lpn):
+    def traverse(parent_lpn, via_pcba=False):
         if parent_lpn in visited:
             return
         visited.add(parent_lpn)
 
+        # Find direct children via Parent Product LPN
         children = bom[bom["Parent Product LPN"] == parent_lpn]
         for _, child_row in children.iterrows():
             child_lpn = child_row["item_number"]
@@ -277,15 +282,28 @@ def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
             if sourcing_qty > 0:
                 buy_parts.add(child_lpn)
 
-            traverse(child_lpn)
+            # Recurse both as product and as potential PCBA
+            traverse(child_lpn, via_pcba=False)
+
+        # If this is a PCBA (30- prefix), also find children via Parent PCBA LPN
+        if parent_lpn.startswith("30-"):
+            pcba_children = bom[bom["Parent PCBA LPN"] == parent_lpn]
+            for _, child_row in pcba_children.iterrows():
+                child_lpn = child_row["item_number"]
+                sourcing_qty = pd.to_numeric(child_row["Sourcing Flat Qty"], errors="coerce") or 0
+
+                if sourcing_qty > 0:
+                    buy_parts.add(child_lpn)
+
+                traverse(child_lpn, via_pcba=True)
 
     traverse(product_lpn)
     return buy_parts
 
 
 # --- Load and run ---
-@st.cache_data(show_spinner=False)
-def load_and_run():
+@st.cache_data
+def load_and_run(_cache_invalidation="v8_explode_debug"):
     frames = lio.load_all()
     result = eng.run(frames)
     build_plan = lio.load_build_plan()
@@ -301,6 +319,16 @@ receipts = result["receipts"]
 demand_detail = result["demand_detail"]
 excess = result["excess"]
 products = result["products"]
+demand = result["demand"]
+usage = result["usage"]
+
+# DEBUG: Check what's in result
+debug_info = {}
+debug_info["demand_rows"] = len(demand)
+debug_info["10-002244_in_demand"] = "10-002244" in demand['part'].values
+debug_info["usage_rows"] = len(usage)
+debug_info["10-002244_in_usage"] = "10-002244" in usage['part'].values
+debug_info["bridge_usage_parts"] = len(usage[usage['product'] == '90-06801A'])
 
 # --- Header ---
 st.title("Lunar Material Monitor")
@@ -331,7 +359,7 @@ with col_left:
     cm_filter = filter_cols[0].selectbox("CM", ["All"] + sorted(s["cm"].unique()))
 
     # Filter products: only show 90- top-level products from the products master
-    prod_filter = filter_cols[1].multiselect("Products", sorted(result["products"]["display_name"].unique()))
+    prod_filter = filter_cols[1].multiselect("Products", sorted(result["products"]["alias"].unique()))
 
     part_filter = filter_cols[2].multiselect("Part Number", sorted(s["part"].unique()))
 
@@ -372,16 +400,27 @@ if cm_filter != "All":
 
 # Product filter: show only buy parts under selected products
 if prod_filter:
-    # Get all product LPNs for selected display_names
-    selected_products = products[products["display_name"].isin(prod_filter)]["product"].unique()
+    # Get all product LPNs for selected aliases
+    selected_products = products[products["alias"].isin(prod_filter)]["product"].unique()
 
     # Get all buy parts under these products
     parts_in_products = set()
     for product_lpn in selected_products:
-        parts_in_products.update(get_buy_parts_under_product(product_lpn, bom_stitched))
+        product_parts = get_buy_parts_under_product(product_lpn, bom_stitched)
+        parts_in_products.update(product_parts)
+        print(f"DEBUG: Product {product_lpn} has {len(product_parts)} buy parts")
+        if product_lpn == "90-06801A" and "10-002244" in product_parts:
+            print(f"DEBUG: 10-002244 found under Bridge")
+        elif product_lpn == "90-06801A":
+            print(f"DEBUG: 10-002244 NOT found under Bridge")
+            print(f"DEBUG: Bridge parts include: {list(product_parts)[:10]}...")
+
+    print(f"DEBUG: Total parts in selected products: {len(parts_in_products)}")
 
     # Filter to show only parts in selected products
+    filtered_before = len(filtered)
     filtered = filtered[filtered["part"].isin(parts_in_products)]
+    print(f"DEBUG: Filtered from {filtered_before} to {len(filtered)} rows")
 
 if part_filter:
     filtered = filtered[filtered["part"].isin(part_filter)]
@@ -422,194 +461,6 @@ if include_allocations:
             "Recommendation column shows PO quantities needed from Lunar to resolve each shortage.")
 
 # --- Build plan grid (filtered by CM and products) ---
-def get_pcba_pull_forward_daily(bp, snapshot_date):
-    """Apply daily time-phasing + 28-day shift, reaggregate to calendar months.
-
-    Matches engine logic: spread monthly qty across working days, shift 28 days, reaggregate.
-    Returns: {month_str: total_qty} dict for the 4-week pull-forward aggregated result.
-    """
-    bp_filt = bp.copy()
-    bp_filt["period_start"] = pd.to_datetime(bp_filt["period_start"], errors="coerce")
-    bp_filt["qty"] = pd.to_numeric(bp_filt["qty"], errors="coerce").fillna(0.0)
-    bp_filt = bp_filt[(bp_filt["qty"] != 0) & bp_filt["period_start"].notna()]
-
-    if len(bp_filt) == 0:
-        return {}
-
-    daily_demand = []
-
-    for _, row in bp_filt.iterrows():
-        period_start = row["period_start"]
-        month_end = (period_start + pd.offsets.MonthEnd(0)).normalize()
-
-        # For snapshot month, count working days from snapshot onward; otherwise from 1st
-        if period_start.month == snapshot_date.month and period_start.year == snapshot_date.year:
-            count_start = snapshot_date
-        else:
-            count_start = period_start
-
-        # Count working days (Mon-Fri)
-        all_days = pd.date_range(count_start, month_end, freq="D")
-        working_days = [d for d in all_days if d.weekday() < 5]
-
-        if len(working_days) == 0:
-            continue
-
-        daily_rate = row["qty"] / len(working_days)
-
-        # Shift each day back 28 days and track the shifted month
-        for day in working_days:
-            shifted_day = day - pd.Timedelta(days=28)
-            month_str = shifted_day.strftime("%Y-%m")
-            daily_demand.append({"month_str": month_str, "qty": daily_rate})
-
-    if not daily_demand:
-        return {}
-
-    # Reaggregate by shifted month
-    df = pd.DataFrame(daily_demand)
-    monthly_agg = df.groupby("month_str")["qty"].sum().to_dict()
-    return monthly_agg
-
-
-@st.cache_resource
-def get_aggregation_function():
-    """Return the aggregation function (cached resource)."""
-    def aggregate_pab_by_grain(pab_df, grain="Day"):
-        return _aggregate_pab_by_grain_impl(pab_df, grain)
-    return aggregate_pab_by_grain
-
-
-def _aggregate_pab_by_grain_impl(pab_df, grain="Day"):
-    """Implementation of PAB aggregation (not cached).
-
-    For daily granularity:
-    - demand, receipts, net_flow: SUM across the period
-    - pab (inventory): LAST value in the period (end-of-period balance)
-    - period: FIRST date of the period
-    """
-    if len(pab_df) == 0:
-        return pab_df
-
-    pab_df = pab_df.copy()
-
-    if grain == "Day":
-        pab_df["period_key"] = pab_df["period"].dt.strftime("%Y-%m-%d")
-    elif grain == "Week":
-        pab_df["period_key"] = (pab_df["period"] - pd.to_timedelta(pab_df["period"].dt.weekday, unit="D")).dt.strftime("%Y-%m-%d")
-    elif grain == "Month":
-        pab_df["period_key"] = pab_df["period"].dt.strftime("%Y-%m-01")
-
-    # Sum all numeric columns EXCEPT 'pab' (which should be end-of-period balance)
-    agg_dict = {col: "sum" for col in pab_df.columns if col not in ["period", "period_key", "cm", "part", "pab"]}
-
-    # Add pab separately: use last (end-of-period) value
-    agg_dict["pab"] = "last"
-
-    agg_df = pab_df.groupby(["cm", "part", "period_key"], as_index=False).agg({
-        **agg_dict,
-        "period": "first"
-    })
-    return agg_df
-
-
-def render_pab_drill_down(pab_to_show, filtered_parts, demand_detail, receipts):
-    """Render the Demand/Supply/Inventory drill-down table with grain toggle."""
-
-    # Get cached aggregation function
-    aggregate_pab_by_grain = get_aggregation_function()
-
-    # Grain selector
-    col_title, col_grain = st.columns([3, 1])
-    with col_title:
-        st.write("**Demand, Supply & Inventory**")
-    with col_grain:
-        grain = st.selectbox("View by:", ["Day", "Week", "Month"], key=f"pab_grain_{id(pab_to_show)}")
-
-    st.caption("3 rows per part: Demand | Supply | Inventory (color-coded: green=positive, red=negative)")
-
-    if len(pab_to_show) == 0:
-        st.info("No PAB data for selected filters.")
-        return
-
-    # Aggregate to selected grain
-    pab_aggregated = aggregate_pab_by_grain(pab_to_show, grain)
-
-    # Build 3-row grid for each part
-    grid_data = []
-
-    for cm, part in filtered_parts.values:
-        part_pab = pab_aggregated[
-            (pab_aggregated["cm"] == cm) & (pab_aggregated["part"] == part)
-        ].sort_values("period")
-
-        if len(part_pab) == 0:
-            continue
-
-        # Get part description
-        part_desc = demand_detail[(demand_detail["cm"] == cm) & (demand_detail["part"] == part)]
-        if len(part_desc) > 0:
-            desc = str(part_desc.iloc[0]["description"])[:50]
-        else:
-            desc = "—"
-
-        # Get demand_source
-        part_demand_source = "Unknown"
-        if len(part_desc) > 0 and "demand_source" in demand_detail.columns:
-            part_demand_source = part_desc["demand_source"].iloc[0]
-
-        # Demand row
-        demand_row = {"CM": cm, "Part": part, "Description": desc, "Source": part_demand_source, "Metric": "Demand"}
-        for _, pab_row in part_pab.iterrows():
-            period_key = pab_row.get("period_key", pab_row["period"].strftime("%Y-%m-%d"))
-            demand_row[period_key] = int(pab_row["demand"])
-        grid_data.append(demand_row)
-
-        # Supply row
-        supply_row = {"CM": cm, "Part": part, "Description": desc, "Source": part_demand_source, "Metric": "Supply"}
-        for _, pab_row in part_pab.iterrows():
-            period_key = pab_row.get("period_key", pab_row["period"].strftime("%Y-%m-%d"))
-            supply_row[period_key] = int(pab_row["receipts"])
-        grid_data.append(supply_row)
-
-        # Inventory row
-        inv_row = {"CM": cm, "Part": part, "Description": desc, "Source": part_demand_source, "Metric": "Inventory"}
-        for _, pab_row in part_pab.iterrows():
-            period_key = pab_row.get("period_key", pab_row["period"].strftime("%Y-%m-%d"))
-            inv_row[period_key] = int(pab_row["pab"])
-        grid_data.append(inv_row)
-
-    if grid_data:
-        grid_df = pd.DataFrame(grid_data)
-
-        # Style the inventory rows
-        def color_inventory_row(row):
-            if row["Metric"] != "Inventory":
-                return [""] * len(row)
-
-            colors = []
-            for col in row.index:
-                if col in ["CM", "Part", "Description", "Source", "Metric"]:
-                    colors.append("")
-                else:
-                    val = row[col]
-                    if isinstance(val, (int, float)):
-                        if val < 0:
-                            intensity = min(abs(val) / 100000, 1.0)
-                            colors.append(f"background-color: rgba(255, 0, 0, {0.3 + intensity * 0.7})")
-                        else:
-                            intensity = min(val / 100000, 1.0)
-                            colors.append(f"background-color: rgba(0, 128, 0, {0.2 + intensity * 0.5})")
-                    else:
-                        colors.append("")
-            return colors
-
-        styled_grid = grid_df.style.apply(color_inventory_row, axis=1)
-        st.dataframe(styled_grid, use_container_width=True)
-    else:
-        st.info("No inventory data to display.")
-
-
 def get_build_plan_grid(bp, demand_det, cm_filt, prod_filt, weeks_cutoff):
     """Returns a pivot table: products x weeks with total column."""
     bp_filt = bp[bp["period_start"] <= weeks_cutoff].copy()
@@ -620,15 +471,11 @@ def get_build_plan_grid(bp, demand_det, cm_filt, prod_filt, weeks_cutoff):
         bp_filt = bp_filt[bp_filt["product_lpn"].isin(prods_in_cm)]
 
     if prod_filt:
-        # Get products that match the selected display_names
-        # demand_det uses "alias" so we need to extract it from display_name
+        # Get products that match the selected aliases
         prods_for_alias = set()
-        for display_name in prod_filt:
-            # Extract alias from display_name (format: "LPN - Alias")
-            if " - " in display_name:
-                alias = display_name.split(" - ", 1)[1]
-                matching = demand_det[demand_det["alias"] == alias]["product"].unique()
-                prods_for_alias.update(matching)
+        for alias in prod_filt:
+            matching = demand_det[demand_det["alias"] == alias]["product"].unique()
+            prods_for_alias.update(matching)
         bp_filt = bp_filt[bp_filt["product_lpn"].isin(prods_for_alias)]
 
     if len(bp_filt) == 0:
@@ -662,20 +509,21 @@ def get_toplevel_build_plan(bp, products, cm_filt, prod_filt, weeks_cutoff):
         prods_in_cm = set(products[products["cm"] == cm_filt]["product"].unique())
         bp_filt = bp_filt[bp_filt["product_lpn"].isin(prods_in_cm)]
 
-    # Filter by products: use products master display_name mapping
+    # Filter by products: use products master alias mapping
     if prod_filt:
-        prods_for_display = set(
-            products[products["display_name"].isin(prod_filt)]["product"].unique()
+        prods_for_alias = set(
+            products[products["alias"].isin(prod_filt)]["product"].unique()
         )
-        bp_filt = bp_filt[bp_filt["product_lpn"].isin(prods_for_display)]
+        bp_filt = bp_filt[bp_filt["product_lpn"].isin(prods_for_alias)]
 
     if len(bp_filt) == 0:
         return None
 
-    # Add product display names
-    prod_desc = products[["product", "display_name"]].drop_duplicates().rename(
-        columns={"product": "product_lpn", "display_name": "Product"})
+    # Add product descriptions
+    prod_desc = products[["product", "alias"]].drop_duplicates().rename(
+        columns={"product": "product_lpn", "alias": "Product"})
     bp_filt = bp_filt.merge(prod_desc, on="product_lpn", how="left")
+    bp_filt["Product"] = bp_filt["product_lpn"] + " - " + bp_filt["Product"].fillna("")
 
     # Pivot: products x months
     bp_filt["period_str"] = bp_filt["period_start"].dt.strftime("%Y-%m")
@@ -689,117 +537,88 @@ def get_toplevel_build_plan(bp, products, cm_filt, prod_filt, weeks_cutoff):
     return pivot
 
 
-def get_pcba_build_plan(bp, bom, products, cm_filt, prod_filt, weeks_cutoff, demand_detail, snapshot_date=None):
-    """Returns PCBA (30-) pull-forward demand with daily-grain time-phasing.
+def get_pcba_build_plan(bp, bom, products, cm_filt, prod_filt, weeks_cutoff):
+    """Returns PCBA (30-) pull-forward demand: shift build plan 4 weeks back, use BOM Flat Qty."""
+    bp_filt = bp.copy()
+    bp_filt["period_start"] = pd.to_datetime(bp_filt["period_start"])
+    bp_filt = bp_filt[bp_filt["period_start"] <= weeks_cutoff]
 
-    Each PCBA shows the demand for its parent product (not aggregated across all products).
-    Columns: PCBA - Description | Pull Forward Demand | 2026-08 | 2026-09 | ... | Grand Total
-    """
-    # Get snapshot date from demand_detail if not provided
-    if snapshot_date is None:
-        if len(demand_detail) > 0:
-            snapshot_date = pd.to_datetime(demand_detail["period"].min()).normalize()
-        else:
-            return None
+    # Get products in selected CM from products master
+    if cm_filt != "All":
+        prods_in_cm = set(products[products["cm"] == cm_filt]["product"].unique())
+        bp_filt = bp_filt[bp_filt["product_lpn"].isin(prods_in_cm)]
 
-    # Get products for selected display_names (or all if none selected)
+    # Filter by products: use products master alias mapping
     if prod_filt:
-        selected_products = products[products["display_name"].isin(prod_filt)]["product"].unique()
-    else:
-        # Show all products if no filter selected
-        selected_products = products["product"].unique()
+        prods_for_alias = set(
+            products[products["alias"].isin(prod_filt)]["product"].unique()
+        )
+        bp_filt = bp_filt[bp_filt["product_lpn"].isin(prods_for_alias)]
 
-    if len(selected_products) == 0:
+    if len(bp_filt) == 0:
         return None
 
-    # Include one month beyond weeks_cutoff to capture spillover from time-phasing
-    next_month_cutoff = weeks_cutoff + pd.DateOffset(months=1)
+    # For each top-level product, find all 30- children and their Flat Qty
+    # Create PCBA demand rows
+    pcba_rows = []
 
-    data = []
+    for product_lpn in bp_filt["product_lpn"].unique():
+        # Get BOM for this product: find all 30- parts and their Flat Qty
+        prod_bom = bom[bom["Parent Product LPN"] == product_lpn]
+        pcba_parts = prod_bom[prod_bom["item_number"].str.startswith("30-", na=False)][
+            ["item_number", "item_name", "Flat Qty"]
+        ].drop_duplicates("item_number")
 
-    # For each product, get its build plan and PCBAs
-    for product_lpn in selected_products:
-        # Get build plan for this product
-        bp_product = bp[(bp["period_start"] <= next_month_cutoff) & (bp["product_lpn"] == product_lpn)].copy()
-
-        if len(bp_product) == 0:
+        if len(pcba_parts) == 0:
             continue
 
-        # Apply daily time-phasing with 28-day pull-forward shift for this product
-        monthly_demand_dict = get_pcba_pull_forward_daily(bp_product, snapshot_date)
+        # For each PCBA, create rows with pull-forward demand
+        for _, pcba_row in pcba_parts.iterrows():
+            pcba_lpn = pcba_row["item_number"]
+            pcba_flat_qty = pd.to_numeric(pcba_row["Flat Qty"], errors="coerce") or 1.0
 
-        if not monthly_demand_dict:
-            continue
+            # Get build plan for this product
+            prod_plan = bp_filt[bp_filt["product_lpn"] == product_lpn]
 
-        # Get PCBAs under this product only
-        bom_product = bom[bom["Parent Product LPN"] == product_lpn]
-        pcbas_product = bom_product[
-            (bom_product["Parent PCBA LPN"].notna()) &
-            (bom_product["Parent PCBA LPN"] != "")
-        ]["Parent PCBA LPN"].unique()
+            for _, plan_row in prod_plan.iterrows():
+                # Calculate PCBA demand and shift back 4 weeks
+                pcba_qty = plan_row["qty"] * pcba_flat_qty
+                original_period = pd.to_datetime(plan_row["period_start"])
+                shifted_period = original_period - pd.Timedelta(weeks=4)
 
-        if len(pcbas_product) == 0:
-            continue
+                # Clamp shifted period to first week in visible range (weeks_cutoff)
+                min_visible_week = bp_filt["period_start"].min()
+                if shifted_period < min_visible_week:
+                    shifted_period = min_visible_week
 
-        # Create rows: each PCBA of this product gets this product's demand
-        for pcba in pcbas_product:
-            for month_str, qty in monthly_demand_dict.items():
-                data.append({
-                    "pcba": pcba,
-                    "month_str": month_str,
-                    "demand": qty
+                pcba_rows.append({
+                    "PCBA_LPN": pcba_lpn,
+                    "PCBA_Name": pcba_row["item_name"],
+                    "period_start": shifted_period,
+                    "pcba_qty": pcba_qty
                 })
 
-    if not data:
+    if not pcba_rows:
         return None
 
-    result_df = pd.DataFrame(data)
+    pcba_df = pd.DataFrame(pcba_rows)
+    pcba_df["PCBA"] = pcba_df["PCBA_LPN"] + " - " + pcba_df["PCBA_Name"]
+    pcba_df["period_str"] = pcba_df["period_start"].dt.strftime("%Y-%m")
 
-    # Pivot: PCBA x shifted months
-    pivot = result_df.pivot_table(
-        index="pcba", columns="month_str", values="demand", aggfunc="first", fill_value=0
+    # Pivot: PCBAs x periods
+    pivot = pcba_df.pivot_table(
+        index="PCBA", columns="period_str", values="pcba_qty", aggfunc="sum", fill_value=0
     ).astype(int)
 
-    # Sort columns chronologically and filter to only show months within weeks_cutoff
-    pivot = pivot[sorted(pivot.columns)]
+    pivot["Total"] = pivot.sum(axis=1).astype(int)
+    pivot = pivot.sort_values("Total", ascending=False)
 
-    # Filter columns to only those within weeks_cutoff
-    valid_cols = [col for col in pivot.columns if pd.Timestamp(col) <= weeks_cutoff]
-    if not valid_cols:
-        return None
-    pivot = pivot[valid_cols]
-
-    # Rename first month column to "Pull Forward Demand"
-    first_month = pivot.columns[0]
-    pivot = pivot.rename(columns={first_month: "Pull Forward Demand"})
-
-    # Add Grand Total column
-    pivot["Grand Total"] = pivot.sum(axis=1).astype(int)
-
-    # Add PCBA descriptions from BOM and combine into single column
-    pcba_list = result_df["pcba"].unique()
-    pcba_descriptions = bom[bom["item_number"].isin(pcba_list)][["item_number", "item_name"]].drop_duplicates()
-    pcba_desc_map = dict(zip(pcba_descriptions["item_number"], pcba_descriptions["item_name"]))
-
-    # Reorder: PCBA - Description, Pull Forward Demand, months, Grand Total
-    pivot_reset = pivot.reset_index()
-    pivot_reset["pcba_desc"] = pivot_reset["pcba"] + " - " + pivot_reset["pcba"].map(pcba_desc_map).fillna("")
-    pivot_reset = pivot_reset.drop("pcba", axis=1)
-    pivot_reset = pivot_reset.set_index("pcba_desc")
-    pivot_reset.index.name = "PCBA"
-
-    # Move Grand Total to last position
-    grand_total = pivot_reset.pop("Grand Total")
-    pivot_reset["Grand Total"] = grand_total
-
-    pivot_reset = pivot_reset.sort_values("Pull Forward Demand", ascending=False)
-
-    return pivot_reset
+    return pivot
 
 
 build_plan_grid = get_build_plan_grid(build_plan, demand_detail, cm_filter, prod_filter, cutoff)
 toplevel_plan = get_toplevel_build_plan(build_plan, products, cm_filter, prod_filter, cutoff)
-pcba_plan = get_pcba_build_plan(build_plan, bom_stitched, products, cm_filter, prod_filter, cutoff, demand_detail, cfg.snapshot)
+pcba_plan = get_pcba_build_plan(build_plan, bom_stitched, products, cm_filter, prod_filter, cutoff)
 
 # ============================================================================
 # RENDER ACTIVE TAB
@@ -807,32 +626,31 @@ pcba_plan = get_pcba_build_plan(build_plan, bom_stitched, products, cm_filter, p
 if st.session_state.active_tab == "Shortage Report":
     # SHORTAGE REPORT
     st.subheader("Build Plan (Filtered)")
+    if build_plan_grid is not None and len(build_plan_grid) > 0:
+        st.caption(f"Products planned by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
+        st.dataframe(build_plan_grid, use_container_width=True)
+    else:
+        st.info("No build plan data for selected filters.")
 
-    # Collapsible build plan sections
-    col1, col2 = st.columns(2)
-
-    with col1:
-        with st.expander("▼ Top-Level Products", expanded=True):
-            if toplevel_plan is not None and len(toplevel_plan) > 0:
-                st.caption(f"90- products with Build Plan demand by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
-                st.dataframe(toplevel_plan, use_container_width=True)
-            else:
-                st.info("No top-level products planned for selected filters.")
-
-    with col2:
-        with st.expander("▼ PCBA Build Plan", expanded=False):
-            if pcba_plan is not None and len(pcba_plan) > 0:
-                st.caption(f"30- PCBA parts with 4-week pull-forward by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
-                st.dataframe(pcba_plan, use_container_width=True)
-            else:
-                st.info("No PCBA parts in pull-forward for selected filters.")
-
-    st.divider()
     st.subheader("Components Short Within Selected Time Window")
     st.caption(f"Parts running out by {cutoff.strftime('%Y-%m-%d')} ({weeks_window} weeks)")
 
     if len(filtered) == 0:
         st.info("No shortages in this time window.")
+
+        # Debug info
+        with st.expander("🔧 Debug Info"):
+            st.write("**Demand & Usage Status:**")
+            st.write(f"Total demand rows: {debug_info['demand_rows']}")
+            st.write(f"10-002244 in demand: {debug_info['10-002244_in_demand']}")
+            st.write(f"Usage table rows: {debug_info['usage_rows']}")
+            st.write(f"10-002244 in usage table: {debug_info['10-002244_in_usage']}")
+            st.write(f"Bridge parts in usage table: {debug_info['bridge_usage_parts']}")
+
+            st.write("\n**Overall Stats:**")
+            summary_all = result['summary']
+            st.write(f"Total shortages: {len(summary_all[summary_all['is_shortage']])}")
+            st.write(f"Parts in filtered selection: {len(parts_in_products)}")
     else:
         # Build shortage report
         report = []
@@ -844,24 +662,11 @@ if st.session_state.active_tab == "Shortage Report":
                 (receipts["cm"] == cm) & (receipts["part"] == part) &
                 (receipts["period"] <= cutoff)
             ]
-            has_past_due = False
             if len(incoming):
-                supply_parts = []
-                for _, r in incoming.sort_values("period").iterrows():
-                    # Use original_eta if available (past-due items), otherwise use period
-                    display_date = r["_original_eta"] if pd.notna(r.get("_original_eta")) else r["period"]
-                    display_date_str = display_date.strftime("%Y-%m-%d")
-
-                    qty_str = f"{int(r['receipts']):,} on {display_date_str}"
-
-                    # Add [Past Due] note if applicable
-                    if r.get("is_past_due", False):
-                        qty_str += " [Past Due]"
-                        has_past_due = True
-
-                    supply_parts.append(qty_str)
-
-                supply_str = "\n".join(supply_parts)  # Use newline instead of pipe for readability
+                supply_str = " | ".join(
+                    f"{int(r['receipts']):,} on {r['period'].strftime('%Y-%m-%d')}"
+                    for _, r in incoming.sort_values("period").iterrows()
+                )
             else:
                 supply_str = "—"
 
@@ -891,9 +696,9 @@ if st.session_state.active_tab == "Shortage Report":
                 "Build Coverage": int(row["blocks_buildable"]),
                 "First Short Date": row["first_shortage_date"].strftime("%Y-%m-%d") if pd.notna(row["first_shortage_date"]) else "—",
                 "Shortage Type": row.get("shortage_type", "—"),
-                "Raw Inventory": int(row.get("raw_inventory", 0)),
-                "WIP Inventory": int(row.get("wip_inventory", 0)),
-                "Total Inventory": int(row.get("raw_inventory", 0) + row.get("wip_inventory", 0)),
+                "Raw Inventory": int(0 if pd.isna(row.get("raw_inventory")) else row.get("raw_inventory", 0)),
+                "WIP Inventory": int(0 if pd.isna(row.get("wip_inventory")) else row.get("wip_inventory", 0)),
+                "Total Inventory": int((0 if pd.isna(row.get("raw_inventory")) else row.get("raw_inventory", 0)) + (0 if pd.isna(row.get("wip_inventory")) else row.get("wip_inventory", 0))),
                 "Shortage Qty": int(row["shortage_qty"]) if pd.notna(row["shortage_qty"]) else 0,
                 "Incoming Supply": supply_str,
             }
@@ -986,19 +791,10 @@ if st.session_state.active_tab == "Shortage Report":
 
         # Reorder: add Notes and Watched at the end
         col_order.extend(["Notes", "Watched"])
-        report_df_display = report_df[[c for c in col_order if c in report_df.columns]].copy()
+        report_df_display = report_df[[c for c in col_order if c in report_df.columns]]
 
-        # Style: highlight Incoming Supply cells red if they contain [Past Due]
-        def highlight_past_due(s):
-            """Highlight Incoming Supply column red if it contains [Past Due]."""
-            if s.name == "Incoming Supply":
-                return ["background-color: #cc0000; color: white; font-weight: bold;" if "[Past Due]" in str(v) else "" for v in s]
-            return [""] * len(s)
-
-        styled_df = report_df_display.style.apply(highlight_past_due, axis=0)
-
-        # Display clean dataframe with styling
-        st.dataframe(styled_df, use_container_width=True, height=500)
+        # Display clean dataframe
+        st.dataframe(report_df_display, use_container_width=True, height=500)
 
         st.write(f"**Total: {len(report)} parts short**")
 
@@ -1020,7 +816,7 @@ elif st.session_state.active_tab == "Drill-Down Grid":
                 st.info("No top-level products planned for selected filters.")
 
     with col2:
-        with st.expander("▼ PCBA Build Plan", expanded=False):
+        with st.expander("▼ PCBA Build Plan", expanded=True):
             if pcba_plan is not None and len(pcba_plan) > 0:
                 st.caption(f"30- PCBA parts with 4-week pull-forward by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
                 st.dataframe(pcba_plan, use_container_width=True)
@@ -1029,61 +825,14 @@ elif st.session_state.active_tab == "Drill-Down Grid":
 
     st.divider()
 
-    # Helper function: aggregate PAB data by grain
-    def aggregate_pab_by_grain(pab_df, grain="Day"):
-        """Group PAB data to Daily, Weekly (Monday), or Monthly grain.
-
-        For aggregation:
-        - demand, receipts, net_flow: SUM across the period
-        - pab (inventory): LAST value in the period (end-of-period balance)
-        - period: FIRST date of the period
-        """
-        if len(pab_df) == 0:
-            return pab_df
-
-        pab_df = pab_df.copy()
-
-        if grain == "Day":
-            pab_df["period_key"] = pab_df["period"].dt.strftime("%Y-%m-%d")
-        elif grain == "Week":
-            # Group to Monday of each week
-            pab_df["period_key"] = (pab_df["period"] - pd.to_timedelta(pab_df["period"].dt.weekday, unit="D")).dt.strftime("%Y-%m-%d")
-        elif grain == "Month":
-            # Group to first day of month
-            pab_df["period_key"] = pab_df["period"].dt.strftime("%Y-%m-01")
-
-        # Sum all numeric columns EXCEPT 'pab' (which should be end-of-period balance)
-        agg_dict = {col: "sum" for col in pab_df.columns if col not in ["period", "period_key", "cm", "part", "pab"]}
-
-        # Add pab separately: use last (end-of-period) value
-        agg_dict["pab"] = "last"
-
-        agg_df = pab_df.groupby(["cm", "part", "period_key"], as_index=False).agg({
-            **agg_dict,
-            "period": "first"  # Keep original period for reference
-        })
-        return agg_df
-
     # Filter toggle: All parts vs Only PCBA parts
-    st.subheader("Demand, Supply & Inventory")
-
-    col_filter, col_grain = st.columns([2, 1])
-
-    with col_filter:
-        filter_option = st.radio(
-            "Show:",
-            ["All parts", "Only PCBA parts"],
-            horizontal=True,
-            key="demand_source_filter"
-        )
-
-    with col_grain:
-        grain = st.selectbox(
-            "View by:",
-            ["Day", "Week", "Month"],
-            key="pab_grain"
-        )
-
+    st.subheader("Demand, Supply & Inventory by Week")
+    filter_option = st.radio(
+        "Show:",
+        ["All parts", "Only PCBA parts"],
+        horizontal=True,
+        key="demand_source_filter"
+    )
     st.caption("3 rows per part: Demand | Supply | Inventory (color-coded: green=positive, red=negative)")
 
     if len(filtered) == 0:
@@ -1112,9 +861,6 @@ elif st.session_state.active_tab == "Drill-Down Grid":
         if len(pab_filtered) == 0:
             st.info("No PAB data for selected filters.")
         else:
-            # Aggregate to selected grain
-            pab_filtered = aggregate_pab_by_grain(pab_filtered, grain)
-
             # Build 3-row grid for each part
             grid_data = []
 
@@ -1150,12 +896,8 @@ elif st.session_state.active_tab == "Drill-Down Grid":
                     "Metric": "Demand"
                 }
                 for _, pab_row in part_pab.iterrows():
-                    # Use period_key if it exists (from aggregation), otherwise format period
-                    if "period_key" in pab_row.index:
-                        period_key = pab_row["period_key"]
-                    else:
-                        period_key = pab_row["period"].strftime("%Y-%m-%d")
-                    demand_row[period_key] = int(pab_row["demand"])
+                    week_key = pab_row["period"].strftime("%Y-%m-%d")
+                    demand_row[week_key] = int(pab_row["demand"])
                 grid_data.append(demand_row)
 
                 # Supply row
@@ -1167,11 +909,8 @@ elif st.session_state.active_tab == "Drill-Down Grid":
                     "Metric": "Supply"
                 }
                 for _, pab_row in part_pab.iterrows():
-                    if "period_key" in pab_row.index:
-                        period_key = pab_row["period_key"]
-                    else:
-                        period_key = pab_row["period"].strftime("%Y-%m-%d")
-                    supply_row[period_key] = int(pab_row["receipts"])
+                    week_key = pab_row["period"].strftime("%Y-%m-%d")
+                    supply_row[week_key] = int(pab_row["receipts"])
                 grid_data.append(supply_row)
 
                 # Inventory row (will be color-coded)
@@ -1183,11 +922,8 @@ elif st.session_state.active_tab == "Drill-Down Grid":
                     "Metric": "Inventory"
                 }
                 for _, pab_row in part_pab.iterrows():
-                    if "period_key" in pab_row.index:
-                        period_key = pab_row["period_key"]
-                    else:
-                        period_key = pab_row["period"].strftime("%Y-%m-%d")
-                    inv_row[period_key] = int(pab_row["pab"])
+                    week_key = pab_row["period"].strftime("%Y-%m-%d")
+                    inv_row[week_key] = int(pab_row["pab"])
                 grid_data.append(inv_row)
 
             if grid_data:
@@ -1325,27 +1061,12 @@ elif st.session_state.active_tab == "Drill-Down Grid":
 # ============================================================================
 elif st.session_state.active_tab == "Excess Monitor":
     st.subheader("Build Plan (Filtered)")
+    if build_plan_grid is not None and len(build_plan_grid) > 0:
+        st.caption(f"Products planned by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
+        st.dataframe(build_plan_grid, use_container_width=True)
+    else:
+        st.info("No build plan data for selected filters.")
 
-    # Collapsible build plan sections
-    col1, col2 = st.columns(2)
-
-    with col1:
-        with st.expander("▼ Top-Level Products", expanded=True):
-            if toplevel_plan is not None and len(toplevel_plan) > 0:
-                st.caption(f"90- products with Build Plan demand by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
-                st.dataframe(toplevel_plan, use_container_width=True)
-            else:
-                st.info("No top-level products planned for selected filters.")
-
-    with col2:
-        with st.expander("▼ PCBA Build Plan", expanded=False):
-            if pcba_plan is not None and len(pcba_plan) > 0:
-                st.caption(f"30- PCBA parts with 4-week pull-forward by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
-                st.dataframe(pcba_plan, use_container_width=True)
-            else:
-                st.info("No PCBA parts in pull-forward for selected filters.")
-
-    st.divider()
     st.subheader("Parts with Excess Supply Beyond Demand")
     st.caption("Receipts scheduled after the build plan ends for each product")
 
@@ -1359,10 +1080,8 @@ elif st.session_state.active_tab == "Excess Monitor":
             excess_filtered = excess_filtered[excess_filtered["cm"] == cm_filter]
 
         if prod_filter:
-            # Extract aliases from display_names for matching
-            aliases = [dn.split(" - ", 1)[1] if " - " in dn else dn for dn in prod_filter]
             excess_filtered = excess_filtered[
-                excess_filtered["products"].str.contains("|".join(aliases), na=False)
+                excess_filtered["products"].str.contains("|".join(prod_filter), na=False)
             ]
 
         if len(excess_filtered) == 0:

@@ -31,14 +31,14 @@ log = logging.getLogger(__name__)
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 
-# DATA ROWS, excluding the header. Verified against the exports of 2026-08-05.
+# DATA ROWS, excluding the header. Verified against the exports of 2026-08-13.
 # Re-check these every time the snapshots are refreshed.
 #
 # Sheets shows a last-row number that INCLUDES the header, so these are each one
 # less than what you read off the sheet:
-#   bom_stitched 4380 | bom_flat 3620 | stitch_list 19 | onhand 4771 | onorder 6076
+#   bom_stitched 4399 | bom_flat 3620 | stitch_list 19 | onhand 4771 | onorder 6076
 EXPECTED_ROWS = {
-    "bom_stitched.csv": 4379,
+    "bom_stitched.csv": 4398,
     "bom_flat.csv": 3619,
     "stitch_list.csv": 18,
     "onhand.csv": 4770,
@@ -203,8 +203,8 @@ def _read_hand(name: str) -> pd.DataFrame:
 def load_bom_stitched() -> pd.DataFrame:
     """Stitched Indented BOMs — 25 cols, one row per BOM position.
 
-    Returns 4,378 rows: the raw export is 4,379 and the sentinel row is dropped.
-    EXPECTED_ROWS stays at 4,379 on purpose; it describes the file, not the frame.
+    Returns 4,397 rows: the raw export is 4,398 and the sentinel row is dropped.
+    EXPECTED_ROWS stays at 4,398 on purpose; it describes the file, not the frame.
 
     `item_number` is NOT unique — 11 items sit at several BOM positions. Key on
     (Parent Product LPN, guid) or aggregate. CLAUDE.md 5.4.
