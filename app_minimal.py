@@ -422,12 +422,16 @@ if include_allocations:
             "Recommendation column shows PO quantities needed from Lunar to resolve each shortage.")
 
 # --- Build plan grid (filtered by CM and products) ---
-def get_pcba_pull_forward_daily(bp, snapshot_date):
+@st.cache_data(show_spinner=False)
+def get_pcba_pull_forward_daily(bp_json, snapshot_date_str):
     """Apply daily time-phasing + 28-day shift, reaggregate to calendar months.
 
     Matches engine logic: spread monthly qty across working days, shift 28 days, reaggregate.
     Returns: {month_str: total_qty} dict for the 4-week pull-forward aggregated result.
     """
+    # Deserialize cached inputs
+    bp = pd.read_json(bp_json)
+    snapshot_date = pd.Timestamp(snapshot_date_str)
     bp_filt = bp.copy()
     bp_filt["period_start"] = pd.to_datetime(bp_filt["period_start"], errors="coerce")
     bp_filt["qty"] = pd.to_numeric(bp_filt["qty"], errors="coerce").fillna(0.0)
@@ -472,30 +476,42 @@ def get_pcba_pull_forward_daily(bp, snapshot_date):
     return monthly_agg
 
 
+@st.cache_data(show_spinner=False)
+def aggregate_pab_by_grain_cached(pab_json, grain="Day"):
+    """Cached aggregation of PAB data by grain."""
+    pab_df = pd.read_json(pab_json)
+    return _aggregate_pab_by_grain_impl(pab_df, grain)
+
+
+def _aggregate_pab_by_grain_impl(pab_df, grain="Day"):
+    """Implementation of PAB aggregation (not cached)."""
+    if len(pab_df) == 0:
+        return pab_df
+
+    pab_df = pab_df.copy()
+
+    if grain == "Day":
+        pab_df["period_key"] = pab_df["period"].dt.strftime("%Y-%m-%d")
+    elif grain == "Week":
+        pab_df["period_key"] = (pab_df["period"] - pd.to_timedelta(pab_df["period"].dt.weekday, unit="D")).dt.strftime("%Y-%m-%d")
+    elif grain == "Month":
+        pab_df["period_key"] = pab_df["period"].dt.strftime("%Y-%m-01")
+
+    agg_dict = {col: "sum" for col in pab_df.columns if col not in ["period", "period_key", "cm", "part"]}
+    agg_df = pab_df.groupby(["cm", "part", "period_key"], as_index=False).agg({
+        **agg_dict,
+        "period": "first"
+    })
+    return agg_df
+
+
 def render_pab_drill_down(pab_to_show, filtered_parts, demand_detail, receipts):
     """Render the Demand/Supply/Inventory drill-down table with grain toggle."""
 
-    # Helper function: aggregate PAB data by grain (defined inline for reuse)
+    # Helper function: aggregate PAB data by grain (uses cached version)
     def aggregate_pab_by_grain(pab_df, grain="Day"):
-        """Group PAB data to Daily, Weekly (Monday), or Monthly grain."""
-        if len(pab_df) == 0:
-            return pab_df
-
-        pab_df = pab_df.copy()
-
-        if grain == "Day":
-            pab_df["period_key"] = pab_df["period"].dt.strftime("%Y-%m-%d")
-        elif grain == "Week":
-            pab_df["period_key"] = (pab_df["period"] - pd.to_timedelta(pab_df["period"].dt.weekday, unit="D")).dt.strftime("%Y-%m-%d")
-        elif grain == "Month":
-            pab_df["period_key"] = pab_df["period"].dt.strftime("%Y-%m-01")
-
-        agg_dict = {col: "sum" for col in pab_df.columns if col not in ["period", "period_key", "cm", "part"]}
-        agg_df = pab_df.groupby(["cm", "part", "period_key"], as_index=False).agg({
-            **agg_dict,
-            "period": "first"
-        })
-        return agg_df
+        """Group PAB data to Daily, Weekly (Monday), or Monthly grain (cached)."""
+        return aggregate_pab_by_grain_cached(pab_df.to_json(), grain)
 
     # Grain selector
     col_title, col_grain = st.columns([3, 1])
@@ -701,7 +717,7 @@ def get_pcba_build_plan(bp, bom, products, cm_filt, prod_filt, weeks_cutoff, dem
             continue
 
         # Apply daily time-phasing with 28-day pull-forward shift for this product
-        monthly_demand_dict = get_pcba_pull_forward_daily(bp_product, snapshot_date)
+        monthly_demand_dict = get_pcba_pull_forward_daily(bp_product.to_json(), snapshot_date.isoformat())
 
         if not monthly_demand_dict:
             continue
@@ -795,7 +811,7 @@ if st.session_state.active_tab == "Shortage Report":
                 st.info("No top-level products planned for selected filters.")
 
     with col2:
-        with st.expander("▼ PCBA Build Plan", expanded=True):
+        with st.expander("▼ PCBA Build Plan", expanded=False):
             if pcba_plan is not None and len(pcba_plan) > 0:
                 st.caption(f"30- PCBA parts with 4-week pull-forward by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
                 st.dataframe(pcba_plan, use_container_width=True)
@@ -973,7 +989,7 @@ elif st.session_state.active_tab == "Drill-Down Grid":
                 st.info("No top-level products planned for selected filters.")
 
     with col2:
-        with st.expander("▼ PCBA Build Plan", expanded=True):
+        with st.expander("▼ PCBA Build Plan", expanded=False):
             if pcba_plan is not None and len(pcba_plan) > 0:
                 st.caption(f"30- PCBA parts with 4-week pull-forward by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
                 st.dataframe(pcba_plan, use_container_width=True)
@@ -1281,7 +1297,7 @@ elif st.session_state.active_tab == "Excess Monitor":
                 st.info("No top-level products planned for selected filters.")
 
     with col2:
-        with st.expander("▼ PCBA Build Plan", expanded=True):
+        with st.expander("▼ PCBA Build Plan", expanded=False):
             if pcba_plan is not None and len(pcba_plan) > 0:
                 st.caption(f"30- PCBA parts with 4-week pull-forward by {cutoff.strftime('%Y-%m')} ({weeks_window} weeks)")
                 st.dataframe(pcba_plan, use_container_width=True)
