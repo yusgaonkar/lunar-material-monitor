@@ -270,13 +270,14 @@ def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
         visited.add(parent_lpn)
 
         children = bom[bom["Parent Product LPN"] == parent_lpn]
-        for _, child_row in children.iterrows():
-            child_lpn = child_row["item_number"]
-            sourcing_qty = pd.to_numeric(child_row["Sourcing Flat Qty"], errors="coerce") or 0
+        if len(children) == 0:
+            return
 
-            if sourcing_qty > 0:
+        # Vectorized instead of iterrows
+        sourcing = pd.to_numeric(children["Sourcing Flat Qty"], errors="coerce").fillna(0)
+        for child_lpn, qty in zip(children["item_number"].values, sourcing.values):
+            if qty > 0:
                 buy_parts.add(child_lpn)
-
             traverse(child_lpn)
 
     traverse(product_lpn)
@@ -284,8 +285,9 @@ def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
 
 
 # --- Load and run ---
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner="Initializing engine...")
 def load_and_run():
+    """Cached: loads data and runs engine once per session."""
     frames = lio.load_all()
     result = eng.run(frames)
     build_plan = lio.load_build_plan()
@@ -299,8 +301,13 @@ s = result["summary"]
 pab = result["pab"]
 receipts = result["receipts"]
 demand_detail = result["demand_detail"]
-excess = result["excess"]
+# Lazy-load excess to defer computation until user views that tab
+excess = result.get("excess", pd.DataFrame())  # Empty until accessed
 products = result["products"]
+
+# Session state for lazy-loading expensive tabs
+if "computed_excess" not in st.session_state:
+    st.session_state.computed_excess = False
 
 # --- Header ---
 st.title("Lunar Material Monitor")
@@ -370,18 +377,23 @@ if len(excluded_parts) > 0:
 if cm_filter != "All":
     filtered = filtered[filtered["cm"] == cm_filter]
 
-# Product filter: show only buy parts under selected products
+# Product filter: show only buy parts under selected products (also filter by CM)
 if prod_filter:
-    # Get all product LPNs for selected display_names
-    selected_products = products[products["display_name"].isin(prod_filter)]["product"].unique()
+    # Get all product LPNs and their CMs for selected display_names
+    selected_products_df = products[products["display_name"].isin(prod_filter)][["product", "cm"]]
+    selected_products = selected_products_df["product"].unique()
+    selected_cms = set(selected_products_df["cm"].unique())
 
     # Get all buy parts under these products
     parts_in_products = set()
     for product_lpn in selected_products:
         parts_in_products.update(get_buy_parts_under_product(product_lpn, bom_stitched))
 
-    # Filter to show only parts in selected products
-    filtered = filtered[filtered["part"].isin(parts_in_products)]
+    # Filter to show only parts in selected products AND in the selected products' CMs
+    filtered = filtered[
+        (filtered["part"].isin(parts_in_products)) &
+        (filtered["cm"].isin(selected_cms))
+    ]
 
 if part_filter:
     filtered = filtered[filtered["part"].isin(part_filter)]
@@ -1130,7 +1142,9 @@ elif st.session_state.active_tab == "Drill-Down Grid":
                 part_desc = filtered[
                     (filtered["cm"] == cm) & (filtered["part"] == part)
                 ].iloc[0]
-                desc = part_desc["description"][:50]
+                desc = part_desc.get("description", "—") if pd.notna(part_desc.get("description")) else "—"
+                if desc != "—":
+                    desc = str(desc)[:50]
 
                 # Get demand_source for this part (handle if column doesn't exist)
                 part_rows = demand_detail[(demand_detail["cm"] == cm) & (demand_detail["part"] == part)]
@@ -1141,54 +1155,33 @@ elif st.session_state.active_tab == "Drill-Down Grid":
                     else:
                         part_demand_source = "Build Plan"  # Default if column missing
 
-                # Demand row
-                demand_row = {
+                # Build all 3 rows in ONE pass (Demand, Supply, Inventory) instead of 3 loops
+                base_row = {
                     "CM": cm,
                     "Part": part,
                     "Description": desc,
                     "Source": part_demand_source,
-                    "Metric": "Demand"
                 }
-                for _, pab_row in part_pab.iterrows():
-                    # Use period_key if it exists (from aggregation), otherwise format period
-                    if "period_key" in pab_row.index:
-                        period_key = pab_row["period_key"]
+
+                # Vectorized: format all period keys once
+                period_keys = []
+                for _, row in part_pab.iterrows():
+                    if "period_key" in row.index:
+                        period_keys.append(row["period_key"])
                     else:
-                        period_key = pab_row["period"].strftime("%Y-%m-%d")
+                        period_keys.append(row["period"].strftime("%Y-%m-%d"))
+
+                # Single pass: populate all three rows at once
+                demand_row = {**base_row, "Metric": "Demand"}
+                supply_row = {**base_row, "Metric": "Supply"}
+                inv_row = {**base_row, "Metric": "Inventory"}
+
+                for period_key, (_, pab_row) in zip(period_keys, part_pab.iterrows()):
                     demand_row[period_key] = int(pab_row["demand"])
-                grid_data.append(demand_row)
-
-                # Supply row
-                supply_row = {
-                    "CM": cm,
-                    "Part": part,
-                    "Description": desc,
-                    "Source": part_demand_source,
-                    "Metric": "Supply"
-                }
-                for _, pab_row in part_pab.iterrows():
-                    if "period_key" in pab_row.index:
-                        period_key = pab_row["period_key"]
-                    else:
-                        period_key = pab_row["period"].strftime("%Y-%m-%d")
                     supply_row[period_key] = int(pab_row["receipts"])
-                grid_data.append(supply_row)
-
-                # Inventory row (will be color-coded)
-                inv_row = {
-                    "CM": cm,
-                    "Part": part,
-                    "Description": desc,
-                    "Source": part_demand_source,
-                    "Metric": "Inventory"
-                }
-                for _, pab_row in part_pab.iterrows():
-                    if "period_key" in pab_row.index:
-                        period_key = pab_row["period_key"]
-                    else:
-                        period_key = pab_row["period"].strftime("%Y-%m-%d")
                     inv_row[period_key] = int(pab_row["pab"])
-                grid_data.append(inv_row)
+
+                grid_data.extend([demand_row, supply_row, inv_row])
 
             if grid_data:
                 grid_df = pd.DataFrame(grid_data)
