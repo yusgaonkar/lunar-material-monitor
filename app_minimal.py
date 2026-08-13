@@ -422,16 +422,12 @@ if include_allocations:
             "Recommendation column shows PO quantities needed from Lunar to resolve each shortage.")
 
 # --- Build plan grid (filtered by CM and products) ---
-@st.cache_data(show_spinner=False)
-def get_pcba_pull_forward_daily(bp_json, snapshot_date_str):
+def get_pcba_pull_forward_daily(bp, snapshot_date):
     """Apply daily time-phasing + 28-day shift, reaggregate to calendar months.
 
     Matches engine logic: spread monthly qty across working days, shift 28 days, reaggregate.
     Returns: {month_str: total_qty} dict for the 4-week pull-forward aggregated result.
     """
-    # Deserialize cached inputs
-    bp = pd.read_json(bp_json)
-    snapshot_date = pd.Timestamp(snapshot_date_str)
     bp_filt = bp.copy()
     bp_filt["period_start"] = pd.to_datetime(bp_filt["period_start"], errors="coerce")
     bp_filt["qty"] = pd.to_numeric(bp_filt["qty"], errors="coerce").fillna(0.0)
@@ -476,11 +472,12 @@ def get_pcba_pull_forward_daily(bp_json, snapshot_date_str):
     return monthly_agg
 
 
-@st.cache_data(show_spinner=False)
-def aggregate_pab_by_grain_cached(pab_json, grain="Day"):
-    """Cached aggregation of PAB data by grain."""
-    pab_df = pd.read_json(pab_json)
-    return _aggregate_pab_by_grain_impl(pab_df, grain)
+@st.cache_resource
+def get_aggregation_function():
+    """Return the aggregation function (cached resource)."""
+    def aggregate_pab_by_grain(pab_df, grain="Day"):
+        return _aggregate_pab_by_grain_impl(pab_df, grain)
+    return aggregate_pab_by_grain
 
 
 def _aggregate_pab_by_grain_impl(pab_df, grain="Day"):
@@ -508,10 +505,8 @@ def _aggregate_pab_by_grain_impl(pab_df, grain="Day"):
 def render_pab_drill_down(pab_to_show, filtered_parts, demand_detail, receipts):
     """Render the Demand/Supply/Inventory drill-down table with grain toggle."""
 
-    # Helper function: aggregate PAB data by grain (uses cached version)
-    def aggregate_pab_by_grain(pab_df, grain="Day"):
-        """Group PAB data to Daily, Weekly (Monday), or Monthly grain (cached)."""
-        return aggregate_pab_by_grain_cached(pab_df.to_json(), grain)
+    # Get cached aggregation function
+    aggregate_pab_by_grain = get_aggregation_function()
 
     # Grain selector
     col_title, col_grain = st.columns([3, 1])
@@ -717,7 +712,7 @@ def get_pcba_build_plan(bp, bom, products, cm_filt, prod_filt, weeks_cutoff, dem
             continue
 
         # Apply daily time-phasing with 28-day pull-forward shift for this product
-        monthly_demand_dict = get_pcba_pull_forward_daily(bp_product.to_json(), snapshot_date.isoformat())
+        monthly_demand_dict = get_pcba_pull_forward_daily(bp_product, snapshot_date)
 
         if not monthly_demand_dict:
             continue
