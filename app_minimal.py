@@ -320,7 +320,7 @@ if "active_tab" not in st.session_state:
 
 # --- Tab selector (preserved across reruns) ---
 st.subheader("View")
-active_tab = st.radio("", ["Shortage Report", "Drill-Down Grid", "Excess Monitor"],
+active_tab = st.radio("", ["Shortage Report", "Drill-Down Grid", "Excess Monitor", "Exclusion Review"],
                        horizontal=True, label_visibility="collapsed",
                        key="tab_selector")
 st.session_state.active_tab = active_tab
@@ -1501,3 +1501,111 @@ elif st.session_state.active_tab == "Excess Monitor":
             )
 
             st.dataframe(detail_df, use_container_width=True, height=300)
+
+# ============================================================================
+# EXCLUSION REVIEW
+# ============================================================================
+elif st.session_state.active_tab == "Exclusion Review":
+    st.subheader("Excluded Parts Review")
+    st.caption("Periodically review excluded parts and notes. Un-exclude to resume monitoring.")
+
+    if len(excluded_parts) == 0:
+        st.info("No excluded parts. All parts are under monitoring.")
+    else:
+        # Build exclusion table with notes
+        exclusion_rows = []
+
+        for part in sorted(excluded_parts):
+            # Get exclusion metadata
+            try:
+                df_excl = pd.read_csv(EXCLUSIONS_FILE)
+                part_exclusion = df_excl[df_excl["part"] == part].sort_values("timestamp", ascending=False).iloc[0]
+                excl_reason = part_exclusion.get("reason", "—")
+                excl_user = part_exclusion.get("user", "—")
+                excl_date = part_exclusion.get("timestamp", "—")[:10] if pd.notna(part_exclusion.get("timestamp")) else "—"
+            except:
+                excl_reason = "—"
+                excl_user = "—"
+                excl_date = "—"
+
+            # Get notes history
+            notes = load_notes(part)
+            notes_preview = ""
+            notes_count = len(notes)
+            if notes_count > 0:
+                latest_note = notes[-1]["note"][:80]
+                notes_preview = f"📝 {latest_note}{'...' if len(notes[-1]['note']) > 80 else ''}"
+                if notes_count > 1:
+                    notes_preview += f" (+{notes_count-1})"
+
+            exclusion_rows.append({
+                "Part": part,
+                "Excluded Date": excl_date,
+                "Excluded By": excl_user,
+                "Reason": excl_reason[:60],
+                "Notes History": notes_preview,
+                "Notes Count": notes_count,
+            })
+
+        excl_df = pd.DataFrame(exclusion_rows)
+
+        # Display table
+        st.dataframe(excl_df, use_container_width=True, height=400)
+
+        st.divider()
+        st.subheader("Un-Exclude Part")
+
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            part_to_review = st.selectbox(
+                "Select part to un-exclude:",
+                options=sorted(excluded_parts),
+                key="uexclude_part_select",
+                label_visibility="collapsed"
+            )
+
+        with col2:
+            if st.button("🔄 Un-Exclude", use_container_width=True, key="uexclude_btn"):
+                if part_to_review:
+                    try:
+                        # Remove from exclusions
+                        df_excl = pd.read_csv(EXCLUSIONS_FILE)
+                        df_excl = df_excl[df_excl["part"] != part_to_review]
+                        df_excl.to_csv(EXCLUSIONS_FILE, index=False)
+                        st.success(f"✓ {part_to_review} re-enabled for monitoring")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+
+        st.divider()
+        st.subheader("Exclusion Details")
+
+        if part_to_review:
+            # Show full details for selected part
+            part_notes = load_notes(part_to_review)
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.write(f"**Part:** {part_to_review}")
+                try:
+                    df_excl = pd.read_csv(EXCLUSIONS_FILE)
+                    part_excl = df_excl[df_excl["part"] == part_to_review].sort_values("timestamp", ascending=False).iloc[0]
+                    st.write(f"**Reason:** {part_excl.get('reason', '—')}")
+                    st.write(f"**Excluded By:** {part_excl.get('user', '—')}")
+                    st.write(f"**Date:** {part_excl.get('timestamp', '—')[:10]}")
+                except:
+                    pass
+
+            with col2:
+                st.write(f"**Notes History:** {len(part_notes)} entries")
+                if part_notes:
+                    st.write(f"**Latest Note Date:** {part_notes[-1]['timestamp'][:10]}")
+
+            # Show all notes
+            if part_notes:
+                st.write("**All Notes:**")
+                for i, note in enumerate(reversed(part_notes)):
+                    with st.container(border=True):
+                        st.caption(f"{i+1}. **{note['user']}** — {note['timestamp'][:10]} {note['timestamp'][11:16]}")
+                        st.write(note["note"])
