@@ -320,7 +320,7 @@ if "active_tab" not in st.session_state:
 
 # --- Tab selector (preserved across reruns) ---
 st.subheader("View")
-active_tab = st.radio("", ["Shortage Report", "Drill-Down Grid", "Excess Monitor", "Exclusion Review"],
+active_tab = st.radio("", ["Shortage Report", "Drill-Down Grid", "Excess Monitor"],
                        horizontal=True, label_visibility="collapsed",
                        key="tab_selector")
 st.session_state.active_tab = active_tab
@@ -1501,11 +1501,6 @@ elif st.session_state.active_tab == "Excess Monitor":
             )
 
             st.dataframe(detail_df, use_container_width=True, height=300)
-
-# ============================================================================
-# EXCLUSION REVIEW
-# ============================================================================
-elif st.session_state.active_tab == "Exclusion Review":
     st.subheader("Excluded Parts Review")
     st.caption("Periodically review excluded parts and notes. Un-exclude to resume monitoring.")
 
