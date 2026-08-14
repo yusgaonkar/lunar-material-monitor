@@ -1,2 +1,4 @@
-# Parts that drop from the report: printed-in-house labels, consumables, etc.
-component_lpn,reason,added_by,added_date
+# Parts that drop from the report: printed-in-house labels, consumables, etc.,part,user,timestamp,reason
+ reason, added_by, added_date,,,,
+reason,added_by,added_date,,,,
+Test exclude,yashusgaonkar,2026-08-14,,,,
