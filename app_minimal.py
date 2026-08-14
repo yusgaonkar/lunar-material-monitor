@@ -1509,12 +1509,12 @@ elif st.session_state.active_tab == "Exclusion Review":
     st.subheader("Excluded Parts Review")
     st.caption("Review excluded parts. Un-exclude to resume monitoring.")
 
-    if len(excluded_parts) == 0:
+    if not excluded_parts or len(excluded_parts) == 0:
         st.info("No excluded parts.")
     else:
         # Build table
         rows = []
-        for part in sorted(excluded_parts):
+        for part in sorted(list(excluded_parts)):
             # Get exclusion info
             excl_reason = "—"
             excl_user = "—"
@@ -1548,7 +1548,7 @@ elif st.session_state.active_tab == "Exclusion Review":
         st.divider()
         st.subheader("Un-Exclude Part")
 
-        part_to_uexclude = st.selectbox("Select part:", sorted(excluded_parts), key="uexcl_part", label_visibility="collapsed")
+        part_to_uexclude = st.selectbox("Select part:", sorted(list(excluded_parts)) if excluded_parts else [], key="uexcl_part", label_visibility="collapsed")
 
         col1, col2, col3 = st.columns(3)
         with col1:
