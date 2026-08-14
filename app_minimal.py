@@ -1520,9 +1520,9 @@ elif st.session_state.active_tab == "Exclusion Review":
             try:
                 df_excl = pd.read_csv(EXCLUSIONS_FILE)
                 part_exclusion = df_excl[df_excl["part"] == part].sort_values("timestamp", ascending=False).iloc[0]
-                excl_reason = part_exclusion.get("reason", "—")
-                excl_user = part_exclusion.get("user", "—")
-                excl_date = part_exclusion.get("timestamp", "—")[:10] if pd.notna(part_exclusion.get("timestamp")) else "—"
+                excl_reason = part_exclusion["reason"] if pd.notna(part_exclusion.get("reason")) else "—"
+                excl_user = part_exclusion["user"] if pd.notna(part_exclusion.get("user")) else "—"
+                excl_date = part_exclusion["timestamp"][:10] if pd.notna(part_exclusion.get("timestamp")) else "—"
             except:
                 excl_reason = "—"
                 excl_user = "—"
@@ -1591,9 +1591,9 @@ elif st.session_state.active_tab == "Exclusion Review":
                 try:
                     df_excl = pd.read_csv(EXCLUSIONS_FILE)
                     part_excl = df_excl[df_excl["part"] == part_to_review].sort_values("timestamp", ascending=False).iloc[0]
-                    st.write(f"**Reason:** {part_excl.get('reason', '—')}")
-                    st.write(f"**Excluded By:** {part_excl.get('user', '—')}")
-                    st.write(f"**Date:** {part_excl.get('timestamp', '—')[:10]}")
+                    st.write(f"**Reason:** {part_excl['reason'] if pd.notna(part_excl.get('reason')) else '—'}")
+                    st.write(f"**Excluded By:** {part_excl['user'] if pd.notna(part_excl.get('user')) else '—'}")
+                    st.write(f"**Date:** {part_excl['timestamp'][:10] if pd.notna(part_excl.get('timestamp')) else '—'}")
                 except:
                     pass
 
