@@ -107,6 +107,7 @@ def exclude_part(part, reason):
         try:
             supabase_io.exclude_part(part, reason, OS_USER)
             st.success(f"✓ Excluded {part}")
+            st.rerun()
         except Exception as e:
             st.error(f"Error excluding part: {e}")
     else:
