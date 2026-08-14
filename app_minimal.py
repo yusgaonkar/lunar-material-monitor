@@ -96,8 +96,9 @@ if not check_password():
 # ============================================================================
 # PERSISTENCE HELPERS
 # ============================================================================
+@st.cache_data(ttl=60)
 def load_exclusions():
-    """Load excluded parts from Supabase."""
+    """Load excluded parts from Supabase (cached for 60 sec)."""
     if SUPABASE_CLIENT:
         try:
             return supabase_io.get_all_excluded_parts()
@@ -110,6 +111,7 @@ def exclude_part(part, reason):
     if SUPABASE_CLIENT:
         try:
             supabase_io.exclude_part(part, reason, OS_USER)
+            st.cache_data.clear()  # Clear caches
             st.success(f"✓ Excluded {part}")
             st.rerun()
         except Exception as e:
@@ -117,8 +119,9 @@ def exclude_part(part, reason):
     else:
         st.error("Supabase not initialized")
 
+@st.cache_data(ttl=60)
 def load_notes(part):
-    """Load notes for a part from Supabase."""
+    """Load notes for a part from Supabase (cached for 60 sec)."""
     if SUPABASE_CLIENT:
         try:
             notes = supabase_io.load_notes(part)
@@ -141,6 +144,7 @@ def add_note(part, note_text):
     if SUPABASE_CLIENT:
         try:
             supabase_io.save_note(part, note_text, OS_USER)
+            st.cache_data.clear()  # Clear caches so new note shows up
             st.success("✓ Note added")
         except Exception as e:
             st.error(f"Error adding note: {e}")
