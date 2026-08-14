@@ -295,7 +295,10 @@ def load_exclusions() -> pd.DataFrame:
 # --- summary -----------------------------------------------------------------
 
 def load_all() -> dict[str, pd.DataFrame]:
-    """Every input, keyed by filename. Order matches the summary table."""
+    """Every input, keyed by filename. Order matches the summary table.
+
+    Note: exclusions are now loaded from Supabase in app_minimal.py, not from CSV.
+    """
     return {
         "bom_stitched.csv": load_bom_stitched(),
         "bom_flat.csv": load_bom_flat(),
@@ -305,7 +308,6 @@ def load_all() -> dict[str, pd.DataFrame]:
         "build_plan.csv": load_build_plan(),
         "plan_to_date.csv": load_plan_to_date(),
         "in_transit.csv": load_in_transit(),
-        "exclusions.csv": load_exclusions(),
     }
 
 

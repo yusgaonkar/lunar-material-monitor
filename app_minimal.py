@@ -17,12 +17,28 @@ import pandas as pd
 import numpy as np
 
 from src import io as lio, engine as eng
+from src import supabase_io
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger(__name__)
 
 # Get OS username
 OS_USER = os.getenv("USER") or os.getenv("USERNAME") or "Unknown"
+
+# Initialize Supabase
+@st.cache_resource
+def init_supabase_client():
+    """Initialize Supabase client once per session."""
+    try:
+        url = st.secrets.get("supabase_url")
+        key = st.secrets.get("supabase_key")
+        if url and key:
+            return supabase_io.init_supabase(url, key)
+    except Exception as e:
+        log.warning(f"Supabase initialization failed: {e}")
+    return None
+
+SUPABASE_CLIENT = init_supabase_client()
 
 # Persistence files
 EXCLUSIONS_FILE = "data/exclusions.csv"
@@ -77,68 +93,54 @@ if not check_password():
 # PERSISTENCE HELPERS
 # ============================================================================
 def load_exclusions():
-    """Load excluded parts from CSV."""
-    try:
-        if os.path.exists(EXCLUSIONS_FILE) and os.path.getsize(EXCLUSIONS_FILE) > 0:
-            df = pd.read_csv(EXCLUSIONS_FILE)
-            if len(df) > 0 and "part" in df.columns:
-                return set(df["part"].unique())
-    except Exception as e:
-        log.warning(f"Error loading exclusions: {e}")
+    """Load excluded parts from Supabase."""
+    if SUPABASE_CLIENT:
+        try:
+            return supabase_io.get_all_excluded_parts()
+        except Exception as e:
+            log.warning(f"Error loading exclusions from Supabase: {e}")
     return set()
 
 def exclude_part(part, reason):
-    """Add a part to exclusions."""
-    os.makedirs(os.path.dirname(EXCLUSIONS_FILE) or ".", exist_ok=True)
-    exclusion_data = {
-        "part": part,
-        "user": OS_USER,
-        "timestamp": datetime.now().isoformat(),
-        "reason": reason
-    }
-    try:
-        if os.path.exists(EXCLUSIONS_FILE) and os.path.getsize(EXCLUSIONS_FILE) > 0:
-            df = pd.read_csv(EXCLUSIONS_FILE)
-            df = pd.concat([df, pd.DataFrame([exclusion_data])], ignore_index=True)
-        else:
-            df = pd.DataFrame([exclusion_data])
-        df.to_csv(EXCLUSIONS_FILE, index=False)
-        st.success(f"✓ Excluded {part}")
-    except Exception as e:
-        st.error(f"Error excluding part: {e}")
+    """Add a part to exclusions via Supabase."""
+    if SUPABASE_CLIENT:
+        try:
+            supabase_io.exclude_part(part, reason, OS_USER)
+            st.success(f"✓ Excluded {part}")
+        except Exception as e:
+            st.error(f"Error excluding part: {e}")
+    else:
+        st.error("Supabase not initialized")
 
 def load_notes(part):
-    """Load notes for a part."""
-    try:
-        if not os.path.exists(NOTES_FILE) or os.path.getsize(NOTES_FILE) == 0:
-            return []
-        notes = []
-        with open(NOTES_FILE, "r") as f:
-            for line in f:
-                if line.strip():
-                    note = json.loads(line)
-                    if note.get("part") == part:
-                        notes.append(note)
-        return notes
-    except Exception as e:
-        log.warning(f"Error loading notes: {e}")
-        return []
+    """Load notes for a part from Supabase."""
+    if SUPABASE_CLIENT:
+        try:
+            notes = supabase_io.load_notes(part)
+            # Convert Supabase format to old format for compatibility
+            formatted_notes = []
+            for note in notes:
+                formatted_notes.append({
+                    "part": part,
+                    "note": note.get("note", ""),
+                    "user": note.get("note_user", "Unknown"),
+                    "timestamp": note.get("timestamp", "")
+                })
+            return formatted_notes
+        except Exception as e:
+            log.warning(f"Error loading notes from Supabase: {e}")
+    return []
 
 def add_note(part, note_text):
-    """Add a note to a part."""
-    os.makedirs(os.path.dirname(NOTES_FILE) or ".", exist_ok=True)
-    note_data = {
-        "part": part,
-        "user": OS_USER,
-        "timestamp": datetime.now().isoformat(),
-        "note": note_text
-    }
-    try:
-        with open(NOTES_FILE, "a") as f:
-            f.write(json.dumps(note_data) + "\n")
-        st.success("✓ Note added")
-    except Exception as e:
-        st.error(f"Error adding note: {e}")
+    """Add a note to a part via Supabase."""
+    if SUPABASE_CLIENT:
+        try:
+            supabase_io.save_note(part, note_text, OS_USER)
+            st.success("✓ Note added")
+        except Exception as e:
+            st.error(f"Error adding note: {e}")
+    else:
+        st.error("Supabase not initialized")
 
 def load_watchlist():
     """Load watched parts from CSV."""
@@ -1547,14 +1549,15 @@ elif st.session_state.active_tab == "Exclusion Review":
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🔄 Un-Exclude", key="ex_btn", use_container_width=True):
-                try:
-                    df_ex = pd.read_csv(EXCLUSIONS_FILE)
-                    df_ex = df_ex[df_ex["part"] != part_choice]
-                    df_ex.to_csv(EXCLUSIONS_FILE, index=False)
-                    st.success(f"✓ {part_choice} re-enabled")
-                    st.rerun()
-                except Exception as e:
-                    st.error(str(e))
+                if SUPABASE_CLIENT:
+                    try:
+                        supabase_io.un_exclude_part(part_choice)
+                        st.success(f"✓ {part_choice} re-enabled")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(str(e))
+                else:
+                    st.error("Supabase not initialized")
 
         with col2:
             if st.button("📝 Notes", key="ex_notes", use_container_width=True):
@@ -1632,16 +1635,15 @@ elif st.session_state.active_tab == "Exclusion Review":
 
         with col2:
             if st.button("🔄 Un-Exclude", use_container_width=True, key="uexclude_btn"):
-                if part_to_review:
+                if part_to_review and SUPABASE_CLIENT:
                     try:
-                        # Remove from exclusions
-                        df_excl = pd.read_csv(EXCLUSIONS_FILE)
-                        df_excl = df_excl[df_excl["part"] != part_to_review]
-                        df_excl.to_csv(EXCLUSIONS_FILE, index=False)
+                        supabase_io.un_exclude_part(part_to_review)
                         st.success(f"✓ {part_to_review} re-enabled for monitoring")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Error: {e}")
+                elif not SUPABASE_CLIENT:
+                    st.error("Supabase not initialized")
 
         st.divider()
         st.subheader("Exclusion Details")
