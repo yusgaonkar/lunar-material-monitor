@@ -32,10 +32,14 @@ def init_supabase_client():
     try:
         url = st.secrets.get("supabase_url")
         key = st.secrets.get("supabase_key")
-        if url and key:
-            return supabase_io.init_supabase(url, key)
+        if not url or not key:
+            log.error(f"Supabase secrets missing: url={bool(url)}, key={bool(key)}")
+            return None
+        client = supabase_io.init_supabase(url, key)
+        log.info("✓ Supabase initialized successfully")
+        return client
     except Exception as e:
-        log.warning(f"Supabase initialization failed: {e}")
+        log.error(f"Supabase initialization failed: {e}", exc_info=True)
     return None
 
 SUPABASE_CLIENT = init_supabase_client()
