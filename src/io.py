@@ -38,11 +38,11 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 # less than what you read off the sheet:
 #   bom_stitched 4403 | bom_flat (deprecated) | stitch_list 19 | onhand 4936 | onorder 3063
 EXPECTED_ROWS = {
-    "bom_stitched.csv": 4401,
+    "bom_stitched.csv": 4402,
     "bom_flat.csv": 3619,
     "stitch_list.csv": 18,
-    "onhand.csv": 4934,
-    "onorder.csv": 3061,
+    "onhand.csv": 4935,
+    "onorder.csv": 3062,
 }
 
 # Columns that must load as str, by file.
