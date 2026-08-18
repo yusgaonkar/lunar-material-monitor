@@ -31,18 +31,18 @@ log = logging.getLogger(__name__)
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 
-# DATA ROWS, excluding the header. Verified against the exports of 2026-08-13.
+# DATA ROWS, excluding the header. Verified against the exports of 2026-08-18.
 # Re-check these every time the snapshots are refreshed.
 #
 # Sheets shows a last-row number that INCLUDES the header, so these are each one
 # less than what you read off the sheet:
-#   bom_stitched 4399 | bom_flat 3620 | stitch_list 19 | onhand 4771 | onorder 6076
+#   bom_stitched 4403 | bom_flat (deprecated) | stitch_list 19 | onhand 4936 | onorder 3063
 EXPECTED_ROWS = {
-    "bom_stitched.csv": 4398,
+    "bom_stitched.csv": 4401,
     "bom_flat.csv": 3619,
     "stitch_list.csv": 18,
-    "onhand.csv": 4770,
-    "onorder.csv": 6075,
+    "onhand.csv": 4934,
+    "onorder.csv": 3061,
 }
 
 # Columns that must load as str, by file.
