@@ -299,17 +299,13 @@ def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
 # --- ASN adjustment ---
 @st.cache_data(ttl=3600)
 def load_asn_adjustments():
-    """Load and process ASN data (8/1-8/12, strictly before snapshot date 8/13)."""
+    """Load and process ASN data (8/1-8/18, from unified ASN file)."""
     try:
-        sienna = asn_processor.process_asn_file(
-            "data/Sienna ASN-data-2026-08-17 13_24_29.csv",
-            "2026-08-01", "2026-08-12", cm='sienna'
+        asn_data = asn_processor.process_asn_file(
+            "data/asn_aug18.csv",
+            "2026-08-01", "2026-08-18", cm='unified'
         )
-        qualitel = asn_processor.process_asn_file(
-            "data/QTL ASN-data-2026-08-17 13_25_13.csv",
-            "2026-08-01", "2026-08-12", cm='qualitel'
-        )
-        return pd.concat([sienna, qualitel], ignore_index=True)
+        return asn_data
     except Exception as e:
         log.warning(f"Could not load ASN data: {e}")
         return pd.DataFrame(columns=['product_lpn', 'asn_qty'])
@@ -392,9 +388,9 @@ def load_and_run():
     # Load and adjust build plan (apply ASN deductions)
     build_plan = lio.load_build_plan()
     asn_data = load_asn_adjustments()
-    # Get snapshot date from config (first run will use cfg from engine output)
-    # For now, assume snapshot is Aug 18, 2026 (hardcoded; will be dynamic after first run)
-    snapshot_date = pd.Timestamp('2026-08-13')
+    # Snapshot date: the date through which ASN data has been received (8/1-8/18)
+    # Demand disaggregation starts from 8/18 onwards (day after last ASN day)
+    snapshot_date = pd.Timestamp('2026-08-18')
     build_plan = apply_asn_to_build_plan(build_plan, asn_data, snapshot_date=snapshot_date)
 
     # Replace qty with qty_adjusted for engine calculations

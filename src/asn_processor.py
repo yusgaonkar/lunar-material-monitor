@@ -7,7 +7,7 @@ import pandas as pd
 from datetime import datetime
 
 
-def process_asn_file(filepath: str, start_date: str, end_date: str, cm: str = 'sienna') -> pd.DataFrame:
+def process_asn_file(filepath: str, start_date: str, end_date: str, cm: str = 'unified') -> pd.DataFrame:
     """
     Process ASN file and aggregate by product.
 
@@ -15,14 +15,19 @@ def process_asn_file(filepath: str, start_date: str, end_date: str, cm: str = 's
         filepath: Path to ASN CSV
         start_date: YYYY-MM-DD format
         end_date: YYYY-MM-DD format
-        cm: 'sienna' or 'qualitel' (schema differs)
+        cm: 'unified' (new format), 'sienna', or 'qualitel' (legacy formats)
 
     Returns:
         DataFrame with columns: product_lpn, asn_qty (aggregated by product)
     """
     df = pd.read_csv(filepath)
 
-    if cm.lower() == 'sienna':
+    if cm.lower() == 'unified':
+        # New unified ASN format (asn_aug18.csv)
+        date_col = 'shipped_date'
+        part_col = 'customer_part_number'
+        qty_col = 'quantity'
+    elif cm.lower() == 'sienna':
         date_col = 'shipped_date'
         part_col = 'customer_part_number'
         qty_col = 'quantity'
