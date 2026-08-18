@@ -90,8 +90,9 @@ def check_password():
 
     return False
 
-if not check_password():
-    st.stop()  # Do not continue if password is not correct
+# Password protection disabled temporarily for testing
+# if not check_password():
+#     st.stop()  # Do not continue if password is not correct
 
 # ============================================================================
 # PERSISTENCE HELPERS
