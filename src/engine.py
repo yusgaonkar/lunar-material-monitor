@@ -178,10 +178,18 @@ def remaining_builds(
         period_start = row.period_start
         month_end = (period_start + pd.offsets.MonthEnd(0)).normalize()
 
-        # For the snapshot month, count working days from snapshot onward
+        # For the snapshot month, count working days from ASN end date (if available) or snapshot onward
         # For other months, count working days from the 1st of the month
         if period_start.month == snapshot.month and period_start.year == snapshot.year:
-            count_start = snapshot
+            # Check if asn_end_date exists; if so, start disaggregation from the day after ASN period
+            if hasattr(row, 'asn_end_date') and pd.notna(row.asn_end_date):
+                asn_end = pd.to_datetime(row.asn_end_date, errors='coerce')
+                if pd.notna(asn_end):
+                    count_start = asn_end
+                else:
+                    count_start = snapshot
+            else:
+                count_start = snapshot
         else:
             count_start = period_start
 

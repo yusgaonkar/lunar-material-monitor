@@ -17,7 +17,7 @@ import pandas as pd
 import numpy as np
 
 from src import io as lio, engine as eng
-from src import supabase_io
+from src import supabase_io, asn_processor
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger(__name__)
@@ -295,13 +295,124 @@ def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
     return buy_parts
 
 
+# --- ASN adjustment ---
+@st.cache_data(ttl=3600)
+def load_asn_adjustments():
+    """Load and process ASN data (8/1-8/12, strictly before snapshot date 8/13)."""
+    try:
+        sienna = asn_processor.process_asn_file(
+            "data/Sienna ASN-data-2026-08-17 13_24_29.csv",
+            "2026-08-01", "2026-08-12", cm='sienna'
+        )
+        qualitel = asn_processor.process_asn_file(
+            "data/QTL ASN-data-2026-08-17 13_25_13.csv",
+            "2026-08-01", "2026-08-12", cm='qualitel'
+        )
+        return pd.concat([sienna, qualitel], ignore_index=True)
+    except Exception as e:
+        log.warning(f"Could not load ASN data: {e}")
+        return pd.DataFrame(columns=['product_lpn', 'asn_qty'])
+
+
+def apply_asn_to_build_plan(build_plan_df: pd.DataFrame, asn_df: pd.DataFrame, bom: pd.DataFrame = None, snapshot_date: pd.Timestamp = None) -> pd.DataFrame:
+    """Apply ASN deductions to first month of build plan.
+
+    - Creates "shipped to date" column for first month
+    - Deducts ASN from first month qty (ASN period is before snapshot_date)
+    - If ASN > first month, overflow carries to second month
+    - Handles component→parent relationships (e.g., 90-06831D ← 10-00522D)
+    - Adds asn_end_date column so remaining_builds() knows where to start disaggregation
+    """
+    result = build_plan_df.copy()
+
+    # Direct merge for products in ASN
+    result = result.merge(asn_df, left_on='product_lpn', right_on='product_lpn', how='left')
+    result['asn_qty'] = result['asn_qty'].fillna(0).astype(int)
+
+    # Find first month dynamically
+    first_month = result['period_start'].min()
+    second_month = result[result['period_start'] > first_month]['period_start'].min()
+
+    # Add asn_end_date: for first month use snapshot_date, for others use period_start
+    # This tells remaining_builds() where to start disaggregation
+    result['asn_end_date'] = None
+    result.loc[result['period_start'] == first_month, 'asn_end_date'] = snapshot_date
+
+    # Handle component-to-parent for 90-06831D ← 10-00522D
+    if not asn_df.empty:
+        for idx, row in result.iterrows():
+            if row['product_lpn'] == '90-06831D' and row['period_start'] == first_month:
+                # Look up 10-00522D ASN (qty 20 per box)
+                comp_asn = asn_df[asn_df['product_lpn'] == '10-00522D']['asn_qty'].sum()
+                if comp_asn > 0:
+                    result.loc[idx, 'asn_qty'] = int(comp_asn / 20)  # Convert units to boxes
+
+    # Apply ASN deductions with overflow to next month
+    result['qty_adjusted'] = result['qty']
+    result['qty_overflow'] = 0  # Track overflow for next month
+
+    for product in result['product_lpn'].unique():
+        prod_data = result[result['product_lpn'] == product].sort_values('period_start')
+
+        # First month: deduct ASN
+        first_idx = prod_data[prod_data['period_start'] == first_month].index
+        if len(first_idx) > 0:
+            idx = first_idx[0]
+            asn = result.loc[idx, 'asn_qty']
+            first_qty = result.loc[idx, 'qty']
+
+            if asn >= first_qty:
+                # ASN exceeds first month: zero out first, overflow to second
+                result.loc[idx, 'qty_adjusted'] = 0
+                result.loc[idx, 'qty_overflow'] = asn - first_qty
+            else:
+                # ASN fits in first month
+                result.loc[idx, 'qty_adjusted'] = first_qty - asn
+
+        # Second month: apply overflow
+        second_idx = prod_data[prod_data['period_start'] == second_month].index
+        if len(second_idx) > 0:
+            idx = second_idx[0]
+            overflow = result.loc[first_idx[0], 'qty_overflow'] if len(first_idx) > 0 else 0
+            result.loc[idx, 'qty_adjusted'] = max(0, result.loc[idx, 'qty'] - overflow)
+
+    return result
+
+
 # --- Load and run ---
 @st.cache_data(show_spinner="Initializing engine...")
 def load_and_run():
-    """Cached: loads data and runs engine once per session."""
+    """Cached: loads data and runs engine once per session.
+
+    Engine uses qty_adjusted (ASN-deducted quantities) for demand calculations.
+    """
     frames = lio.load_all()
-    result = eng.run(frames)
+
+    # Load and adjust build plan (apply ASN deductions)
     build_plan = lio.load_build_plan()
+    asn_data = load_asn_adjustments()
+    # Get snapshot date from config (first run will use cfg from engine output)
+    # For now, assume snapshot is Aug 18, 2026 (hardcoded; will be dynamic after first run)
+    snapshot_date = pd.Timestamp('2026-08-13')
+    build_plan = apply_asn_to_build_plan(build_plan, asn_data, snapshot_date=snapshot_date)
+
+    # Replace qty with qty_adjusted for engine calculations
+    # (engine will use ASN-deducted quantities for demand)
+    build_plan_for_engine = build_plan.copy()
+    build_plan_for_engine['qty'] = build_plan_for_engine['qty_adjusted'].fillna(build_plan_for_engine['qty'])
+    build_plan_for_engine = build_plan_for_engine.drop(columns=['qty_adjusted', 'qty_overflow'], errors='ignore')
+
+    # Debug: verify 90-07675A Aug qty
+    debug_row = build_plan_for_engine[(build_plan_for_engine['product_lpn'] == '90-07675A') &
+                                       (build_plan_for_engine['period_start'] == pd.Timestamp('2026-08-01'))]
+    if len(debug_row) > 0:
+        log.info(f"[ASN DEBUG] 90-07675A Aug qty for engine: {debug_row['qty'].iloc[0]}")
+
+    frames["build_plan.csv"] = build_plan_for_engine
+
+    result = eng.run(frames)
+
+    # Keep full build_plan with both qty and qty_adjusted for display
     bom_stitched = frames["bom_stitched.csv"]
     return result, build_plan, bom_stitched
 
@@ -700,11 +811,23 @@ def get_toplevel_build_plan(bp, products, cm_filt, prod_filt, weeks_cutoff):
         columns={"product": "product_lpn", "display_name": "Product"})
     bp_filt = bp_filt.merge(prod_desc, on="product_lpn", how="left")
 
-    # Pivot: products x months
+    # Pivot: products x months (use adjusted qty which includes ASN deductions)
     bp_filt["period_str"] = bp_filt["period_start"].dt.strftime("%Y-%m")
+    bp_filt["qty_for_display"] = bp_filt["qty_adjusted"].fillna(bp_filt["qty"])
     pivot = bp_filt.pivot_table(
-        index="Product", columns="period_str", values="qty", aggfunc="sum", fill_value=0
+        index="Product", columns="period_str", values="qty_for_display", aggfunc="sum", fill_value=0
     ).astype(int)
+
+    # Add "shipped to date" column for first month if ASN data exists
+    first_month_str = bp_filt["period_str"].min()
+    if first_month_str in pivot.columns and bp_filt["asn_qty"].sum() > 0:
+        asn_by_product = bp_filt[bp_filt["period_str"] == first_month_str].groupby("Product")["asn_qty"].sum().astype(int)
+        shipped_col = asn_by_product.reindex(pivot.index, fill_value=0)
+
+        # Insert "shipped to date" before first month
+        first_col_idx = pivot.columns.get_loc(first_month_str)
+        pivot.insert(first_col_idx, f"{first_month_str[:7]} shipped", shipped_col)
+        pivot.rename(columns={first_month_str: f"{first_month_str[:7]} balance"}, inplace=True)
 
     pivot["Total"] = pivot.sum(axis=1).astype(int)
     pivot = pivot.sort_values("Total", ascending=False)
