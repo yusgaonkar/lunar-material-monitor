@@ -299,13 +299,31 @@ def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
 # --- ASN adjustment ---
 @st.cache_data(ttl=3600)
 def load_asn_adjustments():
-    """Load and process ASN data (8/1-8/18, from unified ASN file)."""
+    """Load and process ASN data from unified, Qualitel, and Sienna shipment files."""
     try:
-        asn_data = asn_processor.process_asn_file(
+        # Load unified ASN (8/1-8/18)
+        asn_unified = asn_processor.process_asn_file(
             "data/asn_aug18.csv",
             "2026-08-01", "2026-08-18", cm='unified'
         )
-        return asn_data
+
+        # Load Qualitel ASN (8/1-8/17)
+        asn_qtl = asn_processor.process_asn_file(
+            "data/asn_qtl_20260817.csv",
+            "2026-08-01", "2026-08-17", cm='qualitel'
+        )
+
+        # Load Sienna actual shipped (from verified shipments file)
+        sienna_ships = pd.read_csv("data/sienna_shipments_20260819.csv")
+        sienna_ships.columns = ['product_lpn', 'asn_qty']
+        # Filter to non-zero shipments
+        sienna_ships = sienna_ships[sienna_ships['asn_qty'] > 0]
+
+        # Combine and deduplicate (sum quantities by product, preferring Sienna actual shipped)
+        asn_combined = pd.concat([asn_unified, asn_qtl, sienna_ships], ignore_index=True)
+        asn_combined = asn_combined.groupby('product_lpn', as_index=False)['asn_qty'].sum()
+
+        return asn_combined
     except Exception as e:
         log.warning(f"Could not load ASN data: {e}")
         return pd.DataFrame(columns=['product_lpn', 'asn_qty'])
