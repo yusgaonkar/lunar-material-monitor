@@ -196,18 +196,29 @@ def remaining_builds(
         # Count working days (Mon-Fri) from count_start to month end
         remaining_working_days = _count_working_days(count_start, month_end)
 
-        # Daily rate = monthly qty / remaining working days
-        daily_rate = row.qty / remaining_working_days if remaining_working_days > 0 else 0
+        # Distribute qty evenly across working days, accounting for remainder
+        # to avoid truncation issues that lose units
+        if remaining_working_days > 0:
+            base_daily = int(row.qty / remaining_working_days)
+            remainder = row.qty - (base_daily * remaining_working_days)
+        else:
+            base_daily = 0
+            remainder = 0
 
         # Allocate to each working day from count_start to month end
+        # First 'remainder' days get base_daily + 1, rest get base_daily
         all_days = pd.date_range(count_start, month_end, freq="D")
+        working_day_count = 0
         for day in all_days:
             if day.weekday() < 5:  # Mon-Fri only
+                # Add the remainder to the first few days to preserve total
+                daily_qty = base_daily + (1 if working_day_count < remainder else 0)
                 daily.append({
                     "product": row.product_lpn,
                     "day": day,
-                    "qty": daily_rate,
+                    "qty": daily_qty,
                 })
+                working_day_count += 1
 
     if daily:
         fwd = pd.DataFrame(daily)
