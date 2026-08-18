@@ -429,7 +429,7 @@ if "computed_excess" not in st.session_state:
 # --- Header ---
 st.title("Lunar Material Monitor")
 st.warning("⚠️ **PILOT / NOT IN PRODUCTION** — Data not yet validated. Use for planning only.")
-st.caption(f"Component runout tracking | Snapshot: {result['snapshot'].date()} | Week 0: {cfg.week0.date()}")
+st.caption(f"Component runout tracking | Snapshot: {result['snapshot'].date()}")
 
 # --- Session state for tab persistence ---
 if "active_tab" not in st.session_state:
