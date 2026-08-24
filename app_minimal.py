@@ -11,6 +11,7 @@ import logging
 import os
 from datetime import datetime
 import json
+import hashlib
 
 import streamlit as st
 import pandas as pd
@@ -111,7 +112,6 @@ def exclude_part(part, reason):
     if SUPABASE_CLIENT:
         try:
             supabase_io.exclude_part(part, reason, OS_USER)
-            st.cache_data.clear()  # Clear caches
             st.success(f"✓ Excluded {part}")
             st.rerun()
         except Exception as e:
@@ -144,8 +144,8 @@ def add_note(part, note_text):
     if SUPABASE_CLIENT:
         try:
             supabase_io.save_note(part, note_text, OS_USER)
-            st.cache_data.clear()  # Clear caches so new note shows up
             st.success("✓ Note added")
+            st.rerun()
         except Exception as e:
             st.error(f"Error adding note: {e}")
     else:
@@ -373,57 +373,82 @@ def apply_asn_to_build_plan(build_plan_df: pd.DataFrame, asn_df: pd.DataFrame, b
     return result
 
 
-# --- Load and run ---
-@st.cache_data(show_spinner="Initializing engine...")
-def load_and_run():
-    """Cached: loads data and runs engine once per session.
+# --- Load and run (split for performance) ---
+@st.cache_data(show_spinner="Loading data...")
+def load_data():
+    """Cached forever: load all CSV files. Rarely changes."""
+    return lio.load_all()
 
-    Engine uses qty_adjusted (ASN-deducted quantities) for demand calculations.
+
+def hash_build_plan(build_plan_df):
+    """Compute a hash of the build plan for cache invalidation.
+
+    Returns a short hash that changes when the build plan changes,
+    enabling run_engine() to re-run only when needed.
     """
-    frames = lio.load_all()
+    if len(build_plan_df) == 0:
+        return "empty"
+    # Hash just the key columns to keep it fast
+    try:
+        key_cols = ['product_lpn', 'qty']
+        hash_val = hashlib.md5(
+            pd.util.hash_pandas_object(build_plan_df[key_cols], index=False).values
+        ).hexdigest()[:8]
+        return hash_val
+    except Exception:
+        return "error"
 
-    # Load and adjust build plan (apply ASN deductions)
-    build_plan = lio.load_build_plan()
-    asn_data = load_asn_adjustments()
-    # Snapshot date: the date through which ASN data has been received (8/1-8/18)
-    # Demand disaggregation starts from 8/18 onwards (day after last ASN day)
-    snapshot_date = pd.Timestamp('2026-08-18')
-    build_plan = apply_asn_to_build_plan(build_plan, asn_data, snapshot_date=snapshot_date)
 
-    # Replace qty with qty_adjusted for engine calculations
-    # (engine will use ASN-deducted quantities for demand)
-    build_plan_for_engine = build_plan.copy()
-    build_plan_for_engine['qty'] = build_plan_for_engine['qty_adjusted'].fillna(build_plan_for_engine['qty'])
-    build_plan_for_engine = build_plan_for_engine.drop(columns=['qty_adjusted', 'qty_overflow'], errors='ignore')
+@st.cache_data(show_spinner="Running engine...")
+def run_engine(frames, build_plan_hash):
+    """Cached by build_plan_hash: run the engine.
 
-    # Debug: verify 90-07675A Aug qty
-    debug_row = build_plan_for_engine[(build_plan_for_engine['product_lpn'] == '90-07675A') &
-                                       (build_plan_for_engine['period_start'] == pd.Timestamp('2026-08-01'))]
-    if len(debug_row) > 0:
-        log.info(f"[ASN DEBUG] 90-07675A Aug qty for engine: {debug_row['qty'].iloc[0]}")
-
-    frames["build_plan.csv"] = build_plan_for_engine
-
+    Only re-runs if build_plan_hash changes (i.e., build plan or ASN changes).
+    The frames dict should already have 'build_plan.csv' populated.
+    """
     result = eng.run(frames)
-
-    # Keep full build_plan with both qty and qty_adjusted for display
-    bom_stitched = frames["bom_stitched.csv"]
-    return result, build_plan, bom_stitched
+    return result
 
 
-result, build_plan, bom_stitched = load_and_run()
+# Load data once
+frames = load_data()
+
+# Load and adjust build plan (apply ASN deductions)
+build_plan = lio.load_build_plan()
+asn_data = load_asn_adjustments()
+# Snapshot date: the date through which ASN data has been received (8/1-8/18)
+# Demand disaggregation starts from 8/18 onwards (day after last ASN day)
+snapshot_date = pd.Timestamp('2026-08-18')
+build_plan = apply_asn_to_build_plan(build_plan, asn_data, snapshot_date=snapshot_date)
+
+# Replace qty with qty_adjusted for engine calculations
+# (engine will use ASN-deducted quantities for demand)
+build_plan_for_engine = build_plan.copy()
+build_plan_for_engine['qty'] = build_plan_for_engine['qty_adjusted'].fillna(build_plan_for_engine['qty'])
+build_plan_for_engine = build_plan_for_engine.drop(columns=['qty_adjusted', 'qty_overflow'], errors='ignore')
+
+# Debug: verify 90-07675A Aug qty
+debug_row = build_plan_for_engine[(build_plan_for_engine['product_lpn'] == '90-07675A') &
+                                   (build_plan_for_engine['period_start'] == pd.Timestamp('2026-08-01'))]
+if len(debug_row) > 0:
+    log.info(f"[ASN DEBUG] 90-07675A Aug qty for engine: {debug_row['qty'].iloc[0]}")
+
+# Compute hash for cache invalidation
+bp_hash = hash_build_plan(build_plan_for_engine)
+
+# Add build plan to frames and run engine
+frames_with_plan = frames.copy()  # Shallow copy of dict
+frames_with_plan["build_plan.csv"] = build_plan_for_engine
+result = run_engine(frames_with_plan, bp_hash)
+
 cfg = result["config"]
 s = result["summary"]
 pab = result["pab"]
 receipts = result["receipts"]
 demand_detail = result["demand_detail"]
-# Lazy-load excess to defer computation until user views that tab
-excess = result.get("excess", pd.DataFrame())  # Empty until accessed
+excess = result.get("excess", pd.DataFrame())
 products = result["products"]
-
-# Session state for lazy-loading expensive tabs
-if "computed_excess" not in st.session_state:
-    st.session_state.computed_excess = False
+bom_stitched = frames["bom_stitched.csv"]
 
 # --- Header ---
 st.title("Lunar Material Monitor")
@@ -600,7 +625,17 @@ def get_pcba_pull_forward_daily(bp, snapshot_date):
     return monthly_agg
 
 
-@st.cache_resource
+@st.cache_data(show_spinner="Processing excess monitor...")
+def process_excess_monitor(excess_df):
+    """Cached: process excess monitor data (only called when Excess Monitor tab is rendered).
+
+    This defers processing of excess data until it's actually needed.
+    """
+    if len(excess_df) == 0:
+        return pd.DataFrame()
+    return excess_df
+
+
 def get_aggregation_function():
     """Return the aggregation function (cached resource)."""
     def aggregate_pab_by_grain(pab_df, grain="Day"):
@@ -1470,11 +1505,14 @@ elif st.session_state.active_tab == "Excess Monitor":
     st.subheader("Parts with Excess Supply Beyond Demand")
     st.caption("Receipts scheduled after the build plan ends for each product")
 
-    if len(excess) == 0:
+    # Lazy-load excess data only when this tab is rendered
+    excess_processed = process_excess_monitor(excess)
+
+    if len(excess_processed) == 0:
         st.info("No excess supply detected.")
     else:
         # Filter excess by CM and products
-        excess_filtered = excess.copy()
+        excess_filtered = excess_processed.copy()
 
         if cm_filter != "All":
             excess_filtered = excess_filtered[excess_filtered["cm"] == cm_filter]
