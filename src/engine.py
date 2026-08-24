@@ -828,29 +828,20 @@ def compute_runout(demand, opening, receipts, cfg: Config):
         (summary["first_shortage_date"] - cfg.snapshot).dt.days)
     summary["weeks_of_cover"] = (summary["days_of_cover"] / 7).round(1)
 
-    # Calculate days_of_supply: on-hand / (total_demand / horizon_days)
-    # This shows how many days of on-hand inventory will last based on demand rate
-    total_demand = grid.groupby(["cm", "part"])["demand"].sum().reset_index()
-    total_demand.columns = ["cm", "part", "total_demand"]
-    summary = summary.merge(total_demand, on=["cm", "part"], how="left")
+    # Calculate days_of_supply: on-hand only (no on-order)
+    # PAB with only opening inventory, no receipts
+    grid_onhand_only = grid[["cm", "part", "period", "demand", "opening"]].copy()
+    grid_onhand_only["pab"] = grid_onhand_only.groupby(["cm", "part"])["opening"].transform("first") - grid_onhand_only.groupby(["cm", "part"])["demand"].cumsum()
 
-    # Calculate average daily demand based on total demand / days in planning horizon
-    # Use the grid's actual period range to calculate horizon days
-    if len(grid) > 0:
-        min_period = grid["period"].min()
-        max_period = grid["period"].max()
-        horizon_days = (max_period - min_period).days
-    else:
-        horizon_days = 1
+    # Find first period where PAB < 0 for each CM/part
+    short_onhand = grid_onhand_only[grid_onhand_only["pab"] < 0]
+    first_short_onhand = (short_onhand.groupby(["cm", "part"], as_index=False)["period"].min()
+                          .rename(columns={"period": "first_short_onhand_date"}))
 
-    if horizon_days <= 0:
-        horizon_days = 1
-
-    summary["avg_daily_demand"] = summary["total_demand"] / horizon_days
+    summary = summary.merge(first_short_onhand, on=["cm", "part"], how="left")
     summary["days_of_supply"] = (
-        (summary["cm_available"] / summary["avg_daily_demand"].replace(0, 1e-10))
-        .fillna(0).clip(lower=0, upper=9999).round(1)
-    )
+        (summary["first_short_onhand_date"] - cfg.snapshot).dt.days
+    ).fillna(999).clip(lower=0, upper=999).round(1)
 
     return grid, summary
 
