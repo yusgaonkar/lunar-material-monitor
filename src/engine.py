@@ -828,13 +828,21 @@ def compute_runout(demand, opening, receipts, cfg: Config):
         (summary["first_shortage_date"] - cfg.snapshot).dt.days)
     summary["weeks_of_cover"] = (summary["days_of_cover"] / 7).round(1)
 
-    # Calculate days_of_supply: on-hand / average daily demand
-    daily_demand = grid.groupby(["cm", "part"])["demand"].mean().reset_index()
-    daily_demand.columns = ["cm", "part", "avg_daily_demand"]
-    summary = summary.merge(daily_demand, on=["cm", "part"], how="left")
+    # Calculate days_of_supply: on-hand / (total_demand / horizon_days)
+    # This shows how many days of on-hand inventory will last based on demand rate
+    total_demand = grid.groupby(["cm", "part"])["demand"].sum().reset_index()
+    total_demand.columns = ["cm", "part", "total_demand"]
+    summary = summary.merge(total_demand, on=["cm", "part"], how="left")
+
+    # Calculate average daily demand based on total demand / days in planning horizon
+    horizon_days = (cfg.week0 + pd.Timedelta(days=cfg.horizon_days) - cfg.snapshot).days
+    if horizon_days <= 0:
+        horizon_days = 1
+
+    summary["avg_daily_demand"] = summary["total_demand"] / horizon_days
     summary["days_of_supply"] = (
-        (summary["cm_available"] / summary["avg_daily_demand"])
-        .fillna(0).clip(lower=0).round(1)
+        (summary["cm_available"] / summary["avg_daily_demand"].replace(0, 1e-10))
+        .fillna(0).clip(lower=0, upper=9999).round(1)
     )
 
     return grid, summary
