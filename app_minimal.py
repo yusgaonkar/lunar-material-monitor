@@ -575,6 +575,11 @@ filtered = filtered[
 ]
 filtered = filtered.drop(columns=["demand_in_window"])
 
+# DEBUG: Check days_of_supply calculation
+debug_part = filtered[filtered["part"] == "10-000099"]
+if len(debug_part) > 0:
+    st.write(f"DEBUG 10-000099: cm_available={debug_part['cm_available'].values[0]}, days_of_supply={debug_part['days_of_supply'].values[0]}, avg_daily_demand={debug_part.get('avg_daily_demand', {}).values[0] if 'avg_daily_demand' in debug_part.columns else 'N/A'}")
+
 # Apply sort based on user selection
 if sort_by == "Days of Supply":
     filtered = filtered.sort_values("days_of_supply", ascending=True, na_position="last")
