@@ -491,6 +491,13 @@ with col_left:
         step=1
     )
 
+# Sort option
+sort_by = st.selectbox(
+    "Sort by",
+    ["First Shortage Date", "Days of Supply"],
+    key="sort_by"
+)
+
 # RIGHT COLUMN: Stacked checkboxes on extreme right
 with col_right:
     st.write("")  # Spacing for alignment
@@ -567,7 +574,12 @@ filtered = filtered[
     (filtered["cm_available"] < filtered["demand_in_window"])
 ]
 filtered = filtered.drop(columns=["demand_in_window"])
-filtered = filtered.sort_values("first_shortage_date", na_position="last")
+
+# Apply sort based on user selection
+if sort_by == "Days of Supply":
+    filtered = filtered.sort_values("days_of_supply", ascending=True, na_position="last")
+else:  # First Shortage Date
+    filtered = filtered.sort_values("first_shortage_date", na_position="last")
 
 # Add note if using allocations
 if include_allocations:
@@ -1069,6 +1081,7 @@ if st.session_state.active_tab == "Shortage Report":
                 "Raw Inventory": int(row.get("raw_inventory", 0)),
                 "WIP Inventory": int(row.get("wip_inventory", 0)),
                 "Total Inventory": int(row.get("raw_inventory", 0) + row.get("wip_inventory", 0)),
+                "Days of Supply": row.get("days_of_supply", 0),
                 "Shortage Qty": int(row["shortage_qty"]) if pd.notna(row["shortage_qty"]) else 0,
                 "Incoming Supply": supply_str,
             }
@@ -1138,7 +1151,7 @@ if st.session_state.active_tab == "Shortage Report":
 
         # Prepare data for clean dataframe display
         col_order = ["CM", "Part", "Description", "Products", "Raw Inventory", "WIP Inventory",
-                     "Total Inventory", "Build Coverage", "First Short Date", "Shortage Type",
+                     "Total Inventory", "Days of Supply", "Build Coverage", "First Short Date", "Shortage Type",
                      "Incoming Supply"]
         if include_allocations and "Recommended" in report_df.columns:
             col_order.append("Recommended")

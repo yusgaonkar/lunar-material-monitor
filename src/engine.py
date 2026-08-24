@@ -827,6 +827,16 @@ def compute_runout(demand, opening, receipts, cfg: Config):
     summary["days_of_cover"] = (
         (summary["first_shortage_date"] - cfg.snapshot).dt.days)
     summary["weeks_of_cover"] = (summary["days_of_cover"] / 7).round(1)
+
+    # Calculate days_of_supply: on-hand / average daily demand
+    daily_demand = grid.groupby(["cm", "part"])["demand"].mean().reset_index()
+    daily_demand.columns = ["cm", "part", "avg_daily_demand"]
+    summary = summary.merge(daily_demand, on=["cm", "part"], how="left")
+    summary["days_of_supply"] = (
+        (summary["cm_available"] / summary["avg_daily_demand"])
+        .fillna(0).clip(lower=0).round(1)
+    )
+
     return grid, summary
 
 
