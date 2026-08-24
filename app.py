@@ -10,6 +10,9 @@ if "authenticated" not in st.session_state:
 
 if not st.session_state.authenticated:
     st.title("Lunar Material Planning")
+    # DEBUG
+    secret_val = st.secrets.get("password")
+    st.write(f"DEBUG: password from secrets = {repr(secret_val)}")
     col1, col2 = st.columns([1, 2])
     with col1:
         pwd = st.text_input("Password", type="password", key="pwd_input")
