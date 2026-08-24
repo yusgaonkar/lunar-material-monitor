@@ -575,15 +575,6 @@ filtered = filtered[
 ]
 filtered = filtered.drop(columns=["demand_in_window"])
 
-# DEBUG: Check days_of_supply calculation
-st.write(f"DEBUG: 'days_of_supply' in summary? {'days_of_supply' in s.columns}")
-st.write(f"DEBUG: 'days_of_supply' in filtered? {'days_of_supply' in filtered.columns}")
-if "days_of_supply" in filtered.columns:
-    debug_part = filtered[filtered["part"] == "10-000099"]
-    if len(debug_part) > 0:
-        st.write(f"DEBUG 10-000099: days_of_supply={debug_part['days_of_supply'].iloc[0]}, first_short_onhand_date={debug_part.get('first_short_onhand_date', 'N/A')}")
-    else:
-        st.write(f"DEBUG: 10-000099 not in filtered dataframe")
 
 # Apply sort based on user selection
 if sort_by == "Days of Supply":
