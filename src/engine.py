@@ -864,6 +864,11 @@ def compute_runout(demand, opening, receipts, cfg: Config):
             # Days from snapshot to exhaustion date
             exhaustion_date = exhausted.iloc[0]["period"]
             days = (exhaustion_date - cfg.snapshot).days
+
+            # Debug: log 10-000099
+            if part == "10-000099":
+                log.info(f"DOS DEBUG {part}@{cm}: on_hand={on_hand}, exhaustion_date={exhaustion_date}, snapshot={cfg.snapshot}, days={days}")
+
             summary.loc[idx, "days_of_supply"] = max(0, days)
 
     return grid, summary
