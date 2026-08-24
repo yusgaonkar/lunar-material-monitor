@@ -835,7 +835,14 @@ def compute_runout(demand, opening, receipts, cfg: Config):
     summary = summary.merge(total_demand, on=["cm", "part"], how="left")
 
     # Calculate average daily demand based on total demand / days in planning horizon
-    horizon_days = (cfg.week0 + pd.Timedelta(days=cfg.horizon_days) - cfg.snapshot).days
+    # Use the grid's actual period range to calculate horizon days
+    if len(grid) > 0:
+        min_period = grid["period"].min()
+        max_period = grid["period"].max()
+        horizon_days = (max_period - min_period).days
+    else:
+        horizon_days = 1
+
     if horizon_days <= 0:
         horizon_days = 1
 
