@@ -4,30 +4,54 @@ import streamlit as st
 
 st.set_page_config(page_title="Lunar Material Planning", layout="wide")
 
-# Password authentication
+# Initialize session state
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
+# Check if we have the required password in secrets
+try:
+    REQUIRED_PASSWORD = st.secrets.get("password")
+except Exception as e:
+    st.error(f"Error loading secrets: {e}")
+    REQUIRED_PASSWORD = None
+
+# Authentication gate
 if not st.session_state.authenticated:
     st.title("Lunar Material Planning")
-    # DEBUG
-    secret_val = st.secrets.get("password")
-    st.write(f"DEBUG: password from secrets = {repr(secret_val)}")
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        pwd = st.text_input("Password", type="password", key="pwd_input")
-        if st.button("Login"):
-            if pwd == st.secrets.get("password", ""):
-                st.session_state.authenticated = True
-                st.rerun()
-            else:
-                st.error("Invalid password")
+
+    # Show debug info
+    if REQUIRED_PASSWORD:
+        st.info(f"✓ Password loaded from secrets")
+    else:
+        st.error("✗ No password found in secrets!")
+
+    # Login form
+    st.subheader("Login Required")
+    password_input = st.text_input(
+        "Enter password:",
+        type="password",
+        placeholder="Enter the app password"
+    )
+
+    if st.button("Login", type="primary"):
+        if REQUIRED_PASSWORD is None:
+            st.error("No password configured. Contact admin.")
+        elif password_input == REQUIRED_PASSWORD:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("❌ Incorrect password. Try again.")
+
     st.stop()
 
-# Logged in — show the app
+# ============ REST OF APP (only shown if authenticated) ============
 st.title("Lunar Material Planning")
-if st.button("Logout", key="logout_btn"):
-    st.session_state.authenticated = False
-    st.rerun()
+
+# Logout button
+col1, col2 = st.columns([10, 1])
+with col2:
+    if st.button("🚪 Logout"):
+        st.session_state.authenticated = False
+        st.rerun()
 
 st.info("Not built yet. See BUILD_PROMPTS.md, Prompt 5.")
