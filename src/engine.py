@@ -829,47 +829,41 @@ def compute_runout(demand, opening, receipts, cfg: Config):
     summary["weeks_of_cover"] = (summary["days_of_cover"] / 7).round(1)
 
     # Calculate days_of_supply: on-hand only, no on-order
-    # For each part at each CM, find how many days on-hand lasts based on daily demand
-    summary["days_of_supply"] = 999.0  # Default: infinite supply
+    # Simple: find first day when cumulative demand >= on_hand
+    summary["days_of_supply"] = 999.0
 
     for idx, row in summary.iterrows():
         cm = row["cm"]
         part = row["part"]
-        on_hand = row["cm_available"]
+        on_hand = float(row["cm_available"])
 
-        # Handle zero on-hand
         if on_hand <= 0:
             summary.loc[idx, "days_of_supply"] = 0.0
             continue
 
-        # Get demand for this part at this CM, from snapshot onwards
-        part_demand = grid[(grid["cm"] == cm) & (grid["part"] == part) & (grid["period"] >= cfg.snapshot)].copy()
+        # Get all demand for this part at this CM, from snapshot onwards, sorted by period
+        part_grid = grid[(grid["cm"] == cm) & (grid["part"] == part) & (grid["period"] >= cfg.snapshot)].copy()
+        part_grid = part_grid.sort_values("period").reset_index(drop=True)
 
-        if len(part_demand) == 0:
-            # No demand → infinite supply
+        if len(part_grid) == 0:
             summary.loc[idx, "days_of_supply"] = 999.0
             continue
 
-        # Calculate cumulative demand from snapshot
-        part_demand = part_demand.sort_values("period").reset_index(drop=True)
-        part_demand["cumsum_demand"] = part_demand["demand"].cumsum()
+        # Calculate cumsum
+        part_grid["cumsum"] = part_grid["demand"].cumsum()
 
-        # Find first date where cumsum >= on_hand
-        exhausted = part_demand[part_demand["cumsum_demand"] >= on_hand]
+        # Find when cumsum >= on_hand
+        exhausted_idx = (part_grid["cumsum"] >= on_hand).idxmax()  # First True index, or 0 if all False
 
-        if len(exhausted) == 0:
-            # On-hand never runs out
-            summary.loc[idx, "days_of_supply"] = 999.0
+        if part_grid.loc[exhausted_idx, "cumsum"] < on_hand:
+            # Never exhausted
+            dos = 999.0
         else:
-            # Days from snapshot to exhaustion date
-            exhaustion_date = exhausted.iloc[0]["period"]
-            days = (exhaustion_date - cfg.snapshot).days
+            # Days to exhaustion
+            exhaustion_period = part_grid.loc[exhausted_idx, "period"]
+            dos = max(0, (exhaustion_period - cfg.snapshot).days)
 
-            # Debug: log 10-000099
-            if part == "10-000099":
-                log.info(f"DOS DEBUG {part}@{cm}: on_hand={on_hand}, exhaustion_date={exhaustion_date}, snapshot={cfg.snapshot}, days={days}")
-
-            summary.loc[idx, "days_of_supply"] = max(0, days)
+        summary.loc[idx, "days_of_supply"] = dos
 
     return grid, summary
 
