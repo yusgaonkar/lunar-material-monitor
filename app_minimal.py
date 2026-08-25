@@ -491,13 +491,6 @@ with col_left:
         step=1
     )
 
-# Sort option
-sort_by = st.selectbox(
-    "Sort by",
-    ["First Shortage Date", "Days of Supply"],
-    key="sort_by"
-)
-
 # RIGHT COLUMN: Stacked checkboxes on extreme right
 with col_right:
     st.write("")  # Spacing for alignment
@@ -576,11 +569,8 @@ filtered = filtered[
 filtered = filtered.drop(columns=["demand_in_window"])
 
 
-# Apply sort based on user selection
-if sort_by == "Days of Supply":
-    filtered = filtered.sort_values("days_of_supply", ascending=True, na_position="last")
-else:  # First Shortage Date
-    filtered = filtered.sort_values("first_shortage_date", na_position="last")
+# Sort by Days of Supply (ascending - lowest first = most urgent)
+filtered = filtered.sort_values("days_of_supply", ascending=True, na_position="last")
 
 # Add note if using allocations
 if include_allocations:
