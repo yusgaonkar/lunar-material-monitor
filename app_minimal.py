@@ -1072,7 +1072,7 @@ if st.session_state.active_tab == "Shortage Report":
                 "Raw Inventory": int(row.get("raw_inventory", 0)),
                 "WIP Inventory": int(row.get("wip_inventory", 0)),
                 "Total Inventory": int(row.get("raw_inventory", 0) + row.get("wip_inventory", 0)),
-                "Days of Supply": row.get("days_of_supply", 0),
+                "Days of Supply": int(row.get("days_of_supply", 0)),
                 "Shortage Qty": int(row["shortage_qty"]) if pd.notna(row["shortage_qty"]) else 0,
                 "Incoming Supply": supply_str,
             }
