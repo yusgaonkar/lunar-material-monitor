@@ -569,8 +569,12 @@ filtered = filtered[
 filtered = filtered.drop(columns=["demand_in_window"])
 
 
-# Sort by Days of Supply (ascending - lowest first = most urgent)
-filtered = filtered.sort_values("days_of_supply", ascending=True, na_position="last")
+# Sort by DOS (FATP) (ascending - lowest first = most urgent)
+# Use dos_fatp if available, else fall back to old days_of_supply column
+if "dos_fatp" in filtered.columns:
+    filtered = filtered.sort_values("dos_fatp", ascending=True, na_position="last")
+elif "days_of_supply" in filtered.columns:
+    filtered = filtered.sort_values("days_of_supply", ascending=True, na_position="last")
 
 # Add note if using allocations
 if include_allocations:
@@ -1061,6 +1065,11 @@ if st.session_state.active_tab == "Shortage Report":
             desc = row["description"] if pd.notna(row["description"]) else "—"
             desc = str(desc)[:40] if desc != "—" else "—"
 
+            # Get runout dates for color-coding incoming supply
+            runout_date_fatp = row.get("runout_date_fatp")
+            runout_date_pcba = row.get("runout_date_pcba_kitting")
+            runout_date_to_use = runout_date_pcba if pd.notna(runout_date_pcba) else runout_date_fatp
+
             report_item = {
                 "CM": cm,
                 "Part": part,
@@ -1068,13 +1077,16 @@ if st.session_state.active_tab == "Shortage Report":
                 "Products": products_str,
                 "Build Coverage": int(row["blocks_buildable"]),
                 "First Short Date": row["first_shortage_date"].strftime("%Y-%m-%d") if pd.notna(row["first_shortage_date"]) else "—",
-                "Shortage Type": row.get("shortage_type", "—"),
+                "DOS (FATP)": int(row.get("dos_fatp", 999)) if (pd.notna(row.get("dos_fatp")) and row.get("dos_fatp", 999) < 999) else "∞",
+                "DOS (PCBA Kitting)": int(row.get("dos_pcba_kitting", 999)) if (pd.notna(row.get("dos_pcba_kitting")) and row.get("dos_pcba_kitting", 999) < 999) else "∞",
+                "Runout Date (FATP)": row.get("runout_date_fatp").strftime("%Y-%m-%d") if pd.notna(row.get("runout_date_fatp")) else "—",
+                "Runout Date (PCBA Kitting)": row.get("runout_date_pcba_kitting").strftime("%Y-%m-%d") if pd.notna(row.get("runout_date_pcba_kitting")) else "—",
                 "Raw Inventory": int(row.get("raw_inventory", 0)),
                 "WIP Inventory": int(row.get("wip_inventory", 0)),
                 "Total Inventory": int(row.get("raw_inventory", 0) + row.get("wip_inventory", 0)),
-                "Days of Supply": int(row.get("days_of_supply", 0)),
                 "Shortage Qty": int(row["shortage_qty"]) if pd.notna(row["shortage_qty"]) else 0,
                 "Incoming Supply": supply_str,
+                "_runout_date_for_coloring": runout_date_to_use,
             }
 
             # Add allocation recommendation if toggle is on
@@ -1109,6 +1121,53 @@ if st.session_state.active_tab == "Shortage Report":
 
         report_df["Notes"] = report_df["Part"].apply(get_notes_preview)
 
+        # Color-code Incoming Supply based on runout date
+        def get_supply_color(row):
+            """Color-code incoming supply: GREEN if solves, ORANGE if timing tight, RED otherwise.
+
+            Logic:
+            - GREEN: Supply arrives >1 week before runout (solves easily)
+            - ORANGE: Supply arrives within 1 week before runout (solves but tight)
+            - RED: Supply arrives at/after runout OR no supply (doesn't solve or too late)
+            """
+            supply_str = row["Incoming Supply"]
+            runout_date = row.get("_runout_date_for_coloring")
+
+            # Parse incoming supply to get earliest delivery date
+            if supply_str == "—" or pd.isna(supply_str):
+                return "background-color: #cc0000; color: white; font-weight: bold"  # RED: no incoming supply
+
+            # Check for [Past Due] marker
+            if "[Past Due]" in str(supply_str):
+                return "background-color: #cc0000; color: white; font-weight: bold"  # RED: past due
+
+            # Extract first date from supply string (format: "qty on YYYY-MM-DD")
+            try:
+                import re
+                dates = re.findall(r'\d{4}-\d{2}-\d{2}', str(supply_str))
+                if dates and pd.notna(runout_date):
+                    earliest_supply = pd.to_datetime(dates[0])
+                    days_diff = (earliest_supply - runout_date).days
+
+                    # days_diff < 0: supply before runout (good)
+                    # days_diff >= 0: supply at/after runout (bad)
+                    if days_diff < -7:
+                        # Supply arrives >1 week before runout → solves easily
+                        return "background-color: #006600; color: white; font-weight: bold"  # GREEN
+                    elif days_diff < 0:
+                        # Supply arrives within 1 week before runout → solves but tight
+                        return "background-color: #ff9900; color: black; font-weight: bold"  # ORANGE
+                    else:
+                        # Supply arrives at or after runout → doesn't solve
+                        return "background-color: #cc0000; color: white; font-weight: bold"  # RED
+            except Exception:
+                pass
+
+            return ""  # No coloring if parsing fails
+
+        # Store color info for later styling
+        report_df["_supply_color"] = report_df.apply(get_supply_color, axis=1)
+
         # Quick Actions section (between title and table)
         st.subheader("Quick Actions")
         action_cols = st.columns([3, 1, 1, 1, 1])
@@ -1142,8 +1201,9 @@ if st.session_state.active_tab == "Shortage Report":
 
         # Prepare data for clean dataframe display
         col_order = ["CM", "Part", "Description", "Products", "Raw Inventory", "WIP Inventory",
-                     "Total Inventory", "Days of Supply", "Build Coverage", "First Short Date", "Shortage Type",
-                     "Incoming Supply"]
+                     "Total Inventory", "DOS (FATP)", "DOS (PCBA Kitting)",
+                     "Runout Date (FATP)", "Runout Date (PCBA Kitting)",
+                     "Build Coverage", "First Short Date", "Incoming Supply"]
         if include_allocations and "Recommended" in report_df.columns:
             col_order.append("Recommended")
 
@@ -1165,16 +1225,25 @@ if st.session_state.active_tab == "Shortage Report":
 
         # Reorder: add Notes and Watched at the end
         col_order.extend(["Notes", "Watched"])
-        report_df_display = report_df[[c for c in col_order if c in report_df.columns]].copy()
+        # Filter to only display columns (exclude helper columns starting with _)
+        display_cols = [c for c in col_order if c in report_df.columns and not c.startswith("_")]
+        report_df_display = report_df[display_cols].copy()
 
-        # Style: highlight Incoming Supply cells red if they contain [Past Due]
-        def highlight_past_due(s):
-            """Highlight Incoming Supply column red if it contains [Past Due]."""
-            if s.name == "Incoming Supply":
-                return ["background-color: #cc0000; color: white; font-weight: bold;" if "[Past Due]" in str(v) else "" for v in s]
-            return [""] * len(s)
+        # Style: color-code Incoming Supply based on runout date
+        def highlight_incoming_supply(row):
+            """Highlight Incoming Supply column based on runout alignment."""
+            colors = [""] * len(row)
+            for i, col in enumerate(row.index):
+                if col == "Incoming Supply":
+                    # Get the color from _supply_color column (or empty if not in display cols)
+                    part_val = row.get("Part")
+                    # Find matching row in report_df to get color
+                    matching = report_df[report_df["Part"] == part_val]
+                    if len(matching) > 0:
+                        colors[i] = matching["_supply_color"].iloc[0]
+            return colors
 
-        styled_df = report_df_display.style.apply(highlight_past_due, axis=0)
+        styled_df = report_df_display.style.apply(highlight_incoming_supply, axis=1)
 
         # Display clean dataframe with styling
         st.dataframe(styled_df, use_container_width=True, height=500)
