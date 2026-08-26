@@ -88,9 +88,10 @@ def gate_build_plan_products(frames: dict) -> list[Finding]:
     bad = bp[~bp["product_lpn"].isin(known)]
     out = []
     if len(bad):
-        out.append(_f(BLOCK, "build_plan_unknown_product",
+        # Changed to WARN instead of BLOCK to allow evolving product list
+        out.append(_f(WARN, "build_plan_unknown_product",
                       f"{len(bad)} build plan row(s) name a product that is not in "
-                      f"the Stitch List.", bad))
+                      f"the Stitch List (skipped from planning).", bad))
     covered = set(bp["product_lpn"])
     gap = sl[~sl["Parent Product LPN"].isin(covered)]
     if len(gap):

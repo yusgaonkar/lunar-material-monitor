@@ -1412,6 +1412,9 @@ def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
     products = products_full.copy()
     if not cfg.include_celestica:
         products = products[products["cm"] != "Celestica"]
+        # Also exclude Celestica from on-hand inventory to avoid negative WIP from sunset CM
+        oh_filtered = norm["onhand_all"][norm["onhand_all"]["_cm"] != "Celestica"]
+        norm["cm_available"] = nz.cm_available(oh_filtered)
 
     remaining, backlog = remaining_builds(
         frames["build_plan.csv"], frames["plan_to_date.csv"],

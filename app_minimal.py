@@ -298,11 +298,43 @@ def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
 # --- ASN adjustment ---
 @st.cache_data(ttl=3600)
 def load_asn_adjustments():
-    """Load final consolidated ASN (8/1-8/18) - all sources merged and deduplicated."""
+    """Load ASN (8/1-8/25) - Sienna + Qualitel, aggregated by product."""
     try:
-        # Load single consolidated ASN file (Sienna + Qualitel, components already converted)
-        asn_final = pd.read_csv("data/ASN_FINAL.csv")
-        return asn_final
+        # Load Sienna ASN
+        asn_s = pd.read_csv("data/asn_sienna_2026-08-26.csv")
+        asn_s['shipped_date'] = pd.to_datetime(asn_s['shipped_date'], errors='coerce')
+        asn_s = asn_s[(asn_s['shipped_date'].dt.month == 8) & (asn_s['shipped_date'].dt.day <= 25)]
+        asn_s['customer_part_number'] = asn_s['customer_part_number'].str.split(" Rev").str[0].str.strip()
+
+        # Load Qualitel ASN (no header)
+        cols = ['shipment_num', 'shipped_date', 'ship_to', 'packing_slip', 'po_num', 'po_line',
+                'customer_part_number', 'description', 'quantity'] + [f'col{i}' for i in range(13)]
+        asn_q = pd.read_csv("data/asn_qualitel_2026-08-26.csv", header=None, names=cols, dtype=str, keep_default_na=False, na_values=[])
+        asn_q['shipped_date'] = pd.to_datetime(asn_q['shipped_date'], errors='coerce')
+        asn_q = asn_q[(asn_q['shipped_date'].dt.month == 8) & (asn_q['shipped_date'].dt.day <= 25)]
+        asn_q['customer_part_number'] = asn_q['customer_part_number'].str.split("@").str[0].str.strip()
+        asn_q['quantity'] = pd.to_numeric(asn_q['quantity'], errors='coerce').fillna(0)
+
+        # Combine and aggregate
+        asn_all = pd.concat([asn_s[['customer_part_number', 'quantity']], asn_q[['customer_part_number', 'quantity']]], ignore_index=True)
+
+        # Aggregate first
+        asn_agg = asn_all.groupby('customer_part_number')['quantity'].sum().reset_index()
+
+        # Component-to-product mappings
+        # Maximizer: 10-00522D + 10-00522E are individual units, divide by 20 to get box qty (90-06831E = box of 20)
+        max_d = asn_agg[asn_agg['customer_part_number'] == '10-00522D']['quantity'].sum()
+        max_e = asn_agg[asn_agg['customer_part_number'] == '10-00522E']['quantity'].sum()
+        max_total = (max_d + max_e) / 20
+
+        # Remove component rows and add product row
+        asn_agg = asn_agg[~asn_agg['customer_part_number'].isin(['10-00522D', '10-00522E', '90-06831D'])]
+
+        if max_total > 0:
+            asn_agg = pd.concat([asn_agg, pd.DataFrame({'customer_part_number': ['90-06831E'], 'quantity': [max_total]})], ignore_index=True)
+
+        asn_agg.columns = ['product_lpn', 'asn_qty']
+        return asn_agg
     except Exception as e:
         log.warning(f"Could not load ASN data: {e}")
         return pd.DataFrame(columns=['product_lpn', 'asn_qty'])
@@ -416,9 +448,9 @@ frames = load_data()
 # Load and adjust build plan (apply ASN deductions)
 build_plan = lio.load_build_plan()
 asn_data = load_asn_adjustments()
-# Snapshot date: the date through which ASN data has been received (8/1-8/18)
-# Demand disaggregation starts from 8/18 onwards (day after last ASN day)
-snapshot_date = pd.Timestamp('2026-08-18')
+# Snapshot date: the date through which ASN data has been received (8/1-8/26)
+# Demand disaggregation starts from 8/27 onwards (day after last ASN day)
+snapshot_date = pd.Timestamp('2026-08-26')
 build_plan = apply_asn_to_build_plan(build_plan, asn_data, snapshot_date=snapshot_date)
 
 # Replace qty with qty_adjusted for engine calculations
@@ -441,6 +473,9 @@ frames_with_plan = frames.copy()  # Shallow copy of dict
 frames_with_plan["build_plan.csv"] = build_plan_for_engine
 result = run_engine(frames_with_plan, bp_hash)
 
+# Override snapshot to 8/26 (files may have 8/25 internally)
+result['snapshot'] = pd.Timestamp('2026-08-26')
+
 cfg = result["config"]
 s = result["summary"]
 pab = result["pab"]
@@ -449,6 +484,18 @@ demand_detail = result["demand_detail"]
 excess = result.get("excess", pd.DataFrame())
 products = result["products"]
 bom_stitched = frames["bom_stitched.csv"]
+
+# --- Add ASN shipments to build plan for display ---
+asn_all = frames.get("asn_all.csv", pd.DataFrame())
+if len(asn_all) > 0:
+    asn_all["shipped_date"] = pd.to_datetime(asn_all["shipped_date"], errors="coerce")
+    asn_aug = asn_all[(asn_all["shipped_date"].dt.month == 8) & (asn_all["shipped_date"].dt.day <= 25)]
+    asn_by_part = asn_aug.groupby("customer_part_number")["quantity"].sum()
+    build_plan_for_engine["asn_qty"] = build_plan_for_engine["product_lpn"].map(asn_by_part).fillna(0)
+    build_plan_for_engine["qty_adjusted"] = build_plan_for_engine["qty"] - build_plan_for_engine["asn_qty"]
+else:
+    build_plan_for_engine["asn_qty"] = 0
+    build_plan_for_engine["qty_adjusted"] = build_plan_for_engine["qty"]
 
 # --- Header ---
 st.title("Lunar Material Monitor")
