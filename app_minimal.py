@@ -131,7 +131,7 @@ def exclude_part(part, reason):
         log.error(f"Error excluding part: {e}")
         st.error(f"Error: {e}")
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)
 def load_all_notes():
     """Load ALL notes once (cached for 5 min). Returns dict: {part -> [notes]}."""
     notes_by_part = {}
