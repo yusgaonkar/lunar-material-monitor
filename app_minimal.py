@@ -9,6 +9,7 @@ To add password protection when deploying:
 
 import logging
 import os
+import time
 from datetime import datetime
 import json
 import hashlib
@@ -123,12 +124,19 @@ def exclude_part(part, reason):
     """Add a part to exclusions (Supabase or local CSV fallback)."""
     try:
         if SUPABASE_CLIENT:
+            # Re-initialize Supabase in case module was reloaded
+            try:
+                supabase_io.init_supabase(st.secrets["supabase_url"], st.secrets["supabase_key"])
+            except Exception as e:
+                log.warning(f"Could not re-init Supabase: {e}")
+
             log.info(f"[EXCLUDE] Calling Supabase with part={part}")
             result = supabase_io.exclude_part(part, reason, OS_USER)
             log.info(f"[EXCLUDE] Supabase returned: {result}")
-            st.success(f"✓ Excluded {part}")
-            # Clear all caches to refresh
+            st.success(f"✓ Excluded {part} — refreshing report...")
+            # Clear caches including summary/engine to update report immediately
             st.cache_data.delete_all()
+            time.sleep(0.5)  # Brief pause so success message shows
             st.rerun()
         else:
             raise RuntimeError("SUPABASE_CLIENT is None")
@@ -149,8 +157,9 @@ def exclude_part(part, reason):
             else:
                 df = pd.DataFrame([excl_data])
             df.to_csv(EXCLUSIONS_FILE, index=False)
-            st.success(f"✓ Excluded {part} (saved locally)")
+            st.success(f"✓ Excluded {part} (saved locally) — refreshing report...")
             st.cache_data.delete_all()
+            time.sleep(0.5)
             st.rerun()
         except Exception as e2:
             st.error(f"Error excluding part: {e2}")
@@ -194,6 +203,12 @@ def add_note(part, note_text):
     """Add a note to a part (Supabase or local JSONL fallback)."""
     try:
         if SUPABASE_CLIENT:
+            # Re-initialize Supabase in case module was reloaded
+            try:
+                supabase_io.init_supabase(st.secrets["supabase_url"], st.secrets["supabase_key"])
+            except Exception as e:
+                log.warning(f"Could not re-init Supabase: {e}")
+
             log.info(f"[NOTE] Calling Supabase with part={part}")
             result = supabase_io.save_note(part, note_text, OS_USER)
             log.info(f"[NOTE] Supabase returned: {result}")
