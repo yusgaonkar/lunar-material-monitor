@@ -119,10 +119,14 @@ def exclude_part(part, reason):
     """Add a part to exclusions (Supabase or local CSV)."""
     if SUPABASE_CLIENT:
         try:
-            supabase_io.exclude_part(part, reason, OS_USER)
+            log.info(f"[EXCLUDE] Calling Supabase with part={part}")
+            result = supabase_io.exclude_part(part, reason, OS_USER)
+            log.info(f"[EXCLUDE] Supabase returned: {result}")
             st.success(f"✓ Excluded {part}")
+            st.cache_data.clear()
             st.rerun()
         except Exception as e:
+            log.error(f"[EXCLUDE] Exception: {e}", exc_info=True)
             st.error(f"Error excluding part: {e}")
     else:
         # Fallback to local CSV
@@ -170,11 +174,14 @@ def add_note(part, note_text):
     """Add a note to a part via Supabase."""
     if SUPABASE_CLIENT:
         try:
-            supabase_io.save_note(part, note_text, OS_USER)
+            log.info(f"[NOTE] Calling Supabase with part={part}")
+            result = supabase_io.save_note(part, note_text, OS_USER)
+            log.info(f"[NOTE] Supabase returned: {result}")
             st.success("✓ Note added")
             st.cache_data.clear()
             st.rerun()
         except Exception as e:
+            log.error(f"[NOTE] Exception: {e}", exc_info=True)
             st.error(f"Error adding note: {e}")
     else:
         st.error("Supabase not initialized")
