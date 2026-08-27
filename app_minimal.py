@@ -298,7 +298,11 @@ def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
 # --- ASN adjustment ---
 @st.cache_data(ttl=3600)
 def load_asn_adjustments():
-    """Load ASN (8/1-8/25) - Sienna + Qualitel, aggregated by product."""
+    """Load ASN (8/1-8/25) - Sienna + Qualitel, aggregated by product.
+
+    For component-to-product mappings (e.g., Maximizer), counts unique serial numbers
+    instead of summing quantities to avoid double-counting.
+    """
     try:
         # Load Sienna ASN
         asn_s = pd.read_csv("data/asn_sienna_2026-08-26.csv")
@@ -308,30 +312,29 @@ def load_asn_adjustments():
 
         # Load Qualitel ASN (no header)
         cols = ['shipment_num', 'shipped_date', 'ship_to', 'packing_slip', 'po_num', 'po_line',
-                'customer_part_number', 'description', 'quantity'] + [f'col{i}' for i in range(13)]
+                'customer_part_number', 'description', 'quantity', 'serial_number'] + [f'col{i}' for i in range(12)]
         asn_q = pd.read_csv("data/asn_qualitel_2026-08-26.csv", header=None, names=cols, dtype=str, keep_default_na=False, na_values=[])
         asn_q['shipped_date'] = pd.to_datetime(asn_q['shipped_date'], errors='coerce')
         asn_q = asn_q[(asn_q['shipped_date'].dt.month == 8) & (asn_q['shipped_date'].dt.day <= 25)]
         asn_q['customer_part_number'] = asn_q['customer_part_number'].str.split("@").str[0].str.strip()
         asn_q['quantity'] = pd.to_numeric(asn_q['quantity'], errors='coerce').fillna(0)
 
-        # Combine and aggregate
+        # Combine and aggregate by quantity (for regular products)
         asn_all = pd.concat([asn_s[['customer_part_number', 'quantity']], asn_q[['customer_part_number', 'quantity']]], ignore_index=True)
-
-        # Aggregate first
         asn_agg = asn_all.groupby('customer_part_number')['quantity'].sum().reset_index()
 
-        # Component-to-product mappings
-        # Maximizer: 10-00522D + 10-00522E are individual units, divide by 20 to get box qty (90-06831E = box of 20)
-        max_d = asn_agg[asn_agg['customer_part_number'] == '10-00522D']['quantity'].sum()
-        max_e = asn_agg[asn_agg['customer_part_number'] == '10-00522E']['quantity'].sum()
-        max_total = (max_d + max_e) / 20
+        # Component-to-product mappings (use unique serial counts)
+        # Maximizer: 10-00522D + 10-00522E → 90-06831E (box of 20)
+        # Count unique serials instead of summing quantities
+        max_d_serials = asn_s[asn_s['customer_part_number'] == '10-00522D']['serial_number'].nunique()
+        max_e_serials = asn_s[asn_s['customer_part_number'] == '10-00522E']['serial_number'].nunique()
+        max_total = (max_d_serials + max_e_serials) / 20
 
         # Remove component rows and add product row
         asn_agg = asn_agg[~asn_agg['customer_part_number'].isin(['10-00522D', '10-00522E', '90-06831D'])]
 
         if max_total > 0:
-            asn_agg = pd.concat([asn_agg, pd.DataFrame({'customer_part_number': ['90-06831E'], 'quantity': [max_total]})], ignore_index=True)
+            asn_agg = pd.concat([asn_agg, pd.DataFrame({'customer_part_number': ['90-06831E'], 'quantity': [int(max_total)]})], ignore_index=True)
 
         asn_agg.columns = ['product_lpn', 'asn_qty']
         return asn_agg
