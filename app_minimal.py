@@ -102,33 +102,38 @@ def load_exclusions():
     """Load excluded parts from Supabase or local CSV fallback."""
     if SUPABASE_CLIENT:
         try:
-            return supabase_io.get_all_excluded_parts()
+            result = supabase_io.get_all_excluded_parts()
+            log.info(f"Loaded {len(result)} exclusions from Supabase")
+            return result
         except Exception as e:
-            log.warning(f"Error loading exclusions from Supabase: {e}")
+            log.warning(f"Error loading exclusions from Supabase: {e}, trying CSV fallback")
 
     # Fallback to local CSV
     try:
         if os.path.exists(EXCLUSIONS_FILE) and os.path.getsize(EXCLUSIONS_FILE) > 0:
             df = pd.read_csv(EXCLUSIONS_FILE)
-            return set(df["part"].unique()) if "part" in df.columns else set()
+            result = set(df["part"].unique()) if "part" in df.columns else set()
+            log.info(f"Loaded {len(result)} exclusions from local CSV")
+            return result
     except Exception as e:
         log.warning(f"Error loading exclusions from CSV: {e}")
     return set()
 
 def exclude_part(part, reason):
-    """Add a part to exclusions (Supabase or local CSV)."""
-    if SUPABASE_CLIENT:
-        try:
+    """Add a part to exclusions (Supabase or local CSV fallback)."""
+    try:
+        if SUPABASE_CLIENT:
             log.info(f"[EXCLUDE] Calling Supabase with part={part}")
             result = supabase_io.exclude_part(part, reason, OS_USER)
             log.info(f"[EXCLUDE] Supabase returned: {result}")
             st.success(f"✓ Excluded {part}")
-            st.cache_data.clear()
-            st.rerun()
-        except Exception as e:
-            log.error(f"[EXCLUDE] Exception: {e}", exc_info=True)
-            st.error(f"Error excluding part: {e}")
-    else:
+            # Clear exclusions cache so next view loads fresh
+            if 'load_exclusions' in st.cache_data:
+                st.cache_data.clear()
+        else:
+            raise RuntimeError("SUPABASE_CLIENT is None")
+    except Exception as e:
+        log.warning(f"[EXCLUDE] Supabase failed: {e}, falling back to CSV")
         # Fallback to local CSV
         try:
             os.makedirs(os.path.dirname(EXCLUSIONS_FILE) or ".", exist_ok=True)
@@ -144,47 +149,78 @@ def exclude_part(part, reason):
             else:
                 df = pd.DataFrame([excl_data])
             df.to_csv(EXCLUSIONS_FILE, index=False)
-            st.success(f"✓ Excluded {part}")
-            st.cache_data.clear()
-            st.rerun()
-        except Exception as e:
-            st.error(f"Error excluding part: {e}")
+            st.success(f"✓ Excluded {part} (saved locally)")
+            if 'load_exclusions' in st.cache_data:
+                st.cache_data.clear()
+        except Exception as e2:
+            st.error(f"Error excluding part: {e2}")
 
-@st.cache_data(ttl=60)
-def load_notes(part):
-    """Load notes for a part from Supabase (cached for 60 sec)."""
+@st.cache_data(ttl=300)
+def load_all_notes():
+    """Load ALL notes once (cached for 5 min). Returns dict: {part -> [notes]}."""
+    notes_by_part = {}
     if SUPABASE_CLIENT:
         try:
-            notes = supabase_io.load_notes(part)
-            # Convert Supabase format to old format for compatibility
-            formatted_notes = []
-            for note in notes:
-                formatted_notes.append({
-                    "part": part,
-                    "note": note.get("note", ""),
-                    "user": note.get("note_user", "Unknown"),
-                    "timestamp": note.get("timestamp", "")
-                })
-            return formatted_notes
+            response = supabase_io.supabase.table("notes").select("*").execute()
+            for note in response.data:
+                part = note.get("component_lpn")
+                if part:
+                    if part not in notes_by_part:
+                        notes_by_part[part] = []
+                    notes_by_part[part].append(note)
+            log.info(f"Loaded notes for {len(notes_by_part)} parts from Supabase")
+            return notes_by_part
         except Exception as e:
-            log.warning(f"Error loading notes from Supabase: {e}")
-    return []
+            log.warning(f"Error loading all notes: {e}")
+    return {}
+
+def load_notes(part):
+    """Get notes for a part from cache (calls load_all_notes once)."""
+    all_notes = load_all_notes()
+    notes = all_notes.get(part, [])
+
+    # Convert to display format
+    formatted_notes = []
+    for note in notes:
+        formatted_notes.append({
+            "part": part,
+            "note": note.get("note", ""),
+            "user": note.get("note_user", "Unknown"),
+            "timestamp": note.get("timestamp", "")
+        })
+    return formatted_notes
 
 def add_note(part, note_text):
-    """Add a note to a part via Supabase."""
-    if SUPABASE_CLIENT:
-        try:
+    """Add a note to a part (Supabase or local JSONL fallback)."""
+    try:
+        if SUPABASE_CLIENT:
             log.info(f"[NOTE] Calling Supabase with part={part}")
             result = supabase_io.save_note(part, note_text, OS_USER)
             log.info(f"[NOTE] Supabase returned: {result}")
             st.success("✓ Note added")
-            st.cache_data.clear()
-            st.rerun()
-        except Exception as e:
-            log.error(f"[NOTE] Exception: {e}", exc_info=True)
-            st.error(f"Error adding note: {e}")
-    else:
-        st.error("Supabase not initialized")
+            # Clear notes cache so next view loads fresh
+            if 'load_all_notes' in st.cache_data:
+                st.cache_data.clear()
+        else:
+            raise RuntimeError("SUPABASE_CLIENT is None")
+    except Exception as e:
+        log.warning(f"[NOTE] Supabase failed: {e}, falling back to JSONL")
+        # Fallback to local JSONL
+        try:
+            os.makedirs(os.path.dirname(NOTES_FILE) or ".", exist_ok=True)
+            note_obj = {
+                "part": part,
+                "note": note_text,
+                "user": OS_USER,
+                "timestamp": datetime.now().isoformat()
+            }
+            with open(NOTES_FILE, "a") as f:
+                f.write(json.dumps(note_obj) + "\n")
+            st.success("✓ Note added (saved locally)")
+            if 'load_all_notes' in st.cache_data:
+                st.cache_data.clear()
+        except Exception as e2:
+            st.error(f"Error adding note: {e2}")
 
 def load_watchlist():
     """Load watched parts from CSV."""
