@@ -27,26 +27,24 @@ log = logging.getLogger(__name__)
 # Get OS username
 OS_USER = os.getenv("USER") or os.getenv("USERNAME") or "Unknown"
 
-# Initialize Supabase (stored in session state for persistence across reruns)
-def get_supabase_client():
-    """Get or initialize Supabase client (persisted in session state)."""
-    if "supabase_client" not in st.session_state:
-        try:
-            url = st.secrets.get("supabase_url")
-            key = st.secrets.get("supabase_key")
-            if not url or not key:
-                log.error(f"Supabase secrets missing: url={bool(url)}, key={bool(key)}")
-                st.session_state.supabase_client = None
-                return None
-            client = supabase_io.init_supabase(url, key)
-            st.session_state.supabase_client = client
-            log.info("✓ Supabase initialized successfully")
-        except Exception as e:
-            log.error(f"Supabase initialization failed: {e}", exc_info=True)
-            st.session_state.supabase_client = None
-    return st.session_state.supabase_client
+# Initialize Supabase
+@st.cache_resource
+def init_supabase_client():
+    """Initialize Supabase client once per session."""
+    try:
+        url = st.secrets.get("supabase_url")
+        key = st.secrets.get("supabase_key")
+        if not url or not key:
+            log.error(f"Supabase secrets missing: url={bool(url)}, key={bool(key)}")
+            return None
+        client = supabase_io.init_supabase(url, key)
+        log.info("✓ Supabase initialized successfully")
+        return client
+    except Exception as e:
+        log.error(f"Supabase initialization failed: {e}", exc_info=True)
+    return None
 
-SUPABASE_CLIENT = get_supabase_client()
+SUPABASE_CLIENT = init_supabase_client()
 
 # Persistence files
 EXCLUSIONS_FILE = "data/exclusions.csv"
@@ -124,23 +122,14 @@ def load_exclusions():
 
 def exclude_part(part, reason):
     """Add a part to exclusions via Supabase."""
-    if not SUPABASE_CLIENT:
-        st.error("Supabase not available")
-        return
     try:
-        log.info(f"[EXCLUDE] Excluding: {part}")
-        result = supabase_io.exclude_part(part, reason, OS_USER)
-        if result:
-            log.info(f"[EXCLUDE] Excluded successfully")
-            st.success(f"✓ Excluded {part}")
-            st.cache_data.delete_all()
-            st.rerun()
-        else:
-            log.error(f"[EXCLUDE] Exclude returned False")
-            st.error("Failed to exclude part")
+        supabase_io.exclude_part(part, reason, OS_USER)
+        st.success(f"✓ Excluded {part}")
+        st.cache_data.delete_all()
+        st.rerun()
     except Exception as e:
-        log.error(f"[EXCLUDE] Exception: {e}", exc_info=True)
-        st.error(f"Error: {str(e)[:100]}")
+        log.error(f"Error excluding part: {e}")
+        st.error(f"Error: {e}")
 
 @st.cache_data(ttl=300)
 def load_all_notes():
@@ -184,23 +173,14 @@ def load_notes(part):
 
 def add_note(part, note_text):
     """Add a note to a part via Supabase."""
-    if not SUPABASE_CLIENT:
-        st.error("Supabase not available")
-        return
     try:
-        log.info(f"[NOTE] Saving: {part}")
-        result = supabase_io.save_note(part, note_text, OS_USER)
-        if result:
-            log.info(f"[NOTE] Saved successfully")
-            st.success("✓ Note added")
-            st.cache_data.delete_all()
-            st.rerun()
-        else:
-            log.error(f"[NOTE] Save returned False")
-            st.error("Failed to save note")
+        supabase_io.save_note(part, note_text, OS_USER)
+        st.success("✓ Note added")
+        st.cache_data.delete_all()
+        st.rerun()
     except Exception as e:
-        log.error(f"[NOTE] Exception: {e}", exc_info=True)
-        st.error(f"Error: {str(e)[:100]}")
+        log.error(f"Error adding note: {e}")
+        st.error(f"Error: {e}")
 
 def load_watchlist():
     """Load watched parts from CSV."""
