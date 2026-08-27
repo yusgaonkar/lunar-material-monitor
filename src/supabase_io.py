@@ -27,6 +27,16 @@ def init_supabase(url: str, key: str) -> Client:
 def get_supabase() -> Client | None:
     """Get the Supabase client (returns None if not initialized)."""
     global _supabase_client
+    # Always try to initialize if not already done (in case of module reload)
+    if _supabase_client is None:
+        try:
+            import streamlit as st
+            url = st.secrets.get("supabase_url")
+            key = st.secrets.get("supabase_key")
+            if url and key:
+                init_supabase(url, key)
+        except Exception as e:
+            log.warning(f"Could not auto-initialize Supabase: {e}")
     return _supabase_client
 
 
