@@ -99,16 +99,24 @@ if not check_password():
 # ============================================================================
 @st.cache_data(ttl=60)
 def load_exclusions():
-    """Load excluded parts from Supabase (cached for 60 sec)."""
+    """Load excluded parts from Supabase or local CSV fallback."""
     if SUPABASE_CLIENT:
         try:
             return supabase_io.get_all_excluded_parts()
         except Exception as e:
             log.warning(f"Error loading exclusions from Supabase: {e}")
+
+    # Fallback to local CSV
+    try:
+        if os.path.exists(EXCLUSIONS_FILE) and os.path.getsize(EXCLUSIONS_FILE) > 0:
+            df = pd.read_csv(EXCLUSIONS_FILE)
+            return set(df["part"].unique()) if "part" in df.columns else set()
+    except Exception as e:
+        log.warning(f"Error loading exclusions from CSV: {e}")
     return set()
 
 def exclude_part(part, reason):
-    """Add a part to exclusions via Supabase."""
+    """Add a part to exclusions (Supabase or local CSV)."""
     if SUPABASE_CLIENT:
         try:
             supabase_io.exclude_part(part, reason, OS_USER)
@@ -117,7 +125,26 @@ def exclude_part(part, reason):
         except Exception as e:
             st.error(f"Error excluding part: {e}")
     else:
-        st.error("Supabase not initialized")
+        # Fallback to local CSV
+        try:
+            os.makedirs(os.path.dirname(EXCLUSIONS_FILE) or ".", exist_ok=True)
+            excl_data = {
+                "part": part,
+                "reason": reason,
+                "user": OS_USER,
+                "timestamp": datetime.now().isoformat()
+            }
+            if os.path.exists(EXCLUSIONS_FILE) and os.path.getsize(EXCLUSIONS_FILE) > 0:
+                df = pd.read_csv(EXCLUSIONS_FILE)
+                df = pd.concat([df, pd.DataFrame([excl_data])], ignore_index=True)
+            else:
+                df = pd.DataFrame([excl_data])
+            df.to_csv(EXCLUSIONS_FILE, index=False)
+            st.success(f"✓ Excluded {part}")
+            st.cache_data.clear()
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error excluding part: {e}")
 
 @st.cache_data(ttl=60)
 def load_notes(part):
@@ -145,6 +172,7 @@ def add_note(part, note_text):
         try:
             supabase_io.save_note(part, note_text, OS_USER)
             st.success("✓ Note added")
+            st.cache_data.clear()
             st.rerun()
         except Exception as e:
             st.error(f"Error adding note: {e}")
