@@ -1880,8 +1880,10 @@ elif st.session_state.active_tab == "Inventory Depletion":
             # Normalize inventory data for depletion analysis
             onhand = nz.normalize_onhand(onhand_raw)
             onorder = nz.normalize_onorder(onorder_raw)
-            # Run inventory depletion calculation
-            balance_table, summary_table = inventory_depletion.run(
+
+            with st.spinner("Computing inventory depletion (this may take a minute)..."):
+                # Run inventory depletion calculation
+                balance_table, summary_table = inventory_depletion.run(
                 demand_detail=demand_detail,
                 onhand=onhand,
                 onorder=onorder,

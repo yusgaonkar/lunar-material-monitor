@@ -93,34 +93,45 @@ def classify_generation(part: str, bom: pd.DataFrame, stitch_list: pd.DataFrame)
         return "Gen3 active"
 
 
+def _build_cm_inventory_cache(onhand: pd.DataFrame, onorder: pd.DataFrame) -> dict:
+    """Pre-build lookup caches for CM inventory by (part, cm) to avoid per-part filtering."""
+    # On-hand cache
+    oh_cache = {}
+    for (part, cm), group in onhand.groupby(["_lpn", "_cm"]):
+        oh_cache[(part, cm)] = {
+            "qty": max(0.0, group["unrestricted_qty"].sum()),
+            "value": (group["unrestricted_qty"] * group.get("unit_price", 0)).sum(),
+        }
+
+    # On-order cache
+    oo_cache = {}
+    for (part, cm), group in onorder.groupby(["_lpn", "_cm"]):
+        oo_cache[(part, cm)] = {
+            "qty": group["quantity_open"].sum() if "quantity_open" in group.columns else 0.0,
+            "value": (group.get("quantity_open", 0) * group.get("unit_price", 0)).sum(),
+        }
+
+    return {"oh": oh_cache, "oo": oo_cache}
+
+
 def get_cm_inventory_position(
     part: str,
     cm: str,
-    onhand: pd.DataFrame,
-    onorder: pd.DataFrame,
+    oh_cache: dict,
+    oo_cache: dict,
 ) -> dict:
-    """Get CM inventory position: raw on-hand, WIP, on-order.
+    """Get CM inventory position from pre-built caches (fast lookup, no filtering).
 
     Returns:
         dict with keys: raw_oh, wip_oh, total_oh, on_order, value_raw_oh, value_on_order
     """
-    # Filter for this part at this CM
-    oh = onhand[(onhand["_lpn"] == part) & (onhand["_cm"] == cm)]
-    oo = onorder[(onorder["_lpn"] == part) & (onorder["_cm"] == cm)]
+    raw_oh = oh_cache.get((part, cm), {}).get("qty", 0.0)
+    value_raw_oh = oh_cache.get((part, cm), {}).get("value", 0.0)
 
-    # Raw on-hand: sum unrestricted_qty from On Hand tab for this CM
-    raw_oh = oh["unrestricted_qty"].sum() if len(oh) > 0 else 0.0
-    raw_oh = max(0.0, raw_oh)  # Floor at zero
+    on_order = oo_cache.get((part, cm), {}).get("qty", 0.0)
+    value_on_order = oo_cache.get((part, cm), {}).get("value", 0.0)
 
-    # WIP on-hand: extracted from BOM during engine run (not available here; skip for now)
     wip_oh = 0.0  # TODO: pass in from engine if needed
-
-    # On-order: sum quantity_open for this CM
-    on_order = oo["quantity_open"].sum() if len(oo) > 0 else 0.0
-
-    # Values
-    value_raw_oh = (oh["unrestricted_qty"] * oh["unit_price"]).sum() if len(oh) > 0 else 0.0
-    value_on_order = (oo["quantity_open"] * oo["unit_price"]).sum() if len(oo) > 0 else 0.0
 
     return {
         "raw_oh": raw_oh,
@@ -132,30 +143,44 @@ def get_cm_inventory_position(
     }
 
 
+def _build_lunar_inventory_cache(onhand: pd.DataFrame, onorder: pd.DataFrame) -> dict:
+    """Pre-build lookup caches for Lunar inventory by part."""
+    # Lunar on-hand cache
+    lunar_oh = onhand[onhand["_owner"] == "Lunar"]
+    lunar_oh_cache = {}
+    for part, group in lunar_oh.groupby("_lpn"):
+        lunar_oh_cache[part] = {
+            "qty": max(0.0, group["unrestricted_qty"].sum()),
+            "value": (group["unrestricted_qty"] * group.get("unit_price", 0)).sum(),
+        }
+
+    # Lunar on-order cache (POs where po_vendor = Lunar Energy)
+    lunar_oo = onorder[onorder.get("_cm", "").isna() | (onorder.get("_cm", "") == "Lunar")]
+    lunar_oo_cache = {}
+    for part, group in lunar_oo.groupby("_lpn"):
+        lunar_oo_cache[part] = {
+            "qty": group["quantity_open"].sum() if "quantity_open" in group.columns else 0.0,
+            "value": (group.get("quantity_open", 0) * group.get("unit_price", 0)).sum(),
+        }
+
+    return {"oh": lunar_oh_cache, "oo": lunar_oo_cache}
+
+
 def get_lunar_inventory_position(
     part: str,
-    onhand: pd.DataFrame,
-    onorder: pd.DataFrame,
+    lunar_oh_cache: dict,
+    lunar_oo_cache: dict,
 ) -> dict:
-    """Get Lunar-owned inventory position: on-hand, on-order.
+    """Get Lunar-owned inventory position from pre-built caches (fast lookup).
 
     Returns:
         dict with keys: on_hand, on_order, value_on_hand, value_on_order
     """
-    # Filter for Lunar-owned inventory for this part
-    oh = onhand[(onhand["_lpn"] == part) & (onhand["_owner"] == "Lunar")]
-    oo = onorder[(onorder["_lpn"] == part) & (onorder["_cm"].isna() | (onorder["_cm"] == "Lunar"))]
+    on_hand = lunar_oh_cache.get(part, {}).get("qty", 0.0)
+    value_on_hand = lunar_oh_cache.get(part, {}).get("value", 0.0)
 
-    # On-hand: sum unrestricted_qty (excluding committed)
-    on_hand = oh["unrestricted_qty"].sum() if len(oh) > 0 else 0.0
-    on_hand = max(0.0, on_hand)
-
-    # On-order: Lunar POs (po_vendor = Lunar Energy)
-    on_order = oo["quantity_open"].sum() if len(oo) > 0 else 0.0
-
-    # Values
-    value_on_hand = (oh["unrestricted_qty"] * oh["unit_price"]).sum() if len(oh) > 0 else 0.0
-    value_on_order = (oo["quantity_open"] * oo["unit_price"]).sum() if len(oo) > 0 else 0.0
+    on_order = lunar_oo_cache.get(part, {}).get("qty", 0.0)
+    value_on_order = lunar_oo_cache.get(part, {}).get("value", 0.0)
 
     return {
         "on_hand": on_hand,
@@ -192,13 +217,16 @@ def compute_inventory_depletion(
         .reset_index(drop=True)
     )
 
-    # Add generation classification
-    parts_by_cm["generation_status"] = parts_by_cm["part"].apply(
-        lambda p: classify_generation(p, bom, stitch_list)
-    )
+    # Skip generation classification for now (too slow with per-part BOM lookups)
+    # TODO: optimize with vectorized generation lookup
+    parts_by_cm["generation_status"] = "TBD"
 
     # Rename category to item_category
     parts_by_cm = parts_by_cm.rename(columns={"category": "item_category"})
+
+    # Pre-build lookup caches for fast access (avoid per-part filtering)
+    cm_cache = _build_cm_inventory_cache(onhand, onorder)
+    lunar_cache = _build_lunar_inventory_cache(onhand, onorder)
 
     # Add inventory positions (static, not time-varying)
     inventory_positions = []
@@ -206,8 +234,8 @@ def compute_inventory_depletion(
         cm = row["cm"]
         part = row["part"]
 
-        cm_pos = get_cm_inventory_position(part, cm, onhand, onorder)
-        lunar_pos = get_lunar_inventory_position(part, onhand, onorder)
+        cm_pos = get_cm_inventory_position(part, cm, cm_cache["oh"], cm_cache["oo"])
+        lunar_pos = get_lunar_inventory_position(part, lunar_cache["oh"], lunar_cache["oo"])
 
         inventory_positions.append({
             "cm": cm,
