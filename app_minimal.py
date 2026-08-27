@@ -18,7 +18,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-from src import io as lio, engine as eng, inventory_depletion
+from src import io as lio, engine as eng, inventory_depletion, normalize as nz
 from src import supabase_io, asn_processor
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -1868,32 +1868,44 @@ elif st.session_state.active_tab == "Inventory Depletion":
     st.caption("Tracks inventory balance (qty and $) as demand consumes CM inventory first, then Lunar inventory.")
 
     try:
-        # Run inventory depletion calculation
-        balance_table, summary_table = inventory_depletion.run(
-            demand_detail=detail,
-            onhand=onhand_normalized,
-            onorder=onorder_normalized,
-            bom=bom,
-            stitch_list=stitch_list,
-            products=products,
-            cfg=None
-        )
+        # Get inventory and BOM data from frames
+        onhand_raw = frames.get("onhand.csv", pd.DataFrame())
+        onorder_raw = frames.get("onorder.csv", pd.DataFrame())
+        bom = frames.get("bom_stitched.csv", pd.DataFrame())
+        stitch_list = frames.get("stitch_list.csv", pd.DataFrame())
 
-        if len(balance_table) > 0:
-            st.subheader("Inventory Position Summary")
-            st.dataframe(summary_table, use_container_width=True, height=300)
-
-            st.subheader("Balance by Period")
-            # Pivot balance table for easier viewing
-            balance_pivot = balance_table.pivot_table(
-                index=["cm", "part", "description"],
-                columns="period",
-                values="total_balance_qty",
-                aggfunc="first"
-            )
-            st.dataframe(balance_pivot, use_container_width=True, height=400)
+        if len(onhand_raw) == 0 or len(bom) == 0:
+            st.warning("Inventory or BOM data not loaded. Please upload files first.")
         else:
-            st.info("No inventory depletion data available.")
+            # Normalize inventory data for depletion analysis
+            onhand = nz.normalize_onhand(onhand_raw)
+            onorder = nz.normalize_onorder(onorder_raw)
+            # Run inventory depletion calculation
+            balance_table, summary_table = inventory_depletion.run(
+                demand_detail=demand_detail,
+                onhand=onhand,
+                onorder=onorder,
+                bom=bom,
+                stitch_list=stitch_list,
+                products=products,
+                cfg=cfg
+            )
+
+            if len(balance_table) > 0:
+                st.subheader("Inventory Position Summary")
+                st.dataframe(summary_table, use_container_width=True, height=300)
+
+                st.subheader("Balance by Period")
+                # Pivot balance table for easier viewing
+                balance_pivot = balance_table.pivot_table(
+                    index=["cm", "part", "description"],
+                    columns="period",
+                    values="total_balance_qty",
+                    aggfunc="first"
+                )
+                st.dataframe(balance_pivot, use_container_width=True, height=400)
+            else:
+                st.info("No inventory depletion data available.")
     except Exception as e:
         st.error(f"Error computing inventory depletion: {e}")
         log.error(f"Inventory depletion error: {e}", exc_info=True)
