@@ -142,9 +142,13 @@ def exclude_part(part, reason):
 def load_all_notes():
     """Load ALL notes once (cached for 5 min). Returns dict: {part -> [notes]}."""
     notes_by_part = {}
-    if SUPABASE_CLIENT:
-        try:
-            response = supabase_io.supabase.table("notes").select("*").execute()
+    try:
+        # Ensure Supabase is initialized
+        supabase_io.init_supabase(st.secrets["supabase_url"], st.secrets["supabase_key"])
+        supabase = supabase_io.get_supabase()
+
+        if supabase:
+            response = supabase.table("notes").select("*").execute()
             for note in response.data:
                 part = note.get("component_lpn")
                 if part:
@@ -152,10 +156,11 @@ def load_all_notes():
                         notes_by_part[part] = []
                     notes_by_part[part].append(note)
             log.info(f"Loaded notes for {len(notes_by_part)} parts from Supabase")
-            return notes_by_part
-        except Exception as e:
-            log.warning(f"Error loading all notes: {e}")
-    return {}
+        else:
+            log.warning("Supabase client is None after init")
+    except Exception as e:
+        log.warning(f"Error loading all notes: {e}")
+    return notes_by_part
 
 def load_notes(part):
     """Get notes for a part from cache (calls load_all_notes once)."""
