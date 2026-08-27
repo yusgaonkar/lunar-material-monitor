@@ -11,23 +11,23 @@ from supabase import create_client, Client
 
 log = logging.getLogger(__name__)
 
-# Initialize client (credentials come from Streamlit secrets)
-# Using a dict to store persistent state across Streamlit reruns
-_supabase_state = {"client": None}
+# Global client - initialized once per process
+_supabase_client: Client | None = None
 
 
 def init_supabase(url: str, key: str) -> Client:
     """Initialize Supabase client with credentials."""
-    global _supabase_state
-    if _supabase_state["client"] is None:
-        _supabase_state["client"] = create_client(url, key)
-        log.info("Supabase client created")
-    return _supabase_state["client"]
+    global _supabase_client
+    if _supabase_client is None:
+        _supabase_client = create_client(url, key)
+        log.info(f"Supabase client initialized with URL: {url[:30]}...")
+    return _supabase_client
 
 
 def get_supabase() -> Client | None:
     """Get the Supabase client (returns None if not initialized)."""
-    return _supabase_state.get("client")
+    global _supabase_client
+    return _supabase_client
 
 
 def load_exclusions() -> pd.DataFrame:
