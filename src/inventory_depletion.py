@@ -98,18 +98,21 @@ def _build_cm_inventory_cache(onhand: pd.DataFrame, onorder: pd.DataFrame) -> di
     # On-hand cache
     oh_cache = {}
     for (part, cm), group in onhand.groupby(["_lpn", "_cm"]):
-        oh_cache[(part, cm)] = {
-            "qty": max(0.0, group["unrestricted_qty"].sum()),
-            "value": (group["unrestricted_qty"] * group.get("unit_price", 0)).sum(),
-        }
+        qty = max(0.0, group["unrestricted_qty"].sum())
+        value = 0.0
+        if "unit_price" in group.columns:
+            value = (group["unrestricted_qty"] * group["unit_price"]).sum()
+        oh_cache[(part, cm)] = {"qty": qty, "value": value}
 
     # On-order cache
     oo_cache = {}
-    for (part, cm), group in onorder.groupby(["_lpn", "_cm"]):
-        oo_cache[(part, cm)] = {
-            "qty": group["quantity_open"].sum() if "quantity_open" in group.columns else 0.0,
-            "value": (group.get("quantity_open", 0) * group.get("unit_price", 0)).sum(),
-        }
+    if "_lpn" in onorder.columns and "_cm" in onorder.columns and "quantity_open" in onorder.columns:
+        for (part, cm), group in onorder.groupby(["_lpn", "_cm"]):
+            qty = group["quantity_open"].sum()
+            value = 0.0
+            if "unit_price" in group.columns:
+                value = (group["quantity_open"] * group["unit_price"]).sum()
+            oo_cache[(part, cm)] = {"qty": qty, "value": value}
 
     return {"oh": oh_cache, "oo": oo_cache}
 
@@ -145,23 +148,28 @@ def get_cm_inventory_position(
 
 def _build_lunar_inventory_cache(onhand: pd.DataFrame, onorder: pd.DataFrame) -> dict:
     """Pre-build lookup caches for Lunar inventory by part."""
-    # Lunar on-hand cache
-    lunar_oh = onhand[onhand["_owner"] == "Lunar"]
     lunar_oh_cache = {}
-    for part, group in lunar_oh.groupby("_lpn"):
-        lunar_oh_cache[part] = {
-            "qty": max(0.0, group["unrestricted_qty"].sum()),
-            "value": (group["unrestricted_qty"] * group.get("unit_price", 0)).sum(),
-        }
-
-    # Lunar on-order cache (POs where po_vendor = Lunar Energy)
-    lunar_oo = onorder[onorder.get("_cm", "").isna() | (onorder.get("_cm", "") == "Lunar")]
     lunar_oo_cache = {}
-    for part, group in lunar_oo.groupby("_lpn"):
-        lunar_oo_cache[part] = {
-            "qty": group["quantity_open"].sum() if "quantity_open" in group.columns else 0.0,
-            "value": (group.get("quantity_open", 0) * group.get("unit_price", 0)).sum(),
-        }
+
+    # Lunar on-hand cache (owned_by = "Lunar")
+    if "_owner" in onhand.columns:
+        lunar_oh = onhand[onhand["_owner"] == "Lunar"]
+        for part, group in lunar_oh.groupby("_lpn"):
+            qty = max(0.0, group["unrestricted_qty"].sum())
+            value = 0.0
+            if "unit_price" in group.columns:
+                value = (group["unrestricted_qty"] * group["unit_price"]).sum()
+            lunar_oh_cache[part] = {"qty": qty, "value": value}
+
+    # Lunar on-order cache (POs where vendor is Lunar)
+    if "_vendor" in onorder.columns and "_lpn" in onorder.columns and "quantity_open" in onorder.columns:
+        lunar_oo = onorder[onorder["_vendor"] == "Lunar"]
+        for part, group in lunar_oo.groupby("_lpn"):
+            qty = group["quantity_open"].sum()
+            value = 0.0
+            if "unit_price" in group.columns:
+                value = (group["quantity_open"] * group["unit_price"]).sum()
+            lunar_oo_cache[part] = {"qty": qty, "value": value}
 
     return {"oh": lunar_oh_cache, "oo": lunar_oo_cache}
 
