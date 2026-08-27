@@ -319,13 +319,15 @@ def load_asn_adjustments():
         asn_q['customer_part_number'] = asn_q['customer_part_number'].str.split("@").str[0].str.strip()
         asn_q['quantity'] = pd.to_numeric(asn_q['quantity'], errors='coerce').fillna(0)
 
-        # Combine and aggregate by quantity (for regular products)
-        asn_all = pd.concat([asn_s[['customer_part_number', 'quantity']], asn_q[['customer_part_number', 'quantity']]], ignore_index=True)
-        asn_agg = asn_all.groupby('customer_part_number')['quantity'].sum().reset_index()
+        # Combine all ASN rows
+        asn_all_combined = pd.concat([asn_s, asn_q], ignore_index=True)
+
+        # Count unique serials for ALL products (avoids double-counting)
+        asn_agg = asn_all_combined.groupby('customer_part_number')['serial_number'].nunique().reset_index()
+        asn_agg.columns = ['customer_part_number', 'quantity']
 
         # Component-to-product mappings (use unique serial counts)
         # Maximizer: 10-00522D + 10-00522E → 90-06831E (box of 20)
-        # Count unique serials instead of summing quantities
         max_d_serials = asn_s[asn_s['customer_part_number'] == '10-00522D']['serial_number'].nunique()
         max_e_serials = asn_s[asn_s['customer_part_number'] == '10-00522E']['serial_number'].nunique()
         max_total = (max_d_serials + max_e_serials) / 20
