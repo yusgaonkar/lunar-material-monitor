@@ -289,7 +289,7 @@ def sourcing_usage(bom: pd.DataFrame) -> pd.DataFrame:
         b.groupby(["Parent Product LPN", "item_number"], as_index=False)
         .agg(usage=("Sourcing Flat Qty", "sum"),
              description=("item_name", "first"),
-             category=("category_name", "first"),
+             item_category=("category_name", "first"),
              uom=("unit_of_measure", "first"))
         .rename(columns={"Parent Product LPN": "product", "item_number": "part"})
     )
@@ -311,7 +311,7 @@ def explode_demand(remaining, usage, products):
     detail["demand"] = detail["qty"] * detail["usage"]
 
     cols_to_keep = ["cm", "part", "product", "alias", "period",
-                    "qty", "usage", "demand", "description", "category"]
+                    "qty", "usage", "demand", "description", "item_category"]
 
     detail = detail[cols_to_keep]
     total = detail.groupby(["cm", "part", "period"], as_index=False)["demand"].sum()
@@ -521,7 +521,7 @@ def apply_pcba_pull_forward(demand_detail: pd.DataFrame, pcba_map: dict, bom: pd
                     'usage': row['usage'],
                     'demand': row['demand'],
                     'description': row.get('description', ''),
-                    'category': row.get('category', ''),
+                    'item_category': row.get('item_category', ''),
                     'demand_source': 'PCBA_PullForward'
                 })
 
@@ -1201,12 +1201,12 @@ def apply_allocation_scenario(result: dict, lunar_allocatable: pd.DataFrame,
         on=["cm", "part"], how="left"
     )
     # Copy over product-level columns from original summary
-    prod_cols = summary[["cm", "part", "products", "uom", "description", "category", "state"]].drop_duplicates("part", keep="first")
+    prod_cols = summary[["cm", "part", "products", "uom", "description", "item_category", "state"]].drop_duplicates("part", keep="first")
     summary_alloc = summary_alloc.merge(
         prod_cols, on=["cm", "part"], how="left", suffixes=("", "_orig")
     )
     # Use original columns if present
-    for col in ["products", "uom", "description", "category", "state"]:
+    for col in ["products", "uom", "description", "item_category", "state"]:
         if f"{col}_orig" in summary_alloc.columns:
             summary_alloc[col] = summary_alloc[f"{col}_orig"]
             summary_alloc = summary_alloc.drop(columns=[f"{col}_orig"])
@@ -1479,7 +1479,7 @@ def run(frames: dict | None = None, cfg: Config | None = None) -> dict:
         summary.merge(states, on=["cm", "part"], how="left")
         .merge(past_due, on=["cm", "part"], how="left")
         .merge(undated, on=["cm", "part"], how="left")
-        .merge(usage[["part", "description", "category", "uom"]].drop_duplicates("part"),
+        .merge(usage[["part", "description", "item_category", "uom"]].drop_duplicates("part"),
                on="part", how="left")
     )
     summary[["past_due", "undated"]] = summary[["past_due", "undated"]].fillna(0.0)

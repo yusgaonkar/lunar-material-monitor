@@ -18,7 +18,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-from src import io as lio, engine as eng
+from src import io as lio, engine as eng, inventory_depletion
 from src import supabase_io, asn_processor
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -580,7 +580,7 @@ if "active_tab" not in st.session_state:
 
 # --- Tab selector (preserved across reruns) ---
 st.subheader("View")
-active_tab = st.radio("", ["Shortage Report", "Drill-Down Grid", "Excess Monitor", "Exclusion Review"],
+active_tab = st.radio("", ["Shortage Report", "Drill-Down Grid", "Excess Monitor", "Inventory Depletion", "Exclusion Review"],
                        horizontal=True, label_visibility="collapsed",
                        key="tab_selector")
 st.session_state.active_tab = active_tab
@@ -1859,6 +1859,44 @@ elif st.session_state.active_tab == "Excess Monitor":
             )
 
             st.dataframe(detail_df, use_container_width=True, height=300)
+
+# ============================================================================
+# INVENTORY DEPLETION
+# ============================================================================
+elif st.session_state.active_tab == "Inventory Depletion":
+    st.subheader("Inventory Depletion — Two-Stage CM→Lunar Bleed")
+    st.caption("Tracks inventory balance (qty and $) as demand consumes CM inventory first, then Lunar inventory.")
+
+    try:
+        # Run inventory depletion calculation
+        balance_table, summary_table = inventory_depletion.run(
+            demand_detail=detail,
+            onhand=onhand_normalized,
+            onorder=onorder_normalized,
+            bom=bom,
+            stitch_list=stitch_list,
+            products=products,
+            cfg=None
+        )
+
+        if len(balance_table) > 0:
+            st.subheader("Inventory Position Summary")
+            st.dataframe(summary_table, use_container_width=True, height=300)
+
+            st.subheader("Balance by Period")
+            # Pivot balance table for easier viewing
+            balance_pivot = balance_table.pivot_table(
+                index=["cm", "part", "description"],
+                columns="period",
+                values="total_balance_qty",
+                aggfunc="first"
+            )
+            st.dataframe(balance_pivot, use_container_width=True, height=400)
+        else:
+            st.info("No inventory depletion data available.")
+    except Exception as e:
+        st.error(f"Error computing inventory depletion: {e}")
+        log.error(f"Inventory depletion error: {e}", exc_info=True)
 
 elif st.session_state.active_tab == "Exclusion Review":
     st.subheader("Excluded Parts Review")
