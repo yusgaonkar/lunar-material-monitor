@@ -127,9 +127,9 @@ def exclude_part(part, reason):
             result = supabase_io.exclude_part(part, reason, OS_USER)
             log.info(f"[EXCLUDE] Supabase returned: {result}")
             st.success(f"✓ Excluded {part}")
-            # Clear exclusions cache so next view loads fresh
-            if 'load_exclusions' in st.cache_data:
-                st.cache_data.clear()
+            # Clear all caches to refresh
+            st.cache_data.delete_all()
+            st.rerun()
         else:
             raise RuntimeError("SUPABASE_CLIENT is None")
     except Exception as e:
@@ -150,8 +150,8 @@ def exclude_part(part, reason):
                 df = pd.DataFrame([excl_data])
             df.to_csv(EXCLUSIONS_FILE, index=False)
             st.success(f"✓ Excluded {part} (saved locally)")
-            if 'load_exclusions' in st.cache_data:
-                st.cache_data.clear()
+            st.cache_data.delete_all()
+            st.rerun()
         except Exception as e2:
             st.error(f"Error excluding part: {e2}")
 
@@ -198,9 +198,9 @@ def add_note(part, note_text):
             result = supabase_io.save_note(part, note_text, OS_USER)
             log.info(f"[NOTE] Supabase returned: {result}")
             st.success("✓ Note added")
-            # Clear notes cache so next view loads fresh
-            if 'load_all_notes' in st.cache_data:
-                st.cache_data.clear()
+            # Clear only the notes cache to refresh
+            st.cache_data.delete_all()  # More aggressive clear
+            st.rerun()
         else:
             raise RuntimeError("SUPABASE_CLIENT is None")
     except Exception as e:
@@ -217,8 +217,8 @@ def add_note(part, note_text):
             with open(NOTES_FILE, "a") as f:
                 f.write(json.dumps(note_obj) + "\n")
             st.success("✓ Note added (saved locally)")
-            if 'load_all_notes' in st.cache_data:
-                st.cache_data.clear()
+            st.cache_data.delete_all()
+            st.rerun()
         except Exception as e2:
             st.error(f"Error adding note: {e2}")
 
