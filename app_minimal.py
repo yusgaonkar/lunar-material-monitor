@@ -98,8 +98,7 @@ if not check_password():
 # ============================================================================
 # PERSISTENCE HELPERS
 # ============================================================================
-@st.cache_data(ttl=60)
-def load_exclusions():
+def _load_exclusions_from_supabase():
     """Load excluded parts from Supabase or local CSV fallback."""
     if SUPABASE_CLIENT:
         try:
@@ -120,20 +119,8 @@ def load_exclusions():
         log.warning(f"Error loading exclusions from CSV: {e}")
     return set()
 
-def exclude_part(part, reason):
-    """Add a part to exclusions via Supabase."""
-    try:
-        supabase_io.exclude_part(part, reason, OS_USER)
-        st.success(f"✓ Excluded {part}")
-        st.cache_data.delete_all()
-        st.rerun()
-    except Exception as e:
-        log.error(f"Error excluding part: {e}")
-        st.error(f"Error: {e}")
-
-@st.cache_data(ttl=60)
-def load_all_notes():
-    """Load ALL notes once (cached for 5 min). Returns dict: {part -> [notes]}."""
+def _load_all_notes_from_supabase():
+    """Load ALL notes from Supabase. Returns dict: {part -> [notes]}."""
     notes_by_part = {}
     try:
         # Ensure Supabase is initialized
@@ -155,10 +142,31 @@ def load_all_notes():
         log.warning(f"Error loading all notes: {e}")
     return notes_by_part
 
+# Initialize session state caches on first load
+if "notes_cache" not in st.session_state:
+    st.session_state.notes_cache = _load_all_notes_from_supabase()
+if "exclusions_cache" not in st.session_state:
+    st.session_state.exclusions_cache = _load_exclusions_from_supabase()
+
+def exclude_part(part, reason):
+    """Add a part to exclusions with optimistic update (instant UI feedback)."""
+    try:
+        # Optimistic update - immediately add to session state (instant feedback)
+        st.session_state.exclusions_cache.add(part)
+        st.success(f"✓ Excluded {part}")
+
+        # Save to Supabase in background (fire and forget)
+        supabase_io.exclude_part(part, reason, OS_USER)
+        st.rerun()
+    except Exception as e:
+        # If it fails, remove from optimistic cache
+        st.session_state.exclusions_cache.discard(part)
+        log.error(f"Error excluding part: {e}")
+        st.error(f"Error: {e}")
+
 def load_notes(part):
-    """Get notes for a part from cache (calls load_all_notes once)."""
-    all_notes = load_all_notes()
-    notes = all_notes.get(part, [])
+    """Get notes for a part from session state (instant access, no cache wait)."""
+    notes = st.session_state.notes_cache.get(part, [])
 
     # Convert to display format
     formatted_notes = []
@@ -172,14 +180,43 @@ def load_notes(part):
     return formatted_notes
 
 def add_note(part, note_text):
-    """Add a note to a part via Supabase."""
+    """Add a note with optimistic update (instant UI feedback)."""
     try:
-        supabase_io.save_note(part, note_text, OS_USER)
+        # Optimistic update - immediately add to session state (instant feedback)
+        new_note = {
+            "component_lpn": part,
+            "note": note_text,
+            "note_user": OS_USER,
+            "timestamp": datetime.now().isoformat()
+        }
+
+        if part not in st.session_state.notes_cache:
+            st.session_state.notes_cache[part] = []
+        st.session_state.notes_cache[part].append(new_note)
+
         st.success("✓ Note added")
-        st.cache_data.delete_all()
+
+        # Save to Supabase in background (fire and forget)
+        supabase_io.save_note(part, note_text, OS_USER)
         st.rerun()
     except Exception as e:
         log.error(f"Error adding note: {e}")
+        st.error(f"Error: {e}")
+
+def un_exclude_part(part):
+    """Remove a part from exclusions with optimistic update (instant UI feedback)."""
+    try:
+        # Optimistic update - immediately remove from session state (instant feedback)
+        st.session_state.exclusions_cache.discard(part)
+        st.success(f"✓ {part} re-enabled")
+
+        # Save to Supabase in background (fire and forget)
+        supabase_io.un_exclude_part(part)
+        st.rerun()
+    except Exception as e:
+        # If it fails, add back to optimistic cache
+        st.session_state.exclusions_cache.add(part)
+        log.error(f"Error un-excluding part: {e}")
         st.error(f"Error: {e}")
 
 def load_watchlist():
@@ -224,8 +261,7 @@ def unwatch_part(part):
     except Exception as e:
         st.error(f"Error removing from watchlist: {e}")
 
-# Load excluded and watched parts
-excluded_parts = load_exclusions()
+# Load watched parts only (excluded parts come from session state)
 watched_parts = load_watchlist()
 
 # ============================================================================
@@ -595,8 +631,8 @@ else:
 filtered = summary_to_use.copy()
 
 # Exclude parts that are on the exclusion list
-if len(excluded_parts) > 0:
-    filtered = filtered[~filtered["part"].isin(excluded_parts)]
+if len(st.session_state.exclusions_cache) > 0:
+    filtered = filtered[~filtered["part"].isin(st.session_state.exclusions_cache)]
 
 if cm_filter != "All":
     filtered = filtered[filtered["cm"] == cm_filter]
@@ -1828,8 +1864,8 @@ elif st.session_state.active_tab == "Exclusion Review":
     st.subheader("Excluded Parts Review")
     st.caption("Review excluded parts and notes. Un-exclude to resume monitoring.")
 
-    # Get list of excluded parts (filter out any NaN or non-string values)
-    excluded_list = [str(p) for p in list(excluded_parts) if pd.notna(p) and p] if excluded_parts else []
+    # Get list of excluded parts from session state
+    excluded_list = sorted(list(st.session_state.exclusions_cache)) if st.session_state.exclusions_cache else []
 
     if not excluded_list:
         st.info("No excluded parts.")
@@ -1869,15 +1905,7 @@ elif st.session_state.active_tab == "Exclusion Review":
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🔄 Un-Exclude", key="ex_btn", use_container_width=True):
-                if SUPABASE_CLIENT:
-                    try:
-                        supabase_io.un_exclude_part(part_choice)
-                        st.success(f"✓ {part_choice} re-enabled")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(str(e))
-                else:
-                    st.error("Supabase not initialized")
+                un_exclude_part(part_choice)
 
         with col2:
             if st.button("📝 Notes", key="ex_notes", use_container_width=True):
@@ -1895,11 +1923,11 @@ elif st.session_state.active_tab == "Exclusion Review":
     st.caption("Review excluded parts and notes. Un-exclude to resume monitoring.")
     st.caption("Periodically review excluded parts and notes. Un-exclude to resume monitoring.")
 
-    if len(excluded_parts) == 0:
+    if len(st.session_state.exclusions_cache) == 0:
         st.info("No excluded parts. All parts are under monitoring.")
     else:
-        # Clean excluded_parts: filter out NaN/non-string values and sort
-        clean_excluded = sorted([str(p) for p in excluded_parts if pd.notna(p) and str(p).strip()])
+        # Get clean list from session state
+        clean_excluded = sorted(list(st.session_state.exclusions_cache))
 
         # Build exclusion table with notes
         exclusion_rows = []
@@ -1955,14 +1983,9 @@ elif st.session_state.active_tab == "Exclusion Review":
 
         with col2:
             if st.button("🔄 Un-Exclude", use_container_width=True, key="uexclude_btn"):
-                if part_to_review and SUPABASE_CLIENT:
-                    try:
-                        supabase_io.un_exclude_part(part_to_review)
-                        st.success(f"✓ {part_to_review} re-enabled for monitoring")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error: {e}")
-                elif not SUPABASE_CLIENT:
+                if part_to_review:
+                    un_exclude_part(part_to_review)
+                else:
                     st.error("Supabase not initialized")
 
         st.divider()
