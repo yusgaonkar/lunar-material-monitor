@@ -12,18 +12,27 @@ from supabase import create_client, Client
 log = logging.getLogger(__name__)
 
 # Initialize client (credentials come from Streamlit secrets)
-supabase: Client | None = None
+# Using a dict to store persistent state across Streamlit reruns
+_supabase_state = {"client": None}
 
 
 def init_supabase(url: str, key: str) -> Client:
     """Initialize Supabase client with credentials."""
-    global supabase
-    supabase = create_client(url, key)
-    return supabase
+    global _supabase_state
+    if _supabase_state["client"] is None:
+        _supabase_state["client"] = create_client(url, key)
+        log.info("Supabase client created")
+    return _supabase_state["client"]
+
+
+def get_supabase() -> Client | None:
+    """Get the Supabase client (returns None if not initialized)."""
+    return _supabase_state.get("client")
 
 
 def load_exclusions() -> pd.DataFrame:
     """Load exclusions from Supabase table, return as DataFrame matching CSV schema."""
+    supabase = get_supabase()
     if supabase is None:
         raise RuntimeError("Supabase not initialized. Call init_supabase() first.")
 
@@ -53,6 +62,7 @@ def load_exclusions() -> pd.DataFrame:
 
 def save_exclusions(df: pd.DataFrame) -> bool:
     """Save exclusions to Supabase table."""
+    supabase = get_supabase()
     if supabase is None:
         raise RuntimeError("Supabase not initialized.")
 
@@ -85,6 +95,7 @@ def save_exclusions(df: pd.DataFrame) -> bool:
 
 def exclude_part(component_lpn: str, reason: str, added_by: str) -> bool:
     """Add a part to exclusions."""
+    supabase = get_supabase()
     if supabase is None:
         raise RuntimeError("Supabase not initialized.")
 
@@ -105,6 +116,7 @@ def exclude_part(component_lpn: str, reason: str, added_by: str) -> bool:
 
 def un_exclude_part(component_lpn: str) -> bool:
     """Remove a part from exclusions."""
+    supabase = get_supabase()
     if supabase is None:
         raise RuntimeError("Supabase not initialized.")
 
@@ -119,6 +131,7 @@ def un_exclude_part(component_lpn: str) -> bool:
 
 def load_notes(component_lpn: str) -> list[dict]:
     """Load notes for a component, return as list of dicts."""
+    supabase = get_supabase()
     if supabase is None:
         raise RuntimeError("Supabase not initialized.")
 
@@ -149,6 +162,7 @@ def load_notes(component_lpn: str) -> list[dict]:
 
 def save_note(component_lpn: str, note_text: str, note_user: str) -> bool:
     """Add a note for a component."""
+    supabase = get_supabase()
     if supabase is None:
         raise RuntimeError("Supabase not initialized.")
 
