@@ -1899,16 +1899,12 @@ elif st.session_state.active_tab == "Inventory Depletion":
             if len(balance_table) > 0:
                 # Filters
                 st.subheader("Filters")
-                filter_cols = st.columns(3)
+                filter_cols = st.columns(2)
 
                 with filter_cols[0]:
                     cm_filter = st.multiselect("CM", sorted(balance_table["cm"].unique()), default=sorted(balance_table["cm"].unique()), label_visibility="collapsed")
 
                 with filter_cols[1]:
-                    product_options = sorted(balance_table["cm"].unique())
-                    product_filter = st.multiselect("Products", product_options, placeholder="Choose options", label_visibility="collapsed")
-
-                with filter_cols[2]:
                     part_filter = st.multiselect("Part Number", sorted(balance_table["part"].unique()), placeholder="Choose options", label_visibility="collapsed")
 
                 # View options
