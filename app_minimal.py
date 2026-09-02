@@ -580,7 +580,7 @@ if "active_tab" not in st.session_state:
 
 # --- Tab selector (preserved across reruns) ---
 st.subheader("View")
-active_tab = st.radio("", ["Shortage Report", "Drill-Down Grid", "Build Plan Scenario", "Excess Monitor", "Inventory Depletion", "Exclusion Review"],
+active_tab = st.radio("", ["Shortage Report", "Drill-Down Grid", "Excess Monitor", "Inventory Depletion", "Exclusion Review"],
                        horizontal=True, label_visibility="collapsed",
                        key="tab_selector")
 st.session_state.active_tab = active_tab
