@@ -1939,23 +1939,36 @@ elif st.session_state.active_tab == "Inventory Depletion":
                 # Format and display
                 if len(balance_pivot) > 0:
                     # Format numbers
-                    if view_type == "Quantity":
-                        balance_pivot = balance_pivot.fillna(0).astype(int)
-                    else:
-                        balance_pivot = balance_pivot.map(lambda x: f"${x:,.0f}" if pd.notna(x) else "—")
+                    try:
+                        if view_type == "Quantity":
+                            balance_pivot = balance_pivot.fillna(0).astype(int)
+                        else:
+                            # Format as currency
+                            def format_value(x):
+                                if pd.notna(x):
+                                    return f"${x:,.0f}"
+                                return "—"
+                            balance_pivot = balance_pivot.applymap(format_value)
 
-                    st.dataframe(balance_pivot, use_container_width=True, height=500)
+                        st.dataframe(balance_pivot, use_container_width=True, height=500)
 
-                    # Export button
-                    csv = balance_pivot.to_csv()
-                    st.download_button("📥 Download as CSV", csv, "inventory_depletion.csv", "text/csv")
+                        # Export button
+                        csv = balance_pivot.to_csv()
+                        st.download_button("📥 Download as CSV", csv, "inventory_depletion.csv", "text/csv")
+                    except Exception as format_error:
+                        st.error(f"Error formatting table: {format_error}")
+                        log.error(f"Format error: {format_error}", exc_info=True)
+                        st.dataframe(balance_pivot, use_container_width=True, height=500)
                 else:
                     st.info("No data matches the selected filters.")
             else:
                 st.info("No inventory depletion data available.")
     except Exception as e:
-        st.error(f"Error computing inventory depletion: {e}")
+        st.error(f"❌ Error computing inventory depletion: {str(e)}")
         log.error(f"Inventory depletion error: {e}", exc_info=True)
+        st.write("**Debug info:**")
+        st.write(f"Error type: {type(e).__name__}")
+        st.write(f"Error message: {str(e)}")
 
 elif st.session_state.active_tab == "Exclusion Review":
     st.subheader("Excluded Parts Review")
