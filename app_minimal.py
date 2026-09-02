@@ -580,7 +580,7 @@ if "active_tab" not in st.session_state:
 
 # --- Tab selector (preserved across reruns) ---
 st.subheader("View")
-active_tab = st.radio("", ["Shortage Report", "Drill-Down Grid", "Excess Monitor", "Inventory Depletion", "Exclusion Review"],
+active_tab = st.radio("", ["Shortage Report", "Drill-Down Grid", "Build Plan Scenario", "Excess Monitor", "Inventory Depletion", "Exclusion Review"],
                        horizontal=True, label_visibility="collapsed",
                        key="tab_selector")
 st.session_state.active_tab = active_tab
@@ -1864,8 +1864,11 @@ elif st.session_state.active_tab == "Excess Monitor":
 # INVENTORY DEPLETION
 # ============================================================================
 elif st.session_state.active_tab == "Inventory Depletion":
-    st.subheader("Inventory Depletion — Two-Stage CM→Lunar Bleed")
-    st.caption("Tracks inventory balance (qty and $) as demand consumes CM inventory first, then Lunar inventory.")
+    # Warning banner
+    st.warning("⚠️ PILOT / NOT IN PRODUCTION — Data not yet validated. Use for planning only.")
+
+    st.subheader("Component Runout Tracking")
+    st.caption(f"Snapshot: {cutoff.strftime('%Y-%m-%d')}")
 
     try:
         # Get inventory and BOM data from frames
@@ -1881,31 +1884,76 @@ elif st.session_state.active_tab == "Inventory Depletion":
             onhand = nz.normalize_onhand(onhand_raw)
             onorder = nz.normalize_onorder(onorder_raw)
 
-            with st.spinner("Computing inventory depletion (this may take a minute)..."):
+            with st.spinner("Computing inventory depletion..."):
                 # Run inventory depletion calculation
                 balance_table, summary_table = inventory_depletion.run(
-                demand_detail=demand_detail,
-                onhand=onhand,
-                onorder=onorder,
-                bom=bom,
-                stitch_list=stitch_list,
-                products=products,
-                cfg=cfg
-            )
+                    demand_detail=demand_detail,
+                    onhand=onhand,
+                    onorder=onorder,
+                    bom=bom,
+                    stitch_list=stitch_list,
+                    products=products,
+                    cfg=cfg
+                )
 
             if len(balance_table) > 0:
-                st.subheader("Inventory Position Summary")
-                st.dataframe(summary_table, use_container_width=True, height=300)
+                # Filters
+                st.subheader("Filters")
+                filter_cols = st.columns(3)
 
-                st.subheader("Balance by Period")
-                # Pivot balance table for easier viewing
-                balance_pivot = balance_table.pivot_table(
-                    index=["cm", "part", "description"],
-                    columns="period",
-                    values="total_balance_qty",
-                    aggfunc="first"
-                )
-                st.dataframe(balance_pivot, use_container_width=True, height=400)
+                with filter_cols[0]:
+                    cm_filter = st.multiselect("CM", sorted(balance_table["cm"].unique()), default=sorted(balance_table["cm"].unique()), label_visibility="collapsed")
+
+                with filter_cols[1]:
+                    product_filter = st.multiselect("Products", sorted(balance_table["cm"].unique()), default=sorted(balance_table["cm"].unique()), placeholder="Choose options", label_visibility="collapsed")
+
+                with filter_cols[2]:
+                    part_filter = st.multiselect("Part Number", sorted(balance_table["part"].unique()), placeholder="Choose options", label_visibility="collapsed")
+
+                # View options
+                st.subheader("View")
+                view_type = st.radio("", ["Quantity", "Value"], horizontal=True, label_visibility="collapsed")
+
+                # Filter data
+                filtered_balance = balance_table.copy()
+                if cm_filter:
+                    filtered_balance = filtered_balance[filtered_balance["cm"].isin(cm_filter)]
+                if part_filter:
+                    filtered_balance = filtered_balance[filtered_balance["part"].isin(part_filter)]
+
+                # Pivot for display
+                if view_type == "Quantity":
+                    balance_pivot = filtered_balance.pivot_table(
+                        index=["cm", "part", "description"],
+                        columns="period",
+                        values="total_balance_qty",
+                        aggfunc="first"
+                    )
+                    st.caption("Inventory balance by period (quantity)")
+                else:
+                    balance_pivot = filtered_balance.pivot_table(
+                        index=["cm", "part", "description"],
+                        columns="period",
+                        values="total_balance_value",
+                        aggfunc="first"
+                    )
+                    st.caption("Inventory balance by period (value)")
+
+                # Format and display
+                if len(balance_pivot) > 0:
+                    # Format numbers
+                    if view_type == "Quantity":
+                        balance_pivot = balance_pivot.astype(int)
+                    else:
+                        balance_pivot = balance_pivot.applymap(lambda x: f"${x:,.0f}" if pd.notna(x) else "—")
+
+                    st.dataframe(balance_pivot, use_container_width=True, height=500)
+
+                    # Export button
+                    csv = balance_pivot.to_csv()
+                    st.download_button("📥 Download as CSV", csv, "inventory_depletion.csv", "text/csv")
+                else:
+                    st.info("No data matches the selected filters.")
             else:
                 st.info("No inventory depletion data available.")
     except Exception as e:
