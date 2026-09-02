@@ -1905,7 +1905,8 @@ elif st.session_state.active_tab == "Inventory Depletion":
                     cm_filter = st.multiselect("CM", sorted(balance_table["cm"].unique()), default=sorted(balance_table["cm"].unique()), label_visibility="collapsed")
 
                 with filter_cols[1]:
-                    product_filter = st.multiselect("Products", sorted(balance_table["cm"].unique()), default=sorted(balance_table["cm"].unique()), placeholder="Choose options", label_visibility="collapsed")
+                    product_options = sorted(balance_table["cm"].unique())
+                    product_filter = st.multiselect("Products", product_options, placeholder="Choose options", label_visibility="collapsed")
 
                 with filter_cols[2]:
                     part_filter = st.multiselect("Part Number", sorted(balance_table["part"].unique()), placeholder="Choose options", label_visibility="collapsed")
@@ -1943,9 +1944,9 @@ elif st.session_state.active_tab == "Inventory Depletion":
                 if len(balance_pivot) > 0:
                     # Format numbers
                     if view_type == "Quantity":
-                        balance_pivot = balance_pivot.astype(int)
+                        balance_pivot = balance_pivot.fillna(0).astype(int)
                     else:
-                        balance_pivot = balance_pivot.applymap(lambda x: f"${x:,.0f}" if pd.notna(x) else "—")
+                        balance_pivot = balance_pivot.map(lambda x: f"${x:,.0f}" if pd.notna(x) else "—")
 
                     st.dataframe(balance_pivot, use_container_width=True, height=500)
 
