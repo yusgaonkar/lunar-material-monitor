@@ -6,11 +6,18 @@ __pycache__/
 .streamlit/secrets.toml
 
 # Source extracts — confidential (supplier pricing, BOMs, build plans).
-# Never commit these.
+# Never commit these — EXCEPT data/cloud/* for Streamlit Cloud deployment.
+# Un-ignore rules MUST come before the ignore rule for parent directory.
+!data/
+!data/cloud/
+!data/cloud/**/*.csv
 !data/build_plan.csv
 !data/plan_to_date.csv
 !data/in_transit.csv
 !data/exclusions.csv
 !data/golden_cases.csv
+
+# Now ignore the rest of data/
+data/
 data/_unmatched.csv
 .streamlit/secrets.toml

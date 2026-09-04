@@ -39,6 +39,37 @@ DATA = Path(__file__).resolve().parent.parent / "data" / data_folder if is_cloud
 # Debug: log which environment we're running in
 log.info(f"Running in {'Cloud' if is_cloud else 'localhost'} mode. Data path: {DATA}")
 
+def _find_newest_csv(filename: str, base_path: Path) -> Path:
+    """Find the newest version of a CSV file, including dated variants.
+
+    Searches for both the base filename and dated variants like filename_2026-09-03.csv
+    Returns the path to the newest one, or the base filename if only that exists.
+    """
+    base_file = base_path / filename
+    if not base_path.exists():
+        return base_file
+
+    # Find all variants: both base name and dated versions
+    name_without_ext = filename.rsplit('.', 1)[0]
+    candidates = []
+
+    # Add base file if it exists
+    if base_file.exists():
+        candidates.append(base_file)
+
+    # Find dated variants (e.g., bom_stitched_2026-09-03.csv)
+    for f in base_path.glob(f"{name_without_ext}_*.csv"):
+        candidates.append(f)
+
+    if not candidates:
+        return base_file
+
+    # Sort by modification time, return the newest
+    newest = max(candidates, key=lambda p: p.stat().st_mtime)
+    if newest != base_file:
+        log.info(f"Using {newest.name} instead of {filename}")
+    return newest
+
 # DATA ROWS, excluding the header. Verified against the exports of 2026-08-26.
 # Re-check these every time the snapshots are refreshed.
 #
@@ -154,8 +185,12 @@ def _read_export(name: str) -> pd.DataFrame:
 
     The assertion runs on the raw row count, before any filtering, so it is
     measuring the export and not our handling of it.
+
+    Automatically selects the newest version if dated variants exist (e.g.,
+    bom_stitched_2026-09-03.csv over bom_stitched.csv).
     """
-    df = pd.read_csv(DATA / name, dtype=str, keep_default_na=False, na_values=[])
+    file_path = _find_newest_csv(name, DATA)
+    df = pd.read_csv(file_path, dtype=str, keep_default_na=False, na_values=[])
     assert_rows(name, len(df))
 
     missing = [c for c in STR_COLS[name] if c not in df.columns]
@@ -178,8 +213,11 @@ def _read_hand(name: str) -> pd.DataFrame:
     inside a description or a note from truncating the field. This module is
     itself called io, so it also avoids needing to import the stdlib io — which
     resolves back to this file when it is run as a script.
+
+    Automatically selects the newest version if dated variants exist (e.g.,
+    build_plan_2026-09-03.csv over build_plan.csv).
     """
-    path = DATA / name
+    path = _find_newest_csv(name, DATA)
     spec = HAND_COLS[name]
     comments = {
         i for i, ln in enumerate(path.read_text().splitlines())
