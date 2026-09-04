@@ -486,9 +486,25 @@ frames = load_data()
 # Load and adjust build plan (apply ASN deductions)
 build_plan = lio.load_build_plan()
 asn_data = load_asn_adjustments()
-# Snapshot date: 2026-09-03 (updated from 2026-08-26)
-# Demand disaggregation starts from 9/4 onwards (day after last ASN day)
-snapshot_date = pd.Timestamp('2026-09-03')
+
+# Extract snapshot date dynamically from data files
+# The "Updated at" column shows the snapshot date (format: MM-DD-YYYY)
+def extract_snapshot_date(frames_dict):
+    """Extract snapshot date from 'Updated at' column in data files."""
+    for file_key in ['bom_stitched.csv', 'onhand.csv', 'onorder.csv']:
+        if file_key in frames_dict and 'Updated at' in frames_dict[file_key].columns:
+            df = frames_dict[file_key]
+            if len(df) > 0:
+                date_str = df['Updated at'].iloc[0]
+                if pd.notna(date_str):
+                    try:
+                        return pd.to_datetime(date_str, format='%m-%d-%Y')
+                    except:
+                        pass
+    # Fallback to 2026-09-03
+    return pd.Timestamp('2026-09-03')
+
+snapshot_date = extract_snapshot_date(frames)
 build_plan = apply_asn_to_build_plan(build_plan, asn_data, snapshot_date=snapshot_date)
 
 # Replace qty with qty_adjusted for engine calculations
@@ -511,8 +527,8 @@ frames_with_plan = frames.copy()  # Shallow copy of dict
 frames_with_plan["build_plan.csv"] = build_plan_for_engine
 result = run_engine(frames_with_plan, bp_hash)
 
-# Override snapshot to 8/26 (files may have 8/25 internally)
-result['snapshot'] = pd.Timestamp('2026-08-26')
+# Override snapshot with dynamically extracted value from data files
+result['snapshot'] = snapshot_date
 
 cfg = result["config"]
 s = result["summary"]
