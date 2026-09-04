@@ -3,7 +3,15 @@
     "allow": [
       "Bash(.venv/bin/python -m src.io)",
       "Bash(.venv/bin/python)",
-      "Bash(.venv/bin/python -m pytest tests/ -q)"
+      "Bash(.venv/bin/python -m pytest tests/ -q)",
+      "Bash(.venv/bin/python *)",
+      "Bash(PYTHONPATH=/Users/yashusgaonkar/lunar-planner .venv/bin/python /private/tmp/claude-501/-Users-yashusgaonkar-lunar-planner/6214e24e-889b-4733-adb6-4caf5d822a57/scratchpad/diag_tla.py 2>&1 | head -75)",
+      "Bash(PYTHONPATH=/Users/yashusgaonkar/lunar-planner .venv/bin/python /private/tmp/claude-501/-Users-yashusgaonkar-lunar-planner/6214e24e-889b-4733-adb6-4caf5d822a57/scratchpad/diag_tla.py 2>&1 | sed -n '/6. PART-LEVEL ROLLUP/,$p')",
+      "Bash(PYTHONPATH=. .venv/bin/python -u /private/tmp/claude-501/-Users-yashusgaonkar-lunar-planner/6214e24e-889b-4733-adb6-4caf5d822a57/scratchpad/verify.py > /private/tmp/claude-501/-Users-yashusgaonkar-lunar-planner/6214e24e-889b-4733-adb6-4caf5d822a57/scratchpad/verify.out 2>&1; echo \"exit=$?\"; cat /private/tmp/claude-501/-Users-yashusgaonkar-lunar-planner/6214e24e-889b-4733-adb6-4caf5d822a57/scratchpad/verify.out)",
+      "Bash(git worktree *)",
+      "Bash(PYTHONPATH=. .venv/bin/python -c ' *)",
+      "Bash(PYTHONPATH=. .venv/bin/python -u -c ' *)",
+      "Bash(venv/bin/python *)"
     ]
   }
 }

@@ -17,6 +17,7 @@ import hashlib
 import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
 
 from src import io as lio, engine as eng, inventory_depletion, normalize as nz
 from src import supabase_io, asn_processor
@@ -365,51 +366,16 @@ def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
 # --- ASN adjustment ---
 @st.cache_data(ttl=3600)
 def load_asn_adjustments():
-    """Load ASN (8/1-8/25) - Sienna + Qualitel, aggregated by product.
+    """Load ASN adjustments for build plan.
 
-    For component-to-product mappings (e.g., Maximizer), counts unique serial numbers
-    instead of summing quantities to avoid double-counting.
+    For 2026-09-03 snapshot: only 90-07675A has 288 units shipped.
     """
-    try:
-        # Load Sienna ASN
-        asn_s = pd.read_csv("data/asn_sienna_2026-08-26.csv")
-        asn_s['shipped_date'] = pd.to_datetime(asn_s['shipped_date'], errors='coerce')
-        asn_s = asn_s[(asn_s['shipped_date'].dt.month == 8) & (asn_s['shipped_date'].dt.day <= 25)]
-        asn_s['customer_part_number'] = asn_s['customer_part_number'].str.split(" Rev").str[0].str.strip()
-
-        # Load Qualitel ASN (no header)
-        cols = ['shipment_num', 'shipped_date', 'ship_to', 'packing_slip', 'po_num', 'po_line',
-                'customer_part_number', 'description', 'quantity', 'serial_number'] + [f'col{i}' for i in range(12)]
-        asn_q = pd.read_csv("data/asn_qualitel_2026-08-26.csv", header=None, names=cols, dtype=str, keep_default_na=False, na_values=[])
-        asn_q['shipped_date'] = pd.to_datetime(asn_q['shipped_date'], errors='coerce')
-        asn_q = asn_q[(asn_q['shipped_date'].dt.month == 8) & (asn_q['shipped_date'].dt.day <= 25)]
-        asn_q['customer_part_number'] = asn_q['customer_part_number'].str.split("@").str[0].str.strip()
-        asn_q['quantity'] = pd.to_numeric(asn_q['quantity'], errors='coerce').fillna(0)
-
-        # Combine all ASN rows
-        asn_all_combined = pd.concat([asn_s, asn_q], ignore_index=True)
-
-        # Count unique serials for ALL products (avoids double-counting)
-        asn_agg = asn_all_combined.groupby('customer_part_number')['serial_number'].nunique().reset_index()
-        asn_agg.columns = ['customer_part_number', 'quantity']
-
-        # Component-to-product mappings (use unique serial counts)
-        # Maximizer: 10-00522D + 10-00522E → 90-06831E (box of 20)
-        max_d_serials = asn_s[asn_s['customer_part_number'] == '10-00522D']['serial_number'].nunique()
-        max_e_serials = asn_s[asn_s['customer_part_number'] == '10-00522E']['serial_number'].nunique()
-        max_total = (max_d_serials + max_e_serials) / 20
-
-        # Remove component rows and add product row
-        asn_agg = asn_agg[~asn_agg['customer_part_number'].isin(['10-00522D', '10-00522E', '90-06831D'])]
-
-        if max_total > 0:
-            asn_agg = pd.concat([asn_agg, pd.DataFrame({'customer_part_number': ['90-06831E'], 'quantity': [int(max_total)]})], ignore_index=True)
-
-        asn_agg.columns = ['product_lpn', 'asn_qty']
-        return asn_agg
-    except Exception as e:
-        log.warning(f"Could not load ASN data: {e}")
-        return pd.DataFrame(columns=['product_lpn', 'asn_qty'])
+    # Hardcoded for 2026-09-03 snapshot: only 90-07675A = 288 units
+    asn_agg = pd.DataFrame({
+        'product_lpn': ['90-07675A'],
+        'asn_qty': [288]
+    })
+    return asn_agg
 
 
 def apply_asn_to_build_plan(build_plan_df: pd.DataFrame, asn_df: pd.DataFrame, bom: pd.DataFrame = None, snapshot_date: pd.Timestamp = None) -> pd.DataFrame:
@@ -514,15 +480,15 @@ def run_engine(frames, build_plan_hash):
     return result
 
 
-# Load data once
+# Load data once - io.py automatically detects Cloud vs localhost
 frames = load_data()
 
 # Load and adjust build plan (apply ASN deductions)
 build_plan = lio.load_build_plan()
 asn_data = load_asn_adjustments()
-# Snapshot date: the date through which ASN data has been received (8/1-8/26)
-# Demand disaggregation starts from 8/27 onwards (day after last ASN day)
-snapshot_date = pd.Timestamp('2026-08-26')
+# Snapshot date: 2026-09-03 (updated from 2026-08-26)
+# Demand disaggregation starts from 9/4 onwards (day after last ASN day)
+snapshot_date = pd.Timestamp('2026-09-03')
 build_plan = apply_asn_to_build_plan(build_plan, asn_data, snapshot_date=snapshot_date)
 
 # Replace qty with qty_adjusted for engine calculations
@@ -556,6 +522,8 @@ demand_detail = result["demand_detail"]
 excess = result.get("excess", pd.DataFrame())
 products = result["products"]
 bom_stitched = frames["bom_stitched.csv"]
+onhand_raw = frames.get("onhand.csv", pd.DataFrame())
+stitch_list = frames.get("stitch_list.csv", pd.DataFrame())
 
 # --- Add ASN shipments to build plan for display ---
 asn_all = frames.get("asn_all.csv", pd.DataFrame())
@@ -568,6 +536,40 @@ if len(asn_all) > 0:
 else:
     build_plan_for_engine["asn_qty"] = 0
     build_plan_for_engine["qty_adjusted"] = build_plan_for_engine["qty"]
+
+# --- Compute obsolescence_state for all parts (for filtering) ---
+def compute_obsolescence_state(part):
+    """Determine if a part is in Gen 1, Gen 2, both, or obsolete"""
+    gen_1_products = set(stitch_list[stitch_list["Generation Alias"].str.contains("Gen 1", na=False)]["Parent Product LPN"].unique()) if len(stitch_list) > 0 else set()
+    gen_2_products = set(stitch_list[stitch_list["Generation Alias"].str.contains("Gen 2", na=False)]["Parent Product LPN"].unique()) if len(stitch_list) > 0 else set()
+
+    gen_1_parts = set()
+    gen_2_parts = set()
+
+    for product in gen_1_products:
+        product_parts = bom_stitched[bom_stitched["Parent Product LPN"] == product]["item_number"].unique()
+        gen_1_parts.update(product_parts)
+
+    for product in gen_2_products:
+        product_parts = bom_stitched[bom_stitched["Parent Product LPN"] == product]["item_number"].unique()
+        gen_2_parts.update(product_parts)
+
+    gen1 = part in gen_1_parts
+    gen2 = part in gen_2_parts
+    if gen1 and gen2:
+        return "Active in Both"
+    elif gen1 and not gen2:
+        return "Gen 1 Only"
+    elif not gen1 and gen2:
+        return "Gen 2 Only"
+    else:
+        return "Obsolete"
+
+# Add obsolescence_state to summary data for filtering
+if len(s) > 0 and "part" in s.columns:
+    s["obsolescence_state"] = s["part"].apply(compute_obsolescence_state)
+if "summary_with_allocation" in result and len(result["summary_with_allocation"]) > 0 and "part" in result["summary_with_allocation"].columns:
+    result["summary_with_allocation"]["obsolescence_state"] = result["summary_with_allocation"]["part"].apply(compute_obsolescence_state)
 
 # --- Header ---
 st.title("Lunar Material Monitor")
@@ -593,7 +595,7 @@ col_left, col_right = st.columns([5.5, 1.5], gap="large")
 
 # LEFT COLUMN: CM, Products, Part Number, Planning Horizon
 with col_left:
-    filter_cols = st.columns([1, 1.5, 1.5, 1.8])
+    filter_cols = st.columns([1, 1.5, 1.5, 1.5, 1.3, 1.5])
 
     cm_filter = filter_cols[0].selectbox("CM", ["All"] + sorted(s["cm"].unique()))
 
@@ -602,13 +604,19 @@ with col_left:
 
     part_filter = filter_cols[2].multiselect("Part Number", sorted(s["part"].unique()))
 
-    weeks_window = filter_cols[3].slider(
+    category_filter = filter_cols[3].multiselect("Category", sorted(onhand_raw["item_category"].dropna().unique()) if len(onhand_raw) > 0 else [])
+
+    weeks_window = filter_cols[4].slider(
         "Planning Horizon (weeks)",
         min_value=1,
         max_value=cfg.horizon_weeks,
         value=12,
         step=1
     )
+
+    # Product Generation filter (will get unique values from balance_table when available)
+    generation_filter_options = ["Active in Both", "Gen 1 Only", "Gen 2 Only", "Obsolete"]
+    generation_filter = filter_cols[5].multiselect("Product Generation", generation_filter_options)
 
 # RIGHT COLUMN: Stacked checkboxes on extreme right
 with col_right:
@@ -657,6 +665,10 @@ if prod_filter:
 
 if part_filter:
     filtered = filtered[filtered["part"].isin(part_filter)]
+if category_filter:
+    filtered = filtered[filtered["item_category"].isin(category_filter)]
+if generation_filter and "obsolescence_state" in filtered.columns:
+    filtered = filtered[filtered["obsolescence_state"].isin(generation_filter)]
 if show_short_only:
     filtered = filtered[filtered["is_shortage"]]
 
@@ -1101,6 +1113,155 @@ def get_pcba_build_plan(bp, bom, products, cm_filt, prod_filt, weeks_cutoff, dem
 build_plan_grid = get_build_plan_grid(build_plan, demand_detail, cm_filter, prod_filter, cutoff)
 toplevel_plan = get_toplevel_build_plan(build_plan, products, cm_filter, prod_filter, cutoff)
 pcba_plan = get_pcba_build_plan(build_plan, bom_stitched, products, cm_filter, prod_filter, cutoff, demand_detail, cfg.snapshot)
+
+# ============================================================================
+# HELPER: Unit price lookup with priority chain
+# ============================================================================
+def get_unit_prices_with_source(onhand, onorder, frames):
+    """
+    Get unit prices for CM and Lunar with source tracking.
+    CM priority: Cost DB → CM on-hand (weighted avg) → CM on-order (weighted avg)
+    Lunar: On-hand (if exists) → On-order (fallback if not in on-hand)
+
+    Returns: {part: (price, source)}, {part: price}, {part: source}
+    """
+    cm_prices = {}  # {part: (price, source)}
+    lunar_prices = {}  # {part: price}
+    cm_sources = {}  # {part: source}
+
+    # 1. Try cost database (EE and ME costs) for CM
+    cost_files = [frames.get("2026 EE costs.csv"), frames.get("2026 ME costs.csv")]
+    for cost_file in cost_files:
+        if cost_file is not None and len(cost_file) > 0:
+            if "LPN" in cost_file.columns and "Unit Price (@MOQ/EAU)" in cost_file.columns:
+                for _, row in cost_file.iterrows():
+                    lpn = row.get("LPN")
+                    price_str = row.get("Unit Price (@MOQ/EAU)", "")
+                    if lpn and pd.notna(price_str):
+                        try:
+                            price = float(str(price_str).replace("$", "").strip())
+                            if price > 0:
+                                cm_prices[lpn] = (price, "Cost DB")
+                                cm_sources[lpn] = "Cost DB"
+                        except:
+                            pass
+
+    # 2. Calculate from CM on-hand (weighted avg, for parts not in cost DB)
+    if "lpn" in onhand.columns:
+        cm_onhand = onhand[onhand["source_report"] != "Lunar Netsuite"]
+        for part, group in cm_onhand.groupby("lpn"):
+            if part not in cm_prices:
+                total_qty = group["unrestricted_qty"].sum()
+                total_value = (group["unrestricted_qty"] * group.get("unit_price", 0)).sum()
+                if total_qty > 0 and total_value > 0:
+                    weighted_price = total_value / total_qty
+                    cm_prices[part] = (weighted_price, "CM On-Hand")
+                    cm_sources[part] = "CM On-Hand"
+
+    # 3. Calculate from CM on-order (weighted avg, for parts still missing)
+    if "lunar_lpn" in onorder.columns:
+        cm_onorder = onorder[onorder["source_report"] != "Lunar Netsuite"]
+        for part, group in cm_onorder.groupby("lunar_lpn"):
+            if part not in cm_prices:
+                total_qty = group["quantity_open"].sum()
+                total_value = (group["quantity_open"] * group.get("unit_price", 0)).sum()
+                if total_qty > 0 and total_value > 0:
+                    weighted_price = total_value / total_qty
+                    cm_prices[part] = (weighted_price, "CM On-Order")
+                    cm_sources[part] = "CM On-Order"
+
+    # 4. PRIMARY: Calculate from Lunar on-hand (weighted avg from unrestricted_value / unrestricted_qty)
+    # If a part EXISTS in on-hand (even with zero qty/value), use that price. Do NOT fall back to on-order.
+    if "lpn" in onhand.columns:
+        lunar_onhand = onhand[onhand["source_report"] == "Lunar Netsuite"]
+        for part, group in lunar_onhand.groupby("lpn"):
+            # Use unrestricted_value / unrestricted_qty, NOT the unit_price column
+            total_qty = group["unrestricted_qty"].sum()
+            total_value = group["unrestricted_value"].sum()
+            # ALWAYS add to lunar_prices if part exists in on-hand, even if price is 0
+            lunar_prices[part] = total_value / total_qty if total_qty > 0 else 0
+
+    # 5. FALLBACK: Calculate from Lunar on-order (weighted avg, ONLY for parts NOT found in on-hand)
+    if "lunar_lpn" in onorder.columns:
+        lunar_oo = onorder[onorder["source_report"] == "Lunar Netsuite"]
+        for part, group in lunar_oo.groupby("lunar_lpn"):
+            # Only use on-order price if part does NOT exist in on-hand
+            if part not in lunar_prices:
+                total_qty = group["quantity_open"].sum()
+                total_value = (group["quantity_open"] * group.get("unit_price", 0)).sum()
+                if total_qty > 0 and total_value > 0:
+                    lunar_prices[part] = total_value / total_qty
+
+    return cm_prices, lunar_prices, cm_sources
+
+def get_unit_prices(onhand, onorder, frames):
+    """
+    Get unit prices for CM and Lunar by part, with priority chain:
+    CM: Cost DB → CM on-hand → CM on-order
+    Lunar: Lunar on-hand → Lunar on-order
+
+    Returns: {part: cm_price}, {part: lunar_price}
+    """
+    cm_prices = {}
+    lunar_prices = {}
+
+    # 1. Try cost database (EE and ME costs)
+    # Look for cost files in frames or uploaded files
+    cost_files = [frames.get("2026 EE costs.csv"), frames.get("2026 ME costs.csv")]
+    for cost_file in cost_files:
+        if cost_file is not None and len(cost_file) > 0:
+            if "LPN" in cost_file.columns and "Unit Price (@MOQ/EAU)" in cost_file.columns:
+                for _, row in cost_file.iterrows():
+                    lpn = row.get("LPN")
+                    price_str = row.get("Unit Price (@MOQ/EAU)", "")
+                    if lpn and pd.notna(price_str):
+                        try:
+                            # Parse price (e.g., "$ 5.00" → 5.00)
+                            price = float(str(price_str).replace("$", "").strip())
+                            if price > 0:
+                                cm_prices[lpn] = price
+                        except:
+                            pass
+
+    # 2. Calculate from CM on-hand (for parts not in cost DB)
+    if "_cm" in onhand.columns and "_lpn" in onhand.columns:
+        cm_onhand = onhand[onhand["_owner"] != "Lunar"]
+        for part, group in cm_onhand.groupby("_lpn"):
+            if part not in cm_prices:  # Only if not in cost DB
+                total_qty = group["unrestricted_qty"].sum()
+                total_value = (group["unrestricted_qty"] * group.get("unit_price", 0)).sum()
+                if total_qty > 0 and total_value > 0:
+                    cm_prices[part] = total_value / total_qty
+
+    # 3. Calculate from CM on-order (for parts still missing)
+    if "_lpn" in onorder.columns and "_cm" in onorder.columns:
+        for part, group in onorder.groupby("_lpn"):
+            if part not in cm_prices:
+                total_qty = group["quantity_open"].sum()
+                total_value = (group["quantity_open"] * group.get("unit_price", 0)).sum()
+                if total_qty > 0 and total_value > 0:
+                    cm_prices[part] = total_value / total_qty
+
+    # 4. Calculate from Lunar on-hand
+    if "_lpn" in onhand.columns:
+        lunar_onhand = onhand[onhand["_owner"] == "Lunar"]
+        for part, group in lunar_onhand.groupby("_lpn"):
+            total_qty = group["unrestricted_qty"].sum()
+            total_value = (group["unrestricted_qty"] * group.get("unit_price", 0)).sum()
+            if total_qty > 0 and total_value > 0:
+                lunar_prices[part] = total_value / total_qty
+
+    # 5. Calculate from Lunar on-order (for parts still missing)
+    if "_lpn" in onorder.columns and "_vendor" in onorder.columns:
+        lunar_oo = onorder[onorder["_vendor"] == "Lunar"]
+        for part, group in lunar_oo.groupby("_lpn"):
+            if part not in lunar_prices:
+                total_qty = group["quantity_open"].sum()
+                total_value = (group["quantity_open"] * group.get("unit_price", 0)).sum()
+                if total_qty > 0 and total_value > 0:
+                    lunar_prices[part] = total_value / total_qty
+
+    return cm_prices, lunar_prices
 
 # ============================================================================
 # RENDER ACTIVE TAB
@@ -1867,8 +2028,9 @@ elif st.session_state.active_tab == "Inventory Depletion":
     # Warning banner
     st.warning("⚠️ PILOT / NOT IN PRODUCTION — Data not yet validated. Use for planning only.")
 
-    st.subheader("Component Runout Tracking")
-    st.caption(f"Snapshot: {cutoff.strftime('%Y-%m-%d')}")
+    # Initialize session state for inventory source if not present
+    if "inventory_source_selection" not in st.session_state:
+        st.session_state.inventory_source_selection = "On Hand + On Order"
 
     try:
         # Get inventory and BOM data from frames
@@ -1884,81 +2046,855 @@ elif st.session_state.active_tab == "Inventory Depletion":
             onhand = nz.normalize_onhand(onhand_raw)
             onorder = nz.normalize_onorder(onorder_raw)
 
-            with st.spinner("Computing inventory depletion..."):
-                # Run inventory depletion calculation
-                balance_table, summary_table = inventory_depletion.run(
-                    demand_detail=demand_detail,
-                    onhand=onhand,
-                    onorder=onorder,
-                    bom=bom,
-                    stitch_list=stitch_list,
-                    products=products,
-                    cfg=cfg
+            # Cache the computation to avoid recalculating on every interaction
+            @st.cache_data(show_spinner=False, ttl=3600)
+            def _compute_inventory_depletion(_pab, _onhand, _onorder, _inventory_source):
+                """Compute balance table once and cache it."""
+                # --- CM name normalization ---
+                # Create mapping from full CM names (from inventory) to short CM names (from engine/stitch_list)
+                # Examples: "Sienna GA" → "Sienna", "Qualitel WA" → "Qualitel", "Plexus" → "Plexus"
+                cm_name_map = {
+                    "Sienna GA": "Sienna",
+                    "Qualitel WA": "Qualitel",
+                    "Plexus": "Plexus",
+                    "Unigen": "Unigen",
+                    "Celestica MX": "Celestica",
+                    "Lunar": "Lunar"  # Keep Lunar as-is
+                }
+
+                # --- CM PAB by month (end-of-month snapshot) ---
+                pab_monthly = _pab.copy()
+                pab_monthly["period_date"] = pd.to_datetime(pab_monthly["period"])
+                pab_monthly["month"] = pab_monthly["period_date"].dt.to_period("M")
+
+                # Get end-of-month PAB for each (cm, part, month)
+                pab_eom = pab_monthly.loc[pab_monthly.groupby(["cm", "part", "month"])["period_date"].idxmax()]
+                pab_eom["month_str"] = pab_eom["month"].astype(str)
+
+                # Pivot: rows = (cm, part), columns = months
+                cm_pab = pab_eom.pivot_table(
+                    index=["cm", "part"],
+                    columns="month_str",
+                    values="pab",
+                    aggfunc="first"
+                ).reset_index()
+
+                # Build comprehensive part universe from all inventory sources
+                # This ensures we capture parts with demand AND parts with inventory but no demand
+                all_parts = set()
+
+                # Add all parts from on-hand
+                if "lpn" in _onhand.columns:
+                    onhand_parts = _onhand[_onhand["lpn"].notna()]["lpn"].unique()
+                    all_parts.update(onhand_parts)
+
+                # Add all parts from on-order
+                if "lunar_lpn" in _onorder.columns:
+                    onorder_parts = _onorder[_onorder["lunar_lpn"].notna()]["lunar_lpn"].unique()
+                    all_parts.update(onorder_parts)
+
+                # Build comprehensive base table with all parts, all CMs from on-hand
+                cm_universe = set()
+                if "source_report" in _onhand.columns:
+                    for source in _onhand["source_report"].unique():
+                        if source and source != "Lunar Netsuite":
+                            cm = source.split(":")[1].strip() if ":" in source else None
+                            if cm:
+                                cm_universe.add(cm)
+
+                # Create base table with all (cm, part) combinations that appear in inventory
+                all_cm_part = []
+                for part in all_parts:
+                    # Get CMs that have this part in on-hand or on-order
+                    cms_for_part = set()
+
+                    # Check on-hand
+                    if "lpn" in _onhand.columns and "source_report" in _onhand.columns:
+                        part_oh = _onhand[_onhand["lpn"] == part]
+                        for source in part_oh["source_report"].unique():
+                            if source != "Lunar Netsuite":
+                                cm = source.split(":")[1].strip() if ":" in source else None
+                                if cm:
+                                    cms_for_part.add(cm)
+
+                    # Check on-order
+                    if "lunar_lpn" in _onorder.columns and "source_report" in _onorder.columns:
+                        part_oo = _onorder[_onorder["lunar_lpn"] == part]
+                        for source in part_oo["source_report"].unique():
+                            if source != "Lunar Netsuite":
+                                cm = source.split(":")[1].strip() if ":" in source else None
+                                if cm:
+                                    cms_for_part.add(cm)
+
+                    # Add Lunar as a "CM" for tracking Lunar inventory
+                    cms_for_part.add("Lunar")
+
+                    for cm in cms_for_part:
+                        all_cm_part.append({"cm": cm, "part": part})
+
+                base_table = pd.DataFrame(all_cm_part)
+
+                # Normalize CM names in base_table to match engine PAB CM names
+                base_table["cm"] = base_table["cm"].map(cm_name_map).fillna(base_table["cm"])
+
+                # Left-join PAB data (parts without demand will have NaN in PAB columns)
+                cm_pab_full = base_table.merge(cm_pab, on=["cm", "part"], how="left")
+
+                # --- Lunar depletion calculation ---
+                # Get Lunar inventory position
+                # 1. Lunar unrestricted_qty (on-hand inventory)
+                lunar_oh = onhand[onhand["source_report"] == "Lunar Netsuite"].copy()
+                lunar_unrestricted = lunar_oh.groupby("lpn").agg(
+                    unrestricted=("unrestricted_qty", "sum")
+                ).rename_axis("part").reset_index()
+
+                # 2. CM orders placed against Lunar (where Lunar is the vendor)
+                # Filter: po_vendor contains "Lunar" and extract CM from source_report
+                cm_orders_lunar = onorder[onorder["po_vendor"].str.contains("Lunar", case=False, na=False)].copy()
+                cm_orders_lunar["cm_extracted"] = cm_orders_lunar["source_report"].str.extract(r"CM:\s*(.+)$", expand=False).str.strip()
+
+                cm_orders_by_cm_part = cm_orders_lunar.groupby(["cm_extracted", "lunar_lpn"]).agg(
+                    cm_orders=("quantity_open", "sum")
+                ).reset_index()
+                cm_orders_by_cm_part.columns = ["cm", "part", "cm_orders"]
+
+                # 3. Calculate uncommitted per part
+                total_cm_orders_by_part = cm_orders_by_cm_part.groupby("part")["cm_orders"].sum().reset_index()
+                total_cm_orders_by_part.columns = ["part", "total_cm_orders"]
+
+                lunar_start = lunar_unrestricted.merge(total_cm_orders_by_part, on="part", how="left")
+                lunar_start["total_cm_orders"] = lunar_start["total_cm_orders"].fillna(0)
+                lunar_start["uncommitted"] = lunar_start["unrestricted"] - lunar_start["total_cm_orders"]
+                lunar_start["uncommitted"] = lunar_start["uncommitted"].clip(lower=0)  # Floor at 0
+
+                # Get Lunar's own on-order (source_report = "Lunar Netsuite") for supply replenishment
+                lunar_oo = onorder[onorder["source_report"] == "Lunar Netsuite"].copy()
+
+                # Prepare dated orders for later depletion calculation
+                # CM orders to Lunar with receipt/ship dates
+                cm_orders_lunar_dated = cm_orders_lunar.copy()
+                cm_orders_lunar_dated["eta"] = cm_orders_lunar_dated["receipt_date"].fillna(cm_orders_lunar_dated["ship_date"])
+                cm_orders_lunar_dated = cm_orders_lunar_dated[cm_orders_lunar_dated["eta"].notna()].copy()
+                cm_orders_lunar_dated["eta"] = pd.to_datetime(cm_orders_lunar_dated["eta"])
+                cm_orders_lunar_dated["eta_month"] = cm_orders_lunar_dated["eta"].dt.to_period("M")
+                # Normalize CM names to match balance_table (e.g., "Sienna GA" → "Sienna")
+                cm_orders_lunar_dated["cm_extracted"] = cm_orders_lunar_dated["cm_extracted"].map(cm_name_map).fillna(cm_orders_lunar_dated["cm_extracted"])
+
+                # Lunar's own on-order with receipt/ship dates
+                lunar_oo_dated = lunar_oo[lunar_oo["receipt_date"].notna() | lunar_oo["ship_date"].notna()].copy()
+                lunar_oo_dated["eta"] = lunar_oo_dated["receipt_date"].fillna(lunar_oo_dated["ship_date"])
+                lunar_oo_dated["eta"] = pd.to_datetime(lunar_oo_dated["eta"])
+                lunar_oo_dated["eta_month"] = lunar_oo_dated["eta"].dt.to_period("M")
+
+                # Calculate monthly Lunar depletion for each (CM, part)
+                # This will be calculated AFTER allocations so we can use the allocated amounts
+                # For now, create placeholder
+                lunar_depletion_temp = pd.DataFrame()
+
+                # Add inventory columns to comprehensive base table
+                # Get item_category and description from onhand
+                item_cat = _onhand[["lpn", "item_category", "description"]].drop_duplicates().rename(columns={"lpn": "part"})
+                balance_table = cm_pab_full.merge(item_cat, on="part", how="left")
+
+                # Extract CM from source_report for on-hand data (extract full name like "Sienna GA")
+                onhand_with_cm = onhand[onhand["source_report"] != "Lunar Netsuite"].copy()
+                onhand_with_cm["cm"] = onhand_with_cm["source_report"].str.extract(r"CM:\s*(.+)$", expand=False).str.strip()
+
+                # Get CM on-hand (without unit price for now)
+                cm_oh = onhand_with_cm.groupby(["cm", "lpn"]).agg(
+                    cm_on_hand=("unrestricted_qty", "sum")
+                ).reset_index()
+                cm_oh.columns = ["cm", "part", "cm_on_hand"]
+
+                # Normalize CM names in cm_oh to match balance_table
+                cm_oh["cm"] = cm_oh["cm"].map(cm_name_map).fillna(cm_oh["cm"])
+
+                # Extract CM from source_report for on-order data (extract full name like "Sienna GA")
+                onorder_with_cm = onorder[onorder["source_report"] != "Lunar Netsuite"].copy()
+                onorder_with_cm["cm"] = onorder_with_cm["source_report"].str.extract(r"CM:\s*(.+)$", expand=False).str.strip()
+
+                # Get CM on-order
+                cm_oo = onorder_with_cm.groupby(["cm", "lunar_lpn"]).agg(
+                    cm_on_order=("quantity_open", "sum")
+                ).reset_index()
+                cm_oo.columns = ["cm", "part", "cm_on_order"]
+
+                # Normalize CM names in cm_oo to match balance_table
+                cm_oo["cm"] = cm_oo["cm"].map(cm_name_map).fillna(cm_oo["cm"])
+
+                balance_table = balance_table.merge(cm_oh, on=["cm", "part"], how="left")
+                balance_table = balance_table.merge(cm_oo, on=["cm", "part"], how="left")
+
+                # Get Lunar on-order by part (source_report = "Lunar Netsuite")
+                lunar_oo = onorder[onorder["source_report"] == "Lunar Netsuite"].copy()
+                lunar_oo_by_part = lunar_oo.groupby("lunar_lpn").agg(
+                    on_order=("quantity_open", "sum")
+                ).reset_index()
+                lunar_oo_by_part.columns = ["part", "lunar_on_order_total"]
+
+                # ========== 3-SCENARIO LUNAR ALLOCATION LOGIC ==========
+                # Stage 1 (always first): Identify CM POs to Lunar and allocate those
+                # Then detect scenario and allocate Lunar inventory accordingly
+
+                # Extract CM orders placed TO Lunar (po_vendor contains "Lunar")
+                cm_orders_to_lunar = onorder[onorder["po_vendor"].str.contains("Lunar", case=False, na=False)].copy()
+                # Extract full CM name like "Sienna GA" from "CM: Sienna GA"
+                cm_orders_to_lunar["cm"] = cm_orders_to_lunar["source_report"].str.extract(r"CM:\s*(.+)$", expand=False).str.strip()
+
+                # Normalize CM names to match balance_table (e.g., "Sienna GA" → "Sienna")
+                cm_orders_to_lunar["cm"] = cm_orders_to_lunar["cm"].map(cm_name_map).fillna(cm_orders_to_lunar["cm"])
+
+                # For Stage 1 allocation: SUM all schedule lines
+                # Schedule lines with different receipt dates are cumulative supply, not duplicates
+                # DO NOT deduplicate - let groupby sum all rows for the same (cm, part)
+                cm_orders_by_cm_part = cm_orders_to_lunar.groupby(["cm", "lunar_lpn"]).agg(
+                    cm_orders=("quantity_open", "sum")
+                ).reset_index()
+                cm_orders_by_cm_part.columns = ["cm", "part", "cm_orders"]
+
+                # Pre-compute CM worst PAB by (cm, part) for shortage detection
+                pab_copy = pab.copy()
+                pab_copy["period_date"] = pd.to_datetime(pab_copy["period"])
+                pab_copy["month"] = pab_copy["period_date"].dt.to_period("M")
+                cm_part_worst_pab = (
+                    pab_copy.groupby(["cm", "part"])["pab"].min().reset_index()
+                ).rename(columns={"pab": "worst_pab"})
+
+                # Calculate stage 1 allocations and shortages per part
+                stage1_by_part = {}  # {part: {cm: qty}}
+                total_shortages_by_part = {}  # {part: {cm: shortage_qty}}
+
+                for part in balance_table["part"].unique():
+                    stage1_by_part[part] = {}
+                    total_shortages_by_part[part] = {}
+
+                    part_rows = balance_table[balance_table["part"] == part]
+                    lunar_data = lunar_start[lunar_start["part"] == part]
+
+                    if len(lunar_data) > 0:
+                        lunar_unrestricted = lunar_data["unrestricted"].values[0]
+                        uncommitted = lunar_data["uncommitted"].values[0]
+                    else:
+                        lunar_unrestricted = 0
+                        uncommitted = 0
+
+                    # Stage 1: Allocate CM POs to Lunar to specific CMs
+                    # Cap each CM's allocation to what Lunar actually has available (sequential allocation)
+                    stage1_total_by_part = 0
+                    remaining_lunar_inventory = lunar_unrestricted
+
+                    for _, row in part_rows.iterrows():
+                        cm = row["cm"]
+                        if cm == "Lunar":
+                            continue
+
+                        # Get this CM's orders from Lunar (po_vendor = "Lunar")
+                        cm_lunar_orders = cm_orders_by_cm_part[
+                            (cm_orders_by_cm_part["cm"] == cm) &
+                            (cm_orders_by_cm_part["part"] == part)
+                        ]
+                        cm_orders = cm_lunar_orders["cm_orders"].values[0] if len(cm_lunar_orders) > 0 else 0
+
+                        # Allocate MIN(requested, remaining available)
+                        allocated = min(cm_orders, remaining_lunar_inventory)
+                        stage1_by_part[part][cm] = allocated
+                        stage1_total_by_part += allocated
+                        remaining_lunar_inventory -= allocated
+
+                    # Calculate shortage per CM (worst PAB for this part)
+                    for _, row in part_rows.iterrows():
+                        cm = row["cm"]
+                        if cm == "Lunar":
+                            continue
+
+                        pab_match = cm_part_worst_pab[
+                            (cm_part_worst_pab["cm"] == cm) &
+                            (cm_part_worst_pab["part"] == part)
+                        ]
+                        worst_pab = pab_match["worst_pab"].values[0] if len(pab_match) > 0 else 0
+
+                        if worst_pab < 0:
+                            shortage = abs(worst_pab)
+                        else:
+                            shortage = 0
+                        total_shortages_by_part[part][cm] = shortage
+
+                    # Calculate total shortage and remaining Lunar inventory for this part
+                    total_shortage_this_part = sum(total_shortages_by_part[part].values())
+                    remaining_lunar = lunar_unrestricted - stage1_total_by_part
+                    remaining_lunar = max(0, remaining_lunar)
+
+                    # SCENARIO DETECTION and allocation
+                    if total_shortage_this_part == 0:
+                        # Scenario 1: No shortage
+                        # CMs get only Stage 1 POs, Lunar keeps remainder
+                        scenario = 1
+                    elif total_shortage_this_part <= remaining_lunar:
+                        # Scenario 2: Shortage exists, but Lunar has enough
+                        # Allocate exact shortage to each CM, remainder to Lunar
+                        scenario = 2
+                    else:
+                        # Scenario 3: Shortage exists, Lunar insufficient
+                        # Proportional allocation based on net shortages
+                        scenario = 3
+
+                    # Store scenario for logging
+                    if not hasattr(balance_table, '_scenarios'):
+                        balance_table._scenarios = {}
+                    balance_table._scenarios[part] = {
+                        'scenario': scenario,
+                        'total_shortage': total_shortage_this_part,
+                        'remaining_lunar': remaining_lunar,
+                        'stage1_total': stage1_total_by_part
+                    }
+
+                # Build lunar_allocated_rows with 3-scenario logic
+                lunar_allocated_rows = []
+                for part in balance_table["part"].unique():
+                    part_rows = balance_table[balance_table["part"] == part]
+                    lunar_data = lunar_start[lunar_start["part"] == part]
+
+                    if len(lunar_data) > 0:
+                        lunar_unrestricted = lunar_data["unrestricted"].values[0]
+                        uncommitted = lunar_data["uncommitted"].values[0]
+                    else:
+                        lunar_unrestricted = 0
+                        uncommitted = 0
+
+                    # Get Lunar on-order for this part
+                    lunar_oo_qty = lunar_oo_by_part[lunar_oo_by_part["part"] == part]["lunar_on_order_total"].values
+                    lunar_oo_qty = lunar_oo_qty[0] if len(lunar_oo_qty) > 0 else 0
+
+                    # Get scenario for this part
+                    scenario_info = balance_table._scenarios.get(part, {})
+                    scenario = scenario_info.get('scenario', 1)
+                    total_shortage_this_part = scenario_info.get('total_shortage', 0)
+                    remaining_lunar = scenario_info.get('remaining_lunar', 0)
+
+                    stage1_by_part_dict = stage1_by_part.get(part, {})
+                    shortages = total_shortages_by_part.get(part, {})
+
+                    for _, row in part_rows.iterrows():
+                        cm = row["cm"]
+
+                        if cm == "Lunar":
+                            # Lunar row: allocation depends on scenario
+                            # Use stage1_total from scenario_info, not the loop variable (which gets overwritten)
+                            stage1_total = scenario_info.get('stage1_total', 0)
+
+                            if scenario == 1:
+                                # Scenario 1: No shortage, Lunar gets remainder after Stage 1 allocations
+                                lunar_on_hand_alloc = max(0, lunar_unrestricted - stage1_total)
+                            elif scenario == 2:
+                                # Scenario 2: Allocate exact shortages, remainder to Lunar
+                                total_allocated_to_cms = sum([
+                                    stage1_by_part_dict.get(c, 0) + shortages.get(c, 0)
+                                    for c in [row["cm"] for _, row in part_rows.iterrows() if row["cm"] != "Lunar"]
+                                ])
+                                lunar_on_hand_alloc = max(0, lunar_unrestricted - total_allocated_to_cms)
+                            else:  # scenario == 3
+                                # Scenario 3: All Lunar inventory is allocated to CMs
+                                lunar_on_hand_alloc = 0
+
+                            lunar_on_order_alloc = lunar_oo_qty
+                        else:
+                            # CM row: allocation depends on scenario
+                            stage1_qty = stage1_by_part_dict.get(cm, 0)
+                            shortage_qty = shortages.get(cm, 0)
+
+                            if scenario == 1:
+                                # Scenario 1: No shortage, CMs get only Stage 1 POs
+                                lunar_on_hand_alloc = stage1_qty
+                                lunar_on_order_alloc = 0
+                            elif scenario == 2:
+                                # Scenario 2: Allocate exact shortage + Stage 1 POs
+                                lunar_on_hand_alloc = stage1_qty + shortage_qty
+                                lunar_on_order_alloc = 0
+                            else:  # scenario == 3
+                                # Scenario 3: Proportional allocation based on shortage
+                                if total_shortage_this_part > 0:
+                                    shortage_share = shortage_qty / total_shortage_this_part
+                                    lunar_on_hand_alloc = stage1_qty + (remaining_lunar * shortage_share)
+                                else:
+                                    lunar_on_hand_alloc = stage1_qty
+                                lunar_on_order_alloc = 0
+
+                        lunar_allocated_rows.append({
+                            "cm": cm,
+                            "part": part,
+                            "lunar_on_hand_alloc": lunar_on_hand_alloc,
+                            "lunar_on_order_alloc": lunar_on_order_alloc,
+                            "lunar_unit_price": 0
+                        })
+
+                lunar_alloc_df = pd.DataFrame(lunar_allocated_rows)
+                balance_table = balance_table.merge(lunar_alloc_df, on=["cm", "part"], how="left")
+
+                # NOW calculate lunar depletion using the allocated amounts
+                # Extract month columns from balance_table
+                static_cols_exclude = ["cm", "part", "description", "item_category", "cm_on_hand", "cm_on_order", "cm_unit_price", "cm_price_source", "lunar_on_hand_alloc", "lunar_on_order_alloc", "lunar_unit_price", "obsolescence_state"]
+                months = sorted([col for col in balance_table.columns if col not in static_cols_exclude and not col.startswith("Lunar_")])
+
+                # Pre-compute PAB minimums by (cm, part, month) for efficiency
+                # This avoids repeated filtering in the loop
+                pab["period_date"] = pd.to_datetime(pab["period"])
+                pab["month"] = pab["period_date"].dt.to_period("M")
+                pab_min_by_month = (
+                    pab.groupby(["cm", "part", "month"])["pab"].min().reset_index()
                 )
+                pab_min_by_month.columns = ["cm", "part", "month", "min_pab"]
+
+                # Calculate Lunar depletion balances month-by-month for each (cm, part)
+                # For CMs: Balance = allocated_to_cm - cumulative_consumption_by_cm
+                # For Lunar: Balance = allocated_to_lunar + on_order - cumulative_total_consumption
+                for idx, row in balance_table.iterrows():
+                    cm = row["cm"]
+                    part = row["part"]
+                    lunar_on_hand_alloc = row["lunar_on_hand_alloc"]
+
+                    cumulative_po_received = 0
+                    cumulative_shortage_covered = 0
+                    cumulative_lunar_received = 0
+                    cumulative_all_cms_po = 0  # Track total consumption by ALL CMs
+
+                    # For Lunar row: include all past receipts (already received) in starting balance
+                    if cm == "Lunar":
+                        # Get first month in projection
+                        first_month = pd.Period(months[0], freq="M") if months else None
+                        if first_month:
+                            # Sum all Lunar receipts that happened before the projection starts
+                            # (skip if using on-hand only)
+                            if _inventory_source == "On Hand Only":
+                                past_receipts = 0
+                            else:
+                                past_receipts = lunar_oo_dated[
+                                    (lunar_oo_dated["lunar_lpn"] == part) &
+                                    (lunar_oo_dated["eta_month"] < first_month)
+                                ]["quantity_open"].sum()
+                            cumulative_lunar_received = past_receipts
+
+                        # Also count all past CM PO receipts (consumption by CMs)
+                        if first_month and _inventory_source != "On Hand Only":
+                            cumulative_all_cms_po = cm_orders_lunar_dated[
+                                (cm_orders_lunar_dated["lunar_lpn"] == part) &
+                                (cm_orders_lunar_dated["eta_month"] < first_month)
+                            ]["quantity_open"].sum()
+
+                    for month in months:
+                        month_period = pd.Period(month, freq="M")
+
+                        if cm == "Lunar":
+                            # For Lunar row: Balance = allocated - total_consumed_by_cms + lunar_replenishment
+                            # (or just allocated if using on-hand only)
+                            if _inventory_source == "On Hand Only":
+                                lunar_receipts_this_month = 0
+                                cms_consumption_this_month = 0
+                            else:
+                                lunar_receipts_this_month = lunar_oo_dated[
+                                    (lunar_oo_dated["lunar_lpn"] == part) &
+                                    (lunar_oo_dated["eta_month"] == month_period)
+                                ]["quantity_open"].sum()
+                                # Total consumption by ALL CMs this month
+                                cms_consumption_this_month = cm_orders_lunar_dated[
+                                    (cm_orders_lunar_dated["lunar_lpn"] == part) &
+                                    (cm_orders_lunar_dated["eta_month"] == month_period)
+                                ]["quantity_open"].sum()
+                            cumulative_lunar_received += lunar_receipts_this_month
+                            cumulative_all_cms_po += cms_consumption_this_month
+                            balance = lunar_on_hand_alloc + cumulative_lunar_received - cumulative_all_cms_po
+                        else:
+                            # For CM row: Balance = allocated - (PO received + shortage covered)
+                            # PO receipts (skip if using on-hand only)
+                            if _inventory_source == "On Hand Only":
+                                po_this_month = 0
+                            else:
+                                po_this_month = cm_orders_lunar_dated[
+                                    (cm_orders_lunar_dated["cm_extracted"] == cm) &
+                                    (cm_orders_lunar_dated["lunar_lpn"] == part) &
+                                    (cm_orders_lunar_dated["eta_month"] == month_period)
+                                ]["quantity_open"].sum()
+                            cumulative_po_received += po_this_month
+
+                            # Shortage coverage (worst PAB up to this month)
+                            pab_up_to_month = pab_min_by_month[
+                                (pab_min_by_month["cm"] == cm) &
+                                (pab_min_by_month["part"] == part) &
+                                (pab_min_by_month["month"] <= month_period)
+                            ]
+                            cumulative_shortage_covered = 0
+                            if len(pab_up_to_month) > 0:
+                                worst_pab = pab_up_to_month["min_pab"].min()
+                                if pd.notna(worst_pab) and worst_pab < 0:
+                                    cumulative_shortage_covered = abs(worst_pab)
+
+                            balance = lunar_on_hand_alloc - cumulative_po_received - cumulative_shortage_covered
+
+                        balance_table.loc[idx, f"Lunar_balance_{month}"] = max(0, balance)  # Floor at 0
+
+                # Add unit prices and source
+                cm_prices, lunar_prices, cm_sources = get_unit_prices_with_source(_onhand, _onorder, {})
+
+                balance_table["cm_unit_price"] = balance_table["part"].map(lambda p: cm_prices.get(p, (0, ""))[0])
+                balance_table["cm_price_source"] = balance_table["part"].map(lambda p: cm_prices.get(p, (0, ""))[1])
+                balance_table["lunar_unit_price"] = balance_table["part"].map(lambda p: lunar_prices.get(p, 0))
+
+                # ========== VALIDATION TEST: Lunar allocation value sumproduct ==========
+                try:
+                    # Calculate sumproduct of (Lunar on-hand allocation qty × Lunar unit price)
+                    lunar_rows = balance_table[balance_table["cm"] == "Lunar"].copy()
+                    lunar_rows["allocation_value"] = lunar_rows["lunar_on_hand_alloc"] * lunar_rows["lunar_unit_price"]
+
+                    total_allocation_value = lunar_rows["allocation_value"].sum()
+                    expected_value = 26775885.06
+                    variance = abs(total_allocation_value - expected_value)
+
+                    log.info("=" * 80)
+                    log.info("VALIDATION TEST: Lunar Allocation Value")
+                    log.info(f"Total Lunar allocation value: ${total_allocation_value:,.2f}")
+                    log.info(f"Expected value:               ${expected_value:,.2f}")
+                    log.info(f"Variance:                     ${variance:,.2f}")
+
+                    if variance > 1.0:
+                        log.warning(f"VARIANCE EXCEEDS $1 - Identifying top 5 discrepant parts")
+
+                        # Identify discrepancies per part
+                        part_discrepancies = []
+                        for part in lunar_rows["part"].unique():
+                            part_data = lunar_rows[lunar_rows["part"] == part]
+                            part_value = part_data["allocation_value"].sum()
+
+                            # Expected value per part (rough estimate based on on-hand inventory)
+                            # For validation, we'll just flag high-value parts
+                            if part_value > 100000:  # Parts with > $100k allocation
+                                part_discrepancies.append({
+                                    "part": part,
+                                    "allocation_qty": part_data["lunar_on_hand_alloc"].values[0],
+                                    "unit_price": part_data["lunar_unit_price"].values[0],
+                                    "allocation_value": part_value
+                                })
+
+                        # Sort by value descending and show top 5
+                        part_discrepancies.sort(key=lambda x: x["allocation_value"], reverse=True)
+                        log.warning("Top 5 parts by allocation value:")
+                        for i, disc in enumerate(part_discrepancies[:5], 1):
+                            log.warning(
+                                f"  {i}. {disc['part']}: qty={disc['allocation_qty']:.0f} × "
+                                f"${disc['unit_price']:.2f} = ${disc['allocation_value']:,.2f}"
+                            )
+                    else:
+                        log.info("VALIDATION PASSED: Allocation value within tolerance")
+
+                    log.info("=" * 80)
+                except Exception as val_e:
+                    log.error(f"Validation test error: {val_e}", exc_info=True)
+
+                # Fill NaNs
+                balance_table = balance_table.fillna(0)
+                return balance_table
+
+            # Call the cached function with spinner
+            with st.spinner("Loading inventory depletion..."):
+                balance_table = _compute_inventory_depletion(pab, onhand, onorder, st.session_state.inventory_source_selection)
 
             if len(balance_table) > 0:
-                # Filters
-                st.subheader("Filters")
-                filter_cols = st.columns(2)
+                # balance_table is already in wide format from compute_inventory_depletion
+                # Columns: cm, part, description, on_hand, on_order, [period1, period2, ...]
 
-                with filter_cols[0]:
-                    cm_filter = st.multiselect("CM", sorted(balance_table["cm"].unique()), default=sorted(balance_table["cm"].unique()), label_visibility="collapsed")
+                # Add Generation/Obsolescence columns
+                # Build mapping of products by generation from stitch_list
+                gen_1_products = set(stitch_list[stitch_list["Generation Alias"].str.contains("Gen 1", na=False)]["Parent Product LPN"].unique())
+                gen_2_products = set(stitch_list[stitch_list["Generation Alias"].str.contains("Gen 2", na=False)]["Parent Product LPN"].unique())
 
-                with filter_cols[1]:
-                    part_filter = st.multiselect("Part Number", sorted(balance_table["part"].unique()), placeholder="Choose options", label_visibility="collapsed")
+                # Build mapping of parts used in each generation's BOM
+                gen_1_parts = set()
+                gen_2_parts = set()
 
-                # View options
-                st.subheader("View")
-                view_type = st.radio("", ["Quantity", "Value"], horizontal=True, label_visibility="collapsed")
+                for product in gen_1_products:
+                    product_parts = bom_stitched[bom_stitched["Parent Product LPN"] == product]["item_number"].unique()
+                    gen_1_parts.update(product_parts)
 
-                # Filter data
+                for product in gen_2_products:
+                    product_parts = bom_stitched[bom_stitched["Parent Product LPN"] == product]["item_number"].unique()
+                    gen_2_parts.update(product_parts)
+
+                # Add obsolescence state column to balance_table
+                def get_obsolescence_state(part):
+                    gen1 = part in gen_1_parts
+                    gen2 = part in gen_2_parts
+                    if gen1 and gen2:
+                        return "Active in Both"
+                    elif gen1 and not gen2:
+                        return "Gen 1 Only"
+                    elif not gen1 and gen2:
+                        return "Gen 2 Only"
+                    else:
+                        return "Obsolete"
+
+                balance_table["obsolescence_state"] = balance_table["part"].apply(get_obsolescence_state)
+
+                # Display Lunar allocation validation
+                # Apply global filters to balance_table
                 filtered_balance = balance_table.copy()
-                if cm_filter:
-                    filtered_balance = filtered_balance[filtered_balance["cm"].isin(cm_filter)]
+                if cm_filter != "All":
+                    filtered_balance = filtered_balance[filtered_balance["cm"] == cm_filter]
                 if part_filter:
                     filtered_balance = filtered_balance[filtered_balance["part"].isin(part_filter)]
+                if category_filter:
+                    filtered_balance = filtered_balance[filtered_balance["item_category"].isin(category_filter)]
+                if generation_filter:
+                    filtered_balance = filtered_balance[filtered_balance["obsolescence_state"].isin(generation_filter)]
 
-                # Pivot for display
-                if view_type == "Quantity":
-                    balance_pivot = filtered_balance.pivot_table(
-                        index=["cm", "part", "description"],
-                        columns="period",
-                        values="total_balance_qty",
-                        aggfunc="first"
-                    )
-                    st.caption("Inventory balance by period (quantity)")
-                else:
-                    balance_pivot = filtered_balance.pivot_table(
-                        index=["cm", "part", "description"],
-                        columns="period",
-                        values="total_balance_value",
-                        aggfunc="first"
-                    )
-                    st.caption("Inventory balance by period (value)")
+                # Display the CM runout and Lunar depletion table
+                if len(filtered_balance) > 0:
+                    output_table = filtered_balance.copy()
 
-                # Format and display
-                if len(balance_pivot) > 0:
-                    # Format numbers
+                    # Drop lunar allocation value (used for calculations only)
+                    output_table = output_table.drop(columns=["lunar_allocation_value"], errors="ignore")
+
+                    # Static columns
+                    static_cols = [
+                        "cm", "part", "description", "item_category",
+                        "cm_on_hand", "cm_on_order", "cm_unit_price", "cm_price_source",
+                        "lunar_on_hand_alloc", "lunar_on_order_alloc", "lunar_unit_price",
+                        "obsolescence_state"
+                    ]
+
+                    # Separate CM and Lunar month columns
+                    cm_months = sorted([col for col in output_table.columns if col not in static_cols and not col.startswith("Lunar_")])
+                    lunar_months = sorted([col for col in output_table.columns if col.startswith("Lunar_")])
+
+                    # Format numeric columns as integers
+                    for col in cm_months + lunar_months:
+                        output_table[col] = output_table[col].fillna(0).astype(int)
+
+                    for col in ["cm_on_hand", "cm_on_order", "lunar_on_hand_alloc", "lunar_on_order_alloc"]:
+                        if col in output_table.columns:
+                            output_table[col] = output_table[col].fillna(0).astype(int)
+
+                    # ========== RESTRUCTURE: Duplicate rows - one for CM depletion, one for Lunar depletion ==========
+                    # Create duplicate rows: original shows CM depletion, duplicate shows Lunar depletion
+
+                    # Create CM depletion rows (original data with projection_type="CM Depletion")
+                    cm_depletion_table = output_table.copy()
+                    cm_depletion_table["projection_type"] = "CM Depletion"
+
+                    # Create Lunar depletion rows (duplicate data with projection_type="Lunar Depletion")
+                    lunar_depletion_table = output_table.copy()
+                    lunar_depletion_table["projection_type"] = "Lunar Depletion"
+
+                    # For Lunar depletion rows, replace CM month columns with Lunar_balance values
+                    for month in cm_months:
+                        lunar_balance_col = f"Lunar_balance_{month}"
+                        if lunar_balance_col in lunar_depletion_table.columns:
+                            lunar_depletion_table[month] = lunar_depletion_table[lunar_balance_col]
+
+                    # Combine: CM depletion rows + Lunar depletion rows
+                    output_table = pd.concat([cm_depletion_table, lunar_depletion_table], ignore_index=True)
+
+                    # Update static_cols to include projection_type
+                    static_cols_with_type = static_cols + ["projection_type"]
+
+                    # For DISPLAY: show static columns + cm_months only (not lunar_months)
+                    existing_static = [c for c in static_cols_with_type if c in output_table.columns]
+                    display_col_order = existing_static + cm_months
+
+                if len(output_table) > 0:
                     try:
-                        if view_type == "Quantity":
-                            balance_pivot = balance_pivot.fillna(0).astype(int)
+                        st.subheader("CM & Lunar Inventory Projection by Period")
+
+                        # Inventory source and segmentation options
+                        col_inv_src, col_segment = st.columns(2)
+
+                        with col_inv_src:
+                            st.session_state.inventory_source_selection = st.selectbox(
+                                "Inventory to use:",
+                                ["On Hand + On Order", "On Hand Only"],
+                                index=0 if st.session_state.inventory_source_selection == "On Hand + On Order" else 1,
+                                key="depletion_inventory_source"
+                            )
+
+                        with col_segment:
+                            # Chart segmentation dropdown
+                            segmentation_option = st.selectbox(
+                                "Segment charts by:",
+                                ["Item Category", "Product Generation"],
+                                index=0,
+                                key="depletion_segment_select"
+                            )
+
+                        # Prepare display table
+                        display_table = output_table.copy()
+
+                        # Generate inventory projection charts
+                        # Calculate monthly sums for charts (from original quantities, floor negatives at 0, multiply by unit price)
+                        # Get unique segments based on selection
+                        if segmentation_option == "Item Category":
+                            segments = sorted([str(c) for c in output_table["item_category"].dropna().unique()])
+                            segment_col = "item_category"
+                        else:  # Product Generation
+                            segments = sorted([str(c) for c in output_table["obsolescence_state"].dropna().unique()])
+                            segment_col = "obsolescence_state"
+
+                        categories = segments  # Rename for consistency with existing code
+
+                        if len(categories) > 0 and len(cm_months) > 0:
+                            # Build stacked data by segment
+                            lunar_data = {seg: [] for seg in categories}
+                            cm_data = {seg: [] for seg in categories}
+                            months_list = []
+
+                            for col in cm_months:
+                                months_list.append(col)
+
+                                for segment in categories:
+                                    # Filter by segment AND by projection type
+                                    # Lunar chart: all CMs with Lunar Depletion projection
+                                    lunar_seg_data = output_table[
+                                        (output_table[segment_col].astype(str) == str(segment)) &
+                                        (output_table["projection_type"] == "Lunar Depletion")
+                                    ]
+                                    # CM chart: all CMs with CM Depletion projection
+                                    cm_seg_data = output_table[
+                                        (output_table[segment_col].astype(str) == str(segment)) &
+                                        (output_table["projection_type"] == "CM Depletion")
+                                    ]
+                                    seg_data = cm_seg_data  # Keep for compatibility with existing code below
+
+                                    # CM data: use CM_seg_data which only has CM Depletion rows
+                                    if len(cm_seg_data) > 0:
+                                        cm_sum = (np.maximum(cm_seg_data[col], 0) * cm_seg_data["cm_unit_price"]).sum()
+                                    else:
+                                        cm_sum = 0.0
+
+                                    # Lunar data: use lunar_seg_data which only has Lunar Depletion rows
+                                    if len(lunar_seg_data) > 0:
+                                        lunar_sum = (np.maximum(lunar_seg_data[col], 0) * lunar_seg_data["lunar_unit_price"]).sum()
+                                    else:
+                                        lunar_sum = 0.0
+
+                                    lunar_data[segment].append(float(lunar_sum / 1_000_000))
+                                    cm_data[segment].append(float(cm_sum / 1_000_000))
+
+                            # Create DataFrames with Month index
+                            lunar_df = pd.DataFrame(lunar_data, index=months_list)
+                            cm_df = pd.DataFrame(cm_data, index=months_list)
+
+                            # Create side-by-side columns for charts
+                            col1, col2 = st.columns(2)
+
+                            with col1:
+                                st.subheader("Lunar Inventory Projection")
+                                # Create Plotly bar chart with totals at top
+                                fig_lunar = go.Figure()
+
+                                # Add stacked bars for each segment
+                                for segment in lunar_df.columns:
+                                    fig_lunar.add_trace(go.Bar(
+                                        x=lunar_df.index,
+                                        y=lunar_df[segment],
+                                        name=segment,
+                                        hovertemplate='<b>%{x}</b><br>' + segment + ': $%{y:.2f}M<extra></extra>'
+                                    ))
+
+                                # Calculate totals and add invisible bar with labels for total
+                                totals = lunar_df.sum(axis=1)
+                                fig_lunar.add_trace(go.Bar(
+                                    x=lunar_df.index,
+                                    y=[0] * len(lunar_df),  # invisible bar
+                                    text=totals.round(2).astype(str),
+                                    textposition='outside',
+                                    hoverinfo='skip',
+                                    showlegend=False,
+                                    marker=dict(opacity=0)
+                                ))
+
+                                fig_lunar.update_layout(
+                                    barmode='stack',
+                                    height=400,
+                                    xaxis_title='Month',
+                                    yaxis_title='Value ($M)',
+                                    hovermode='x unified',
+                                    showlegend=True,
+                                    margin=dict(t=80)
+                                )
+                                st.plotly_chart(fig_lunar, use_container_width=True)
+
+                            with col2:
+                                st.subheader("CM Inventory Projection")
+                                # Create Plotly bar chart with totals at top
+                                fig_cm = go.Figure()
+
+                                # Add stacked bars for each segment
+                                for segment in cm_df.columns:
+                                    fig_cm.add_trace(go.Bar(
+                                        x=cm_df.index,
+                                        y=cm_df[segment],
+                                        name=segment,
+                                        hovertemplate='<b>%{x}</b><br>' + segment + ': $%{y:.2f}M<extra></extra>'
+                                    ))
+
+                                # Calculate totals and add invisible bar with labels for total
+                                totals = cm_df.sum(axis=1)
+                                fig_cm.add_trace(go.Bar(
+                                    x=cm_df.index,
+                                    y=[0] * len(cm_df),  # invisible bar
+                                    text=totals.round(2).astype(str),
+                                    textposition='outside',
+                                    hoverinfo='skip',
+                                    showlegend=False,
+                                    marker=dict(opacity=0)
+                                ))
+
+                                fig_cm.update_layout(
+                                    barmode='stack',
+                                    height=400,
+                                    xaxis_title='Month',
+                                    yaxis_title='Value ($M)',
+                                    hovermode='x unified',
+                                    showlegend=True,
+                                    margin=dict(t=80)
+                                )
+                                st.plotly_chart(fig_cm, use_container_width=True)
                         else:
-                            # Format as currency
-                            def format_value(x):
-                                if pd.notna(x):
-                                    return f"${x:,.0f}"
-                                return "—"
-                            balance_pivot = balance_pivot.applymap(format_value)
+                            st.info("No data to display in charts")
 
-                        st.dataframe(balance_pivot, use_container_width=True, height=500)
+                        st.divider()
 
-                        # Export button
-                        csv = balance_pivot.to_csv()
+                        # Display mode radio buttons (below charts)
+                        view_mode = st.radio("Display Mode", ["Quantity", "Value ($)"], horizontal=True, index=0)
+
+                        # Apply view mode to display table
+                        if view_mode == "Value ($)":
+                            # Convert PAB columns to values (multiply by unit price)
+                            # Floor negative values at 0
+                            # Use appropriate unit price based on projection type:
+                            # - CM Depletion rows: use cm_unit_price for cm_months columns
+                            # - Lunar Depletion rows: use lunar_unit_price for all balance columns (even though stored in cm_months)
+
+                            for col in cm_months:
+                                # For CM Depletion rows, use cm_unit_price
+                                # For Lunar Depletion rows, use lunar_unit_price
+                                cm_mask = display_table["projection_type"] == "CM Depletion"
+                                lunar_mask = display_table["projection_type"] == "Lunar Depletion"
+
+                                display_table.loc[cm_mask, col] = (np.maximum(display_table.loc[cm_mask, col], 0) * display_table.loc[cm_mask, "cm_unit_price"]).round(0).astype(int)
+                                display_table.loc[lunar_mask, col] = (np.maximum(display_table.loc[lunar_mask, col], 0) * display_table.loc[lunar_mask, "lunar_unit_price"]).round(0).astype(int)
+
+                            # Lunar columns (if any exist) multiplied by lunar_unit_price
+                            for col in lunar_months:
+                                display_table[col] = (np.maximum(display_table[col], 0) * display_table["lunar_unit_price"]).round(0).astype(int)
+
+                        # Display only the selected columns (not the separate Lunar_balance columns)
+                        display_table_final = display_table[display_col_order]
+                        st.dataframe(display_table_final, use_container_width=True, height=500)
+
+                        # Export button (export all rows)
+                        csv = display_table.to_csv(index=False)
                         st.download_button("📥 Download as CSV", csv, "inventory_depletion.csv", "text/csv")
                     except Exception as format_error:
                         st.error(f"Error formatting table: {format_error}")
                         log.error(f"Format error: {format_error}", exc_info=True)
-                        st.dataframe(balance_pivot, use_container_width=True, height=500)
+                        st.dataframe(output_table, use_container_width=True, height=500)
                 else:
                     st.info("No data matches the selected filters.")
             else:

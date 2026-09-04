@@ -23,13 +23,21 @@ Two conventions worth knowing before you use these frames:
 """
 
 import logging
+import os
 from pathlib import Path
 
 import pandas as pd
 
 log = logging.getLogger(__name__)
 
-DATA = Path(__file__).resolve().parent.parent / "data"
+# Detect environment: Streamlit Cloud vs localhost
+# Streamlit Cloud sets STREAMLIT environment variable
+is_cloud = 'STREAMLIT' in os.environ or os.getenv('STREAMLIT_SERVER_HEADLESS') == 'true'
+data_folder = "cloud" if is_cloud else ""
+DATA = Path(__file__).resolve().parent.parent / "data" / data_folder if is_cloud else Path(__file__).resolve().parent.parent / "data"
+
+# Debug: log which environment we're running in
+log.info(f"Running in {'Cloud' if is_cloud else 'localhost'} mode. Data path: {DATA}")
 
 # DATA ROWS, excluding the header. Verified against the exports of 2026-08-26.
 # Re-check these every time the snapshots are refreshed.

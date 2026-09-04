@@ -1,0 +1,351 @@
+LPN,Description,GSM,Supplier,Arena UoM,Order Category,MOQ (#ESS)/EAU,Quoted EAU,MULT (Reel Size), Unit Price (@MOQ/EAU) ,MPN,MFG,Quote Date
+10-000395,"Washer,M5,Flat,5.3mm IDx 12.6mm OD,Steel",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.028 ,,,2026/02/19
+10-000778,"PN-SW8071Screw,M5x0.8 6g x10mm,BHT",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.045 ,,,2026/03/30
+10-000903,"Plug,Conduit,Sealing,Stepped, 3/4""",[MRO Part],Open market,Each,ME Non critical,-,-,-, $ 0.480 ,,,Sienna Managed
+10-001246,"Tray,Blower,Inverter",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 6.010 ,,,2025/09/15
+10-001267,"Enclosure, Top, Maximizer",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 1.560 ,,,2025/09/15
+10-001269,"Mounting Bracket, Maximizer",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 1.240 ,,,2026/02/20
+10-001271,"MC4 Pigtail, Male, 200mm",Tejas Dixit,Avalon,Each,ME critical,7000,-,-, $ 1.230 ,,,2026/01/30
+10-001272,"MC4 Pigtail, Female, 200mm",Tejas Dixit,Avalon,Each,ME critical,7000,-,-, $ 1.260 ,,,2026/01/30
+10-001480,"Screw,6-19xPLAST 48/2, 0.5"",BHT T-15,T/F,Steel,ZnNi BC",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.015 ,,,2025/09/03
+10-001515,"Grommet,Vibration Damping,4mm Shldr,Shor",[MRO Part],Open market,Each,ME Non critical,-,-,-, $ 0.450 ,,,Sienna Managed
+10-001527,"MC4 Pigtail, Male, 1250mm",Tejas Dixit,Avalon,Each,ME critical,7000,-,-, $ 1.940 ,,,2026/01/30
+10-001528,"MC4 Pigtail, Female, 1250mm",Tejas Dixit,Avalon,Each,ME critical,7000,-,-, $ 1.970 ,,,2026/01/30
+10-001820,"Gantry,Power Transistor,material: A38",Hazel Gomes,First Part China Limited,Each,ME Non critical,5000,-,-, $ 9.100 ,,,First Part
+10-001821,"Plastic Pressure Pin, Power Transistor",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 0.250 ,,,
+10-002026,"Hotmelt,Polyamid,V0,0.2-0.3 W/m-K",[MRO Part],LPMS USA LLC,Gram,ME Non critical,,-,-, $ 0.040 ,,,Sienna Managed
+10-002027,"Thread Forming Screw, M2.5 X 5mm, Torx",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.005 ,,,2025/09/03
+10-002035,"Sticker, Vent, 12mm Round",Hazel Gomes,Marian Inc,Each,ME Non critical,10000,-,-, $ 0.180 ,,,2025/08/07
+10-002080,"Wire Harness,Inverter,Antenna (900Mhz/BT",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 25.540 ,,,-
+10-002109,"Screw,M5 x 0.8 6g x 8mm,BHT T-25,Steel,ZnNi BC,Nylon Patch",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.060 ,,,2025/09/03
+10-002110,"PN SW8106Screw,M2.5x0.45 6g x8mm,BHT T8",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.032 ,,,2026/02/19
+10-002113,"PN SW8108M5x0.8 6g x8mm,Under-Head Seal",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.129 ,,,2026/02/19
+10-002115,"SW8107,Screw,K30 x 1.34PF x10mm,T/F,BHT",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.024 ,,,2026/02/19
+10-002116,"Screw,M4x0.7 6g x36mm,BHT T20,Flange,Ste",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.087 ,,,2026/02/19
+10-002119,"Screw,#10-14 PLAST48-2x0.625in,T/F,BHT T25,Flange,Steel,ZiNi BC,Nylon Patch",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.035 ,,,2025/09/03
+10-002120,"SW8121Screw,8-32 UNRC-3Ax0.625in,BHT T",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.078 ,,,2026/02/19
+10-002121,"SW8113,Screw,Shldr,M3x0.5 6g x4.5mm,4.09",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.140 ,,,2026/02/19
+10-002124,"Standoff,M4,M/F,6mm M,10mm F,20mm Shldr,",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.170 ,,,2026/02/19
+10-002134,"PN SW8091M4x0.7 6gx10mm,BHT T15,Steel,Z",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.040 ,,,2026/02/19
+10-002146,Epic Resins Potting 10-002146 (S7475A-5P,[MRO Part],EPIC RESINS,Gram,ME Non critical,-,-,-, $ 0.010 ,,,2025/07/29
+10-002147,Epic Resins Potting 10-002147 (S7475B-5P,[MRO Part],EPIC RESINS,Gram,ME Non critical,-,-,-, $ 0.008 ,,,2025/07/29
+10-002173,"Assy Enclosure, Weldment, Bridge, Charco",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 87.170 ,,,2025/10/01
+10-002190,"Insulator Cap Neutral, Bridge",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 0.500 ,,,2025/09/15
+10-002195,"Relay Assembly, Bridge",Alec DeMarco,KG Technologies,Each,ME critical,10000,-,-, $ 24.320 ,,,KG Technologies (Hongfa)
+10-002203,"Bus Bar, NBU, L1, Bridge (Insul Coat)",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 11.730 ,,,
+10-002204,"Bus Bar, NBU, L2, Bridge (Insul Coat)",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 6.660 ,,,
+10-002205,"Bus Bar, BU, L2, Bridge (Insul Coat)",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 6.790 ,,,
+10-002206,"Bus Bar, BU, L1, Bridge (Insul Coat)",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 11.230 ,,,
+10-002207,"Bus Bar, Load Tray, Left, Bridge (Insul",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 8.570 ,,,
+10-002208,"Wire Terminal Lug, 250MCM, Aluminum, Tin",Hazel Gomes,GORDON ELECTRIC SUPPLY,Each,ME Non critical,1000,-,-, $ 2.300 ,,,Sienna Managed
+10-002209,"Insulation Tray, Core Module, Bridge",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 13.220 ,,,2025/09/15
+10-002211,"Relay Cover, Bridge",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 1.560 ,,,2025/09/15
+10-002212,"Bolt with Washer, M5 x 11, T25 Drive, Steel, Zinc Plated",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.091 ,,,2025/09/03
+10-002215,"Screw,M6 6h X 18mm,BHT T30,Grade 8.8,ZiNi BC",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.137 ,,,2025/09/03
+10-002219,"Standoff, Load Tray, Top, Bridge",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 1.010 ,,,2025/09/15
+10-002221,"Enclosure, PCBA's, Bridge",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 10.100 ,,,2025/09/15
+10-002222,"PENCOM ST9399 Standoff, Male-Female,",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.105 ,,,2026/02/19
+10-002225,"Bracket Assembly, PCBA, Bridge",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 3.870 ,,,2025/09/17
+10-002229,"Insulator, Ground Bar, Bridge",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 3.770 ,,,2025/09/15
+10-002230,"Neutral/Ground Bar, GIP",Hazel Gomes,GORDON ELECTRIC SUPPLY,Each,ME Non critical,7000,-,-, $ 3.410 ,,,2025/09/10
+10-002231,"Mount, Neutral/Ground Bar, Bridge",Steve Gelphman,Axtonne,Each,ME critical,,-,-, $ 1.430 ,,,2025/09/18
+10-002232,"Bus Bar, Ground, Bridge",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 5.150 ,,,
+10-002234,"Bolt, Flat Head, M4 x 13, Steel, Zn-Ni Plated",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.052 ,,,2025/09/03
+10-002235,"Bolt, M5 x 14, T25 Drive, Steel, Zn-Ni Plated",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.103 ,,,2025/09/03
+10-002243,"Insulator, Neutral Bar, Bridge",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 3.770 ,,,2025/09/15
+10-002244,"Busbar, Neutral, bridge",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 3.210 ,,,
+10-002245,"Load Tray, 20 Space, 40 Circuit, 225A",Hazel Gomes,Eaton,Each,ME critical,,-,-, $ 80.030 ,,,2025/08/25
+10-002246,"Nut, 1/4-20, Hex Head, Steel, Zn-Ni Plated",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.225 ,,,2025/09/03
+10-002248,"Wire Harness, Voltage Sense, Bridge",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 2.290 ,,,2025/10/01
+10-002267,"Spring,MW,9.6mm,33N/mm,Ground Ends",[MRO Part],Acxess Spring,Each,ME Non critical,,-,-, $ 0.300 ,,,Sienna Managed
+10-002322,"WIRE HARNESS, G/N BOND, Bridge",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 3.130 ,,,2025/10/01
+10-002324,"Washer, 1/4-20, Steel, Zinc-Plated",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.036 ,,,2025/09/03
+10-002407,"Screw,M5x13,SEMS,BHT T-25,Steel,Class 8.8,ZiNi BC",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.077 ,,,2025/09/03
+10-002548,CONNECTOR LOCK PLATE 3 POS,[MRO Part],Heilind,Each,ME Non critical,-,-,-, $ 0.050 ,,,Sienna Managed
+10-002579,"Offset Mounting Bracket, Wall, Bridge",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 2.020 ,,,2025/10/01
+10-002590,"Insulator, Load Tray, Bridge",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 0.500 ,,,2025/09/15
+10-002592,"CONN, PLUG SOCKET, SEALED COAX, 4POS, W2",[MRO Part],Heilind,Each,ME Non critical,-,-,-, $ 3.600 ,,,Sienna Managed
+10-002595,"Cavity Blanking Plug, PBT, Yellow, -40 –",[MRO Part],Heilind,Each,ME Non critical,-,-,-, $ 0.200 ,,,Sienna Managed
+10-002599,"Plastic Standoff, Wire Lug, S1/S2, Bridg",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 0.640 ,,,2025/09/15
+10-002646,"Home Controller, Processor TIM,10-002",Tejas Dixit,MyHeatSinks,Each,ME critical,3000,-,-, $ 0.780 ,,,2026/01/14
+10-002647,"Compression Bar, PCBA, Bridge",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 0.500 ,,,2025/09/15
+10-002669,XMFR 50A CUSTOM C,Alec DeMarco,KG Technologies,Each,ME Non critical,10000,-,-, $ 1.140 ,120-S0036-D,,KG Technologies (Hongfa)
+10-002691,"Plate, Thermal Break, PCBA, Bridge",Hazel Gomes,Seal Methods Inc.,Each,ME Non critical,7000,-,-, $ 2.050 ,,,Seal Methods
+10-002692,"Standoff,M3,M/F,4.76mm M,2.81mm F,6mm Sh",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.170 ,,,2026/02/19
+10-002720,"Side-Mount External Retaining Rings, Spr",Hazel Gomes,Unisteel Technology Limited,Each,ME Non critical,7000,-,-, $ 0.082 ,,,2025/09/17
+10-002754,"Bus Bar, Load Tray, Right, Bridge (Insu",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 8.570 ,,,
+10-002828,"Internal Star Washer, M3",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.023 ,,,2026/02/19
+10-003002,"Guide, Header Pins, PCBA, Bridge",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 0.500 ,,,2025/09/15
+10-003004,"PV Bus bar, low profile",Steve Gelphman,Axtonne,Each,ME critical,,-,-, $ 2.800 ,,,2025/09/18
+10-003028,Silicone Conformal Coating Clear,[MRO Part],ELLSWORTH ADHESIVES,Milliliter,ME Non critical,-,-,-, $ 0.130 ,,,Sienna Managed
+10-003068,"NUT, M5x0.8 6Hx5mm, NYLON INSERT, STEEL,",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.060 ,,,2026/02/19
+10-003078,"Wire Harness, Positive, PV Hub",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 0.300 ,,,
+10-003079,"Wire Harness, Negative, PV Hub",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 0.300 ,,,
+10-003113,"Screw,M3x0.5 6g x8mm,BHT T8,Flange,Steel",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.025 ,,,2026/02/19
+10-003122,"Light Pipe Trio, Plastic, 3mm tip",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 0.400 ,,,2025/09/17
+10-003133,"Overmolding Gasket, Antenna Pass Thru",Hazel Gomes,Boyd Corporation,Each,ME Non critical,2000,-,-, $ 0.242 ,,,2025/08/02
+10-003340,"Wire RED 16awg,UL1015, 600V, 26/30 stran",[Child of Buy],Anixter,Each,ME Non critical,-,-,-, - ,,,Sienna Managed
+10-003437,"Adhesive/Sealant, RTV Silicone for Bridg",[MRO Part],ELLSWORTH ADHESIVES,Milliliter,ME Non critical,-,-,-, $ 0.430 ,,,Sienna Managed
+10-003464,"Screw, 1/4-28 x 3/8in, Steel, Zinc-Plated",Hazel Gomes,"Bossard, Inc.",Each,ME Non critical,-,-,-, $ 0.085 ,,,2025/05/14
+10-003498,"Assy, SnapNRack, PV Hub",Hazel Gomes,SnapNrack,Each,ME Non critical,7000,-,-, $ 38.560 ,,,
+10-003527,"Cover, PCBA, PV Hub",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 1.520 ,,,2025/09/15
+10-003550,"ASSY, INNER COVER, BRIDGE, CHARCOAL SUED",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 21.540 ,,,2025/10/01
+10-003551,"ASSY, ENCLOSURE DOOR, BRIDGE, LUNAR Blue",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 23.280 ,,,2025/10/01
+10-003560,"Screw M3x0.5 6g,5mm,BHT T-8,Steel,ZiNi B",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.030 ,,,2025/09/03
+10-003564,Thread Forming Screw with Internal Tooth,Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.061 ,,,2026/02/19
+10-003590,"Washer, Flat, M4, Plastic",Hazel Gomes,Bossard North America,Each,ME Non critical,12500,-,-, $ 0.075 ,,,2025/09/12
+10-003598,"Label, Terminal Diagram, Bridge",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,7000,-,-, $ 1.132 ,,,2025/08/06
+10-003600,"Label, Service Disconnect, Bridge",Hazel Gomes,Boyd Corporation,Each,ME Non critical,10000,-,-, $ 0.106 ,,,2025/08/02
+10-003601,"Label, MAC Address Bridge",[Label - Sienna Printed],THOMCO SPECIALTY PRODUCTS,Each,ME Non critical,-,-,-, $ 0.100 ,,,Sienna Managed
+10-003602,"Label, Compliance, Maximizer Hub",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,7000,-,-, $ 0.289 ,,,2025/07/30
+10-003606,"Label, MAC Address, Maximizer",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,7000,-,-, $ 0.045 ,,,2025/07/30
+10-003617,"Label, WiFi, Inverter",[Label - Sienna Printed],Heilind,Each,ME Non critical,-,-,-, $ 0.080 ,,,Sienna Managed
+10-003690,"Screw, SEMS, M3x0.5x35, Belleville Conic",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.120 ,,,2025/09/03
+10-003723,"Jumper, Inverter, RRSID",[MRO Part],Open market,Each,ME Non critical,-,-,-, $ 0.710 ,,,Sienna Managed
+10-003725,"TIM, PhaseChange, Cut to Size for Induct",Tejas Dixit,MyHeatSinks,Each,ME critical,3000,-,-, $ 0.140 ,,,2026/01/14
+10-003756,"PCB Pin, 0.762mm x 24mm",Tejas Dixit,Digikey,Each,ME Non critical,,-,-, $ 0.670 ,,,2026/01/20
+10-003758,"Tabs, PCBA grounding Maximizer",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 0.230 ,,,
+10-003772,"Clip, Wire Harness Pair, Maximizer",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 0.240 ,,,2025/09/15
+10-003794,"Label, Wire Routing Diagram, PV Hub",Hazel Gomes,Boyd Corporation,Each,ME Non critical,7500,-,-, $ 0.125 ,,,2025/08/02
+10-003805,"Wire Harness, CAN Jumper, Bridge",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 1.810 ,,,2025/10/01
+10-003810,"Screw, Sheet Metal, M3x8mm, Steel, ZiNi",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.045 ,,,2026/02/19
+10-003885,"Antenna Box, Top, Maximizer",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 0.190 ,,,2025/09/15
+10-003886,"Antenna Box, Bottom, Maximizer",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 0.190 ,,,2025/09/15
+10-003887,"Foam, Antenna Box, Maximizer",Hazel Gomes,Boyd Grand Rapids,Each,ME Non critical,7000,-,-, $ 0.160 ,,,2025/08/02
+10-003928,"Harness, Trunk, 20 kWh, Type B",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 64.590 ,,,
+10-003929,"Wire Harness,Inverter,Blowers/Ambient T/",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 12.140 ,,,2025/10/01
+10-003950,"O-Strip Tubing, 2.9mm OD x 1.6mm hollow",Hazel Gomes,TTI,Each,ME Non critical,3000,-,-, $ 6.600 ,,,2025/08/15
+10-003978,Inverter Exterior Motion LED/Motion Prem,Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 2.750 ,,,2025/10/01
+10-004072,"Bus Bar, Ground to Enclosure, Bridge",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 0.860 ,,,2025/09/17
+10-004116,"Enclosure, Bottom, Maximizer",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 1.440 ,,,2025/09/15
+10-004124,"Hook Mounting Bracket with Lock, Inverte",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 15.990 ,,,2025/09/17
+10-004152,Steel threaded standoff ST9798,Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.072 ,,,2026/02/19
+10-004293,"NUT, M5x0.8, 12mm DISC SPRING, STEEL, ZINC CHROMATE",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.052 ,,,2025/09/03
+10-004322,"TIM, Inductor Housing 2, Inverter Power",Tejas Dixit,MyHeatSinks,Each,ME critical,3000,-,-, $ 2.130 ,,,2026/01/14
+10-004323,"TIM, Inductor Housing 1, Inverter Power",Tejas Dixit,MyHeatSinks,Each,ME critical,3000,-,-, $ 2.130 ,,,2026/01/14
+10-004359,"Exhaust Duct,Inverter",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 7.360 ,,,2025/09/15
+10-004375,"O-Ring Seal, EMC Base",Hazel Gomes,PARKER HANNIFIN,Each,ME Non critical,7000,-,-, $ 2.310 ,,,2025/08/07
+10-004397,"Foot Bracket Bottom Cover Assembly, Sued",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 71.280 ,,,2025/09/17
+10-004440,"Inverter Aesthetic Cover Main, Front, LR",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 32.320 ,,,2025/09/17
+10-004443,"Screw, 1/4-28x3/8, Slot-Square 2R, Steel",Hazel Gomes,Unisteel Technology Limited,Each,ME Non critical,7000,-,-, $ 0.203 ,,,2025/09/17
+10-004444,"Screw, M5x13, BHT, Flanged, DP, T25 (Ins",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.105 ,,,2026/02/19
+10-004446,"Screw,Captive,M5x0.8 6gx14mm,5mm Thread,",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.220 ,,,2026/02/19
+10-004545,ESS Top Cover LRG Asy,Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 39.010 ,,,2025/09/17
+10-004546,"Label, Serial Number, Inverter",[Label - Sienna Printed],In-house,Each,ME Non critical,-,-,-, $ 0.050 ,,,Sienna Managed
+10-004552,"Inverter Aes Cover SubAssy,Left,No Harne",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 26.340 ,,,2025/09/17
+10-004553,"Inverter Aesthetic Cover Sub Assy, Right",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 87.250 ,,,2025/09/17
+10-004601,"Label, Branch Circuits, Inner Panel, Left, Bridge",Hazel Gomes,Boyd Corporation,Each,ME Non critical,10000,-,-, $ 0.454 ,,,2025/08/02
+10-004611,"Safety Cover, Terminal Lug, Bridge",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 1.210 ,,,2025/09/15
+10-004639,"Heat Sink, Maximizer",Tejas Dixit,MyHeatSinks,Each,ME critical,3000,-,-, $ 2.530 ,,,2026/01/14
+10-004643,"Adhesive, Double-sided, Heat Sink, Maxim",Hazel Gomes,Boyd Grand Rapids,Each,ME Non critical,7000,-,-, $ 0.140 ,,,2025/08/02
+10-004719,"Wire Harness, Power, DC Contactors",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 9.200 ,,,2025/10/01
+10-004729,"Wire Harness, Inverter, PV Switch",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 3.660 ,,,2025/10/01
+10-004730,"Wire Harness, Coil & Aux, DC Contactors",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 37.720 ,,,2025/10/01
+10-004734,"Wire Harness,Inverter,Nano-fit",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 6.130 ,,,2025/10/01
+10-004805,"RTV Silicone Sealant, RV 5818",[MRO Part],R. S. HUGHES COMPANY,Milliliter,ME Non critical,-,-,-, $ 0.120 ,,,Sienna Managed
+10-004806,"Wire Harness, Inverter, Filtered AC Jump",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 13.600 ,,,2025/10/01
+10-004809,"Wire Harness,Inverter,Home Controller",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 6.580 ,,,2025/10/01
+10-004819,"EMI Gasket, 2.3mm x 2.3mm, D-Profile",[MRO Part],WURTH ELECTRONICS MIDCOM,Millimeter,ME Non critical,,-,-, $ 3.740 ,,,Sienna Managed
+10-004822,"O-Strip Tubing, 2.9mm OD x 1.6mm hollow",Hazel Gomes,TTI,Each,ME Non critical,3000,-,-, $ 3.250 ,,,2025/08/15
+10-004824,"O-Strip Tubing, 2.9mm OD x 1.6mm hollow",Hazel Gomes,TTI,Each,ME Non critical,3000,-,-, $ 3.450 ,,,2025/08/15
+10-004825,"O-Strip Tubing, 2.9mm OD x 1.6mm hollow",Hazel Gomes,TTI,Each,ME Non critical,3000,-,-, $ 2.990 ,,,2025/08/15
+10-004934,"Structure, Mounting, PCBA, PV Hub",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 0.680 ,,,2025/09/15
+10-004970,"Label, Branch Circuits, Inner Panel, Right, Bridge",Hazel Gomes,Boyd Corporation,Each,ME Non critical,10000,-,-, $ 0.454 ,,,2025/08/02
+10-004984,"SCREW, PLASTIC-THREADING, M4, STEEL",Hazel Gomes,Unisteel Technology Limited,Each,ME Non critical,7000,-,-, $ 0.033 ,,,2025/09/17
+10-004992,"Enclosure, Plastic, Wiring Compartment,",Hazel Gomes,Fictiv,Each,ME critical,,-,-, $ 29.990 ,,,2025/09/15
+10-004995,"Ground Sheet, Wiring Compartment, Invert",Steve Gelphman,Metcam,Each,ME Non critical,7000,-,-, $ 5.830 ,,,
+10-005026,"ESS Cover, Conduit Cover and Bug Barrier",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 19.700 ,,,2025/09/17
+10-005027,"Filter Board Base, Die Cast, Inverter, D",Tejas Dixit,MyHeatSinks,Each,ME critical,3000,-,-, $ 27.300 ,,,2026/01/14
+10-005037,"Enclosure, Power Module, Inverter, D",Tejas Dixit,MyHeatSinks,Each,ME critical,3000,-,-, $ 32.500 ,,,2026/01/14
+10-005080,"Breaker Hold-Down, Bridge",Steve Gelphman,Axtonne,Each,ME critical,,-,-, $ 1.150 ,,,2025/09/18
+10-005082,"Top Cover, Filter Board, Inverter",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 18.820 ,,,2025/09/17
+10-005110,"Insulator Sheet, Filter Board Integrated",Hazel Gomes,Suzhou DL packing Material,Each,ME Non critical,7000,-,-, $ 1.510 ,,,2025/08/28
+10-005124,"Screw,SEMS,M5x0.8,10mm,Bellevile washer,",Hazel Gomes,Unisteel Technology Limited,Each,ME Non critical,7000,-,-, $ 0.069 ,,,2025/09/17
+10-005125,"Screw,M4x0.7 6gx12mm,BHT T15,Steel,Nylon",Hazel Gomes,Unisteel Technology Limited,Each,ME Non critical,7000,-,-, $ 0.280 ,,,2025/09/17
+10-005148,"O-Ring Seal, Inductor Housing 1 to HS, D",Hazel Gomes,PARKER HANNIFIN,Each,ME Non critical,7000,-,-, $ 2.560 ,,,Parker
+10-005149,"O-Ring Seal, Inductor Housing 2 to HS, D",Hazel Gomes,PARKER HANNIFIN,Each,ME Non critical,7000,-,-, $ 2.450 ,,,Parker
+10-005151,Potted Wire Passthrough and Inductor Hou,Nhi Nguyen,Avnet,Each,ME Non critical,5000,-,-, $ 54.100 ,,,Quote_704747586 BNS.xls
+10-005155,"Insulator Sheet, Power Board, Integrated",Hazel Gomes,Suzhou DL packing Material,Each,ME Non critical,7000,-,-, $ 2.310 ,,,2025/08/28
+10-005157,Potted Pin Passthrough and Inductor Hous,Nhi Nguyen,Avnet,Each,ME Non critical,5000,-,-, $ 78.700 ,,,Quote_704747586 BNS.xls
+10-005158,"Inductor Housing Plastic Pin Cap, D",Steve Gelphman,Axtonne,Each,ME critical,,-,-, $ 0.570 ,,,2025/09/18
+10-005159,"Inductor Housing Plastic Pin Receptacle,",Steve Gelphman,Axtonne,Each,ME critical,,-,-, $ 0.820 ,,,2025/09/18
+10-005160,"BUSBAR, PIN CONNECTORS, 3.4MMX90.6MM, FL",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 1.920 ,,,2025/09/17
+10-005164,"Wire Harness,Inverter Exterior,Blowers/A",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 25.440 ,,,2025/10/01
+10-005169,"DC Contactor Cover, D",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 0.590 ,,,2025/09/17
+10-005176,"Protective Hat, Capacitor Board, Inverte",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 7.230 ,,,2025/09/17
+10-005177,"Home Controller, Heat Spreader, Connecto",Steve Gelphman,Metcam,Each,ME Non critical,7000,-,-, $ 9.500 ,,,
+10-005199,"TIM, PCBA, Terminal Board, Inverter",Hazel Gomes,Suzhou DL packing Material,Each,ME Non critical,7000,-,-, $ 0.150 ,,,2025/08/28
+10-005247,"Screw,M3x11mm,BHT T10,Flange,BF,Steel,Zi",Hazel Gomes,Unisteel Technology Limited,Each,ME Non critical,7000,-,-, $ 0.025 ,,,2025/09/17
+10-005260,"Gasket, Power Module, Perimeter Seal, Wi",Hazel Gomes,"Marian, Inc",Each,ME Non critical,3500,-,-, $ 6.330 ,,,2025/08/07
+10-005278,"Inverter Heat Sink, With Heat Pipe, D",Tejas Dixit,MyHeatSinks,Each,ME critical,3000,-,-, $ 83.500 ,,,2026/01/14
+10-005282,"Insulator Sheet, Power Board, Lower Leve",Hazel Gomes,Suzhou DL packing Material,Each,ME Non critical,7000,-,-, $ 0.850 ,,,2025/08/28
+10-005284,"Packaging, Maximizer Hub",Hazel Gomes,Veritiv Corp,Each,ME Non critical,7000,-,-, $ 1.070 ,,,2025/08/25
+10-005294,"TIM, PCBA, Filter Board, Inverter, D",Hazel Gomes,Suzhou DL packing Material,Each,ME Non critical,7000,-,-, $ 0.360 ,,,2025/08/28
+10-005300,"Seal, Exhaust Duct, Adhesive Backed, Str",Hazel Gomes,"Marian, Inc",Each,ME Non critical,7000,-,-, $ 1.200 ,,,2025/08/07
+10-005303,"Foam Gasket, Protective Hat, Capacitance",Hazel Gomes,"Marian, Inc",Each,ME Non critical,3500,-,-, $ 1.050 ,,,2025/08/07
+10-005304,"Foam Strip, 40mm L, Protective Hat, D",Hazel Gomes,"Marian, Inc",Each,ME Non critical,3500,-,-, $ 0.660 ,,,2025/08/07
+10-005306,"Foam Strip, 18mm L, Protective Hat, D",Hazel Gomes,"Marian, Inc",Each,ME Non critical,10500,-,-, $ 0.350 ,,,2025/08/07
+10-005307,"Foam Strip, 140mm L, Protective Hat, D",Hazel Gomes,"Marian, Inc",Each,ME Non critical,3500,-,-, $ 0.840 ,,,2025/08/07
+10-005310,"Heat Shield, Light Pipe Trio",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 0.140 ,,,2025/09/17
+10-005382,"Packaging, ESS Hardware Kit 20kWh",Hazel Gomes,Veritiv Corp,Each,ME Non critical,1000,-,-, $ 5.830 ,,,2025/06/24
+10-005385,"Label, Packaging, Single Serial Number",[Label - Sienna Printed],In-house,Each,ME Non critical,-,-,-, $ 0.050 ,,,Sienna Managed
+10-005481,"Wire Harness, Earth Ground Sense, Bridge",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 1.330 ,,,2025/10/01
+10-005570,"Screw, Plastic-Threading, M4.5, Steel",Hazel Gomes,MCMASTER CARR,Each,ME Non critical,,-,-, - ,,,
+10-005577,"Cable Tie, Locking, Black, 50lbs, Nylon,",[MRO Part],Open market,Each,ME Non critical,-,-,-, $ 0.040 ,,,Sienna Managed
+10-005633,"Front Door Hinge, Sheet Metal, Inverter",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 2.320 ,,,2025/09/17
+10-005762,"Inverter Packaging, Box",Hazel Gomes,Veritiv Corp,Each,ME Non critical,1000,-,-, $ 12.110 ,,,2025/08/05
+10-005763,"Inverter Packaging, V Board",Hazel Gomes,Veritiv Operating Company,Each,ME Non critical,-,-,-, - ,,,2025/08/05
+10-005828,"Top Cover Gasket, Filter Board, Inverter",Hazel Gomes,"Marian, Inc",Each,ME Non critical,3500,-,-, $ 4.460 ,,,2025/08/07
+10-005831,"HARNESS,JMPR,NANO-FIT,2 POS",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 1.260 ,,,2025/10/01
+10-005843,"Wire Harness,Inverter,Antenna Pass-Thru-",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 2.820 ,,,2025/10/01
+10-005846,"Wire Harness, AFCI, Power Module",Rita Lin,KG Technologies,Each,ME critical,,10000,-, $ 1.660 ,,,2026/01/20
+10-005851,Bridge- RSC Shipping Box,Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,3500,-,-, $ 5.410 ,,,2025/10/31
+10-005852,"Packaging, Bridge, Front Cap Pad",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,10500,-,-, $ 0.550 ,,,2025/10/31
+10-005853,"Packaging, Bridge, Front Cap Frame",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,17500,-,-, $ 0.480 ,,,2025/10/31
+10-005854,"Packaging, Bridge, Front Cap Wrap",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,3500,-,-, $ 2.270 ,,,2025/10/31
+10-005855,"Packaging, Bridge, Back Cap Wrap",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,3500,-,-, $ 2.270 ,,,2025/10/31
+10-005856,"Packaging, Bridge, Back Cap Frame",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,17500,-,-, $ 0.500 ,,,2025/10/31
+10-005857,"Packaging, Bridge, Back Cap Pad",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,10500,-,-, $ 0.520 ,,,2025/10/31
+10-005858,"Packaging, Bridge, Top Cover Frame",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,3500,-,-, $ 3.100 ,,,2025/10/31
+10-005859,"Packaging, Bridge, Top Cover Support",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,3500,-,-, $ 1.590 ,,,2025/10/31
+10-005860,"Packaging, Bridge, Top Cover Support Pad",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,3500,-,-, $ 0.850 ,,,2025/10/31
+10-005861,"Packaging, Bridge, Top Pad",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,3500,-,-, $ 0.610 ,,,2025/10/31
+10-005864,1 275 B Flute Size:15 3/8” x 23 ” x 0,Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,1500,-,-, $ 1.080 ,,,2025/10/31
+10-005865,2 275 B Flute Size:16 ¾”x11”1/4x0,Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,16500,-,-, $ 0.470 ,,,2025/10/31
+10-005866,3 275 B Flute Size :14 3/4”23”x0,Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,1500,-,-, $ 1.410 ,,,2025/10/31
+10-005867,4 275 B Flute Size:22 ¾””x 23”x 0”,Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,3000,-,-, $ 1.490 ,,,2025/10/31
+10-005868,5 275 BC Flute Size: 16” ¾ x 22 15/16”,Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,1500,-,-, $ 1.670 ,,,2025/10/31
+10-005869,"6 275 Box Flute:23”3/16”x17-1/8”x11""",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,1500,-,-, $ 6.110 ,,,2025/10/31
+10-005887,"Wall Bracket Assembly, Inverter",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 13.320 ,,,2025/11/14
+10-005905,"Kit, Installation, Inverter",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 0.950 ,,,2025/09/17
+10-005953,Loctite EA E-60HP Epoxy Structural Adhes,[MRO Part],ELLSWORTH ADHESIVES,Milliliter,ME Non critical,-,-,-, $ 0.360 ,,,Sienna Managed
+10-006069,"Label, Compliance, ESS",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,7000,-,-, $ 0.217 ,,,2025/07/30
+10-006072,"Screw, SEMS, M3x0.5x6, T10, Square-Cone",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.030 ,,,2026/02/19
+10-006073,"Screw, SEMS, M3x0.5x8, T10, Square-Cone",Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.031 ,,,2026/02/19
+10-006074,M3X10MM TX-PN-SQCN-SEMS-MS-SS-P-SMALL WA,Hazel Gomes,Pencom,Each,ME Non critical,7000,-,-, $ 0.025 ,,,2026/02/19
+10-006075,SCREW DELTA PT 50x1.80-14.00 T25 TORX RECESS WASHER PAN HEAD,Hazel Gomes,Unisteel Technology Limited,Each,ME Non critical,7000,-,-, $ 0.043 ,,,2025/09/17
+10-006085,"Inverter Packaging, Foam SET",Hazel Gomes,Veritiv Corp,Each,ME Non critical,1000,-,-, $ 32.710 ,,,2025/08/05
+10-006086,"Inverter Packaging, Foam, Top, Left, V2",Hazel Gomes,Veritiv Operating Company,Each,ME Non critical,-,-,-, - ,,,2025/08/05
+10-006087,"Inverter Packaging, Foam, Bottom, Right, V2",Hazel Gomes,Veritiv Operating Company,Each,ME Non critical,-,-,-, - ,,,2025/08/05
+10-006088,"Inverter Packaging, Foam, Bottom, Left, V2",Hazel Gomes,Veritiv Operating Company,Each,ME Non critical,-,-,-, - ,,,2025/08/05
+10-006096,"Inverter Cover Packaging, Corrugated Ins",Hazel Gomes,Veritiv Operating Company,Each,ME Non critical,1000,-,-, $ 1.180 ,,,2025/08/05
+10-006108,"Label, Overcurrent Device, Bridge",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,7000,-,-, $ 0.237 ,,,2025/07/30
+10-006109,"Label, Traceability, 22mmX10mm",[Label - Sienna Printed],THOMCO SPECIALTY PRODUCTS,Each,ME Non critical,-,-,-, $ 0.050 ,,,Sienna Managed
+10-006231,"Thermal Gap Filler, Curing, 6.5 W/mK, Tw",Hazel Gomes,AUSP,Milliliter,ME Non critical,114,-,-, $ 0.310 ,,,2025/08/08
+10-006267,"Padded Bag, Accessories, Bridge",[MRO Part],Uline,Each,ME Non critical,,-,-, $ 0.270 ,,,Sienna Managed
+10-006277,"Label, Breaker Warning, Bridge",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,7000,-,-, $ 0.137 ,,,2025/07/30
+10-006287,Heat Shrink Tubing & Sleeves 2:1 Thin Wa,[MRO Part],,Millimeter,ME Non critical,-,-,-, $ 0.020 ,,,Sienna Managed
+10-006288,"HEATSHRINK TUBE 1 1/2-48"" 1=1PC",[MRO Part],,Millimeter,ME Non critical,-,-,-, $ 0.060 ,,,Sienna Managed
+10-006362,"Wire Harness, Rogowski Coil Jumper, Bridge, Type B",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 3.650 ,,,2025/10/01
+10-006397,"TIM, PCBA, Terminal Board, Inverter",Hazel Gomes,Suzhou DL packing Material,Each,ME Non critical,7000,-,-, $ 0.090 ,,,2025/08/28
+10-006426,"Heat spreader, Aluminum Nitride, TIM & p",Tejas Dixit,MyHeatSinks,Each,ME critical,2000,-,-, $ 5.010 ,,,2026/01/14
+10-05006A,"Foam Seal, Top Service Entry, Bridge",Hazel Gomes,Seal Methods Inc.,Each,ME Non critical,7000,-,-, $ 0.200 ,,,Seal Methods
+10-06108A,"Closing Plate, Top Service Entry, Bridge",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 1.160 ,,,
+10-06110A,"Screw, Button, 12-24x0.55, T25, Steel wi",Hazel Gomes,Unisteel Technology Limited,Each,ME Non critical,7000,-,-, $ 0.057 ,,,2025/09/17
+10-06501C,"Busbar Assembly, Iph A",Hazel Gomes,Suzhou Recodeal,Each,ME Non critical,7000,-,-, $ 0.690 ,,,2025/08/07
+10-06502C,"Busbar Assembly, Iph B",Hazel Gomes,Suzhou Recodeal,Each,ME Non critical,7000,-,-, $ 0.700 ,,,2025/08/07
+10-06684A,"Ground Bar, Power Module, 4 Terminal",Hazel Gomes,MARSH PRECISION ENGINEERING,Each,ME Non critical,5000,-,-, $ 4.250 ,,,2025/02/11
+10-06690A,"Polybag, Recloseable, 360mm x 1330 mm",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 0.140 ,,,2025/09/17
+10-06703A,"Foam Gasket, GaN FETs, Maximizer",Hazel Gomes,Singleton,Each,ME Non critical,7000,-,-, $ 0.280 ,,,
+10-06732A,"Label, Warning, PCS",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,10000,-,-, $ 0.104 ,,,2025/07/30
+10-06733A,"Label, Limit, PCS",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,10000,-,-, $ 0.144 ,,,2025/07/30
+10-06734C,"Busbar Assembly, Iph BAL",Hazel Gomes,Suzhou Recodeal,Each,ME Non critical,7000,-,-, $ 0.680 ,,,2025/08/07
+10-06812A,"Wire Harness, Power, DC Contactors, Nano",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 7.930 ,,,2025/10/01
+10-06826A,"Fluxgate current sensor, 4P Nano-fit",Rita Lin,KG Technologies,Each,ME critical,10000,-,-, $ 10.120 ,HFCF-F01B,,2026/01/20
+10-06834A,"Wire Harness, Inverter, Battery IF, Cap",Tejas Dixit,Avalon,Each,ME critical,,-,-, $ 35.830 ,,,2025/10/01
+10-06847A,"Label, Low Voltage Wire Routing Diagram,",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,10000,-,-, $ 0.137 ,,,2025/07/30
+10-06888A,"Tape,Polyimide,0.1mm",[MRO Part],TapeMaster,Millimeter,ME Non critical,-,-,-, - ,,,Sienna Managed
+10-06918A,"Label, N Terminal, Front, Inverter",[Label - Sienna Printed],STEPHEN GOULD,Each,ME Non critical,10000,-,-, $ 0.077 ,,,2025/07/30
+10-06953C,"Label,Compliance,Inverter",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,6000,-,-, $ 0.305 ,,,2025/07/30
+10-06954A,"Label, Compliance, Maximizer 1.3",Hazel Gomes,STEPHEN GOULD,Each,ME Non critical,7000,-,-, $ 0.050 ,,,2025/08/14
+10-07001A,"Front Door, Shielded, Inverter, Type 2",Steve Gelphman,JPOND,Each,ME critical,7000,-,-, $ 34.890 ,,,2025/09/17
+10-07089A,"Harness, Trunk, 20 kWh, Type B",Hazel Gomes,Avalon,Each,ME critical,,-,-, $ 64.590 ,,,
+10-07151A,Loctite® Instant Adhesive 401™ Prism®,[MRO Part],MCMASTER CARR,Milliliter,ME Non critical,-,-,-, - ,,,Sienna Managed
+20-000541,"PCB, Home Controller 3-Up Panel",Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7000,, $ 13.090 ,,,LUE20230411101-U7--20-000541 Rev 8(Home Controller)(FR408HR)(FCA HK).pdf
+20-000544,"PCBA, LED",Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7000,, $ 0.420 ,,,LUE20220215101-U3--20-000544-04 Rev 04 -LED Board-10-31-22（IT180A）(FCA).pdf
+20-002996,"PCB, PV Hub",Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7000,, $ 1.820 ,,,
+20-005054,"PCB, Capacitor Board Type A",Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7000,, $ 7.990 ,,,
+20-005340,PCB Lunar Bridge CAN Pigtail Board Rev 1,Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7020,, $ 0.240 ,,,LUE20230901102-U4--20-005340 Rev 1--Bridge CAN Pigtail Board (FCA HK).pdf
+20-005369,"PCB, RF Passthrough Type A",Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7000,, $ 1.370 ,,,LUE20230919101-U6--20-005369 rev 1--RF Passthrough (FCA HK).pdf
+20-005485,"PCB, Bridge Interface Board, Type B",Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7000,, $ 4.720 ,,,LUE20230808104-U8--20-005485-1_BRIDGE INTERFACE TYPE B (FCA HK).pdf
+20-005748,"PCB,Bridge Control Board, Type B",Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7000,, $ 4.750 ,,,2025/09/15
+20-005783,"PCB, Bridge Rogowski Coil Pigtail Type B",Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7020,, $ 0.330 ,,,LUE20241025101-U4-PN 20-005783 Rev 01 (FCA HK).pdf
+20-05001C,"PCB, Terminal Board, Type C",Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7000,, $ 46.880 ,,,
+20-05003C,"PCB, Power Board, Type C",Nhi Nguyen,Sunshine PCB,Each,PCB,7000,10000,, $ 62.300 ,,,
+20-06545A,PCB EMC Filter Type B,Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7000,, $ 16.600 ,,,LUE20240823101--20-06545A Rev 1(Inverter EMC Filter Type B)(FCA HK)-U3 (1).pdf
+20-06830D,"Maximizer PCB, Type D",Nhi Nguyen,Sunshine PCB,Each,PCB,7000,7000,, $ 2.110 ,,,
+10-06929B,"Heat Sink Assy, DCDC",Tejas Dixit,MyHeatSinks,Each,,4000,-,-, $ 35.600 ,,,2026/02/13
+10-002402,N-Channel 200 V 32A (Ta) Surface Mount Die,#N/A,#N/A,,,,,,,,,
+20-06905A,DC-DC BMS 1.5 PCB,Nhi Nguyen,Sunshine,Each,PCB,7000,7000,, $ 22.010 ,,,2025/09/04
+10-004521,"Fan with Connector,DC-DC, with Splice",Hazel Gomes,Lunar Energy / Delta,,,4320,,, $ 7.340 ,QFR0912EJ-00HWY,,2025/08/08
+10-006205,IND 22.8μH±10％ Within (Typ.22.78μH) -40℃ to +125℃ 65.6 x 61.3 x 31.6mm,#N/A,#N/A,,,,,,,,,
+10-004134,"Cover, DC-DC",Tejas Dixit,MyHeatSinks,Each,,12000,-,-, $ 12.300 ,,,2026/02/13
+10-002361,"Heat Spreader, GaN, DCDC",Tejas Dixit,MyHeatSinks,Each,,12000,-,-, $ 5.150 ,,,2026/02/13
+10-006146,"Bushing, Lunar custom",Hazel Gomes,Unisteel Technology Limited,Each,,7000,,, $ 0.372 ,,,2025/09/17
+10-002929,"TIM, INDUCTOR, DCDC",Hazel Gomes,Singleton,Each,ME Non critical,7000,,, $ 1.027 ,,,2025/08/28
+10-06930B,"TIM, PCBA, DCDC",Hazel Gomes,Singleton,Each,ME Non critical,7000,,, $ 3.070 ,,,2025/07/21
+10-06752A,"Thermal Bridge, GaN, DCDC",Hazel Gomes,Singleton,Each,ME Non critical,7000,,, $ 0.040 ,,,2025/08/28
+10-002218,"Nut, M6, Hex Head, Steel, Zn-Ni Plated",Rita Lin,Acetech,,,10000,,, $ 0.03 ,,,2025/10/27
+10-06936A,"Fan Shroud with Inserts, DCDC, LFP ESS, Front",Steve Lee,Acetech,,,10000,,, $ 1.180 ,,,2025/10/27
+10-001645,MCMASTER 99512A216 Pencom SW8323,Hazel Gomes,Pencom,,,7000,,, $ 0.058 ,,,2025/09/03
+10-004305,"Seal, Cover, DC-DC",Hazel Gomes,Marian Inc,Each,ME Non critical,5000,,, $ 0.440 ,,,2025/08/07
+10-002816,"Screw,M5 x 13,SEMS and Washer,BHT T-25,Steel,ZiNi BC,Nylon Patch",Hazel Gomes,Pencom,,,7000,,, $ 0.099 ,,,2025/09/03
+10-000603,LED RED CLEAR 2SMD,#N/A,#N/A,,,,,,,,,
+10-003055,"Threadlocking Adhesive, Low Strength",MRO,KRAYDEN INC,,,,,,,,,
+10-003497,"Screw,M2x0.4 6gX4mm,Flat Head,PH1, Reny Philip (Cross-Recess): Type H Size 1",Hazel Gomes,Pencom,,,7000,,, $ 0.139 ,,,2025/09/03
+10-003754,UV Curable Polyurethane Conformal Coating,N/A - MRO,Consumables (Not Lunar managed),,,,,,,,,
+10-003913,"Nut,M5,Clinch,SS,Passivated",#N/A,#N/A,,,1000,,,,,,
+10-004191,"Thermal gap filler, Non-Curing, 6 W/mK, Dispensed (eg. Laird T-Putty)",Hazel Gomes,LAIRD TECHNOLOGIES,,,360000,,, $ 0.528 ,,,2025/08/15
+10-004340,"Screw,M4X34mm,SEMS and spring washer, BHT,T-15,ZiNi BC",Hazel Gomes,Pencom,,,7000,,, $ 0.131 ,,,2025/09/03
+10-004341,"Screw,M3X6.5mm,SEMS and spring washer, BHT,T-8,ZiNi BC",Hazel Gomes,Pencom,,,7000,,, $ 0.080 ,,,2025/09/03
+10-004422,"Label, 7x7mm QR",0,Consumables (Not Lunar managed),,,,,,,,,
+10-004422,"Label, 7x7mm QR",0,Consumables (Not Lunar managed),,,,,,,,,
+10-004509,ESS Battery Aesthetic Cover Front,Steve Gelphman,JPOND,,,7000,,, $ 28.450 ,,,2025/09/17
+10-004512,Battery Aesthetic Cover Left Asy Suede,Steve Gelphman,JPOND,,,7000,,, $ 20.320 ,,,2025/09/17
+10-004513,Battery Aesthetic Cover Right Asy Suede,Steve Gelphman,JPOND,,,7000,,, $ 20.670 ,,,2025/09/17
+10-005081,"Shield, Trunk Harness Connector, Battery Block",Tejas Dixit,MyHeatSinks,Each,,12000,-,-, $ 2.120 ,,,2026/02/13
+10-005227,"Snorkel with Seal,Battery Block",Steve Gelphman,Axtonne,,,7000,,, $ 4.390 ,,,2025/09/18
+10-005254,"Hinge, Shield, Trunk Harness Connector",Hazel Gomes,Pencom,,,7000,,, $ 0.153 ,,,2025/09/03
+10-06548A,"Label, Compliance, Class 9 with UN3480",MRO,Label,,,,,,,,,
+10-06944A,"Lid w/ Seal, Enclosure, LFP DC ESS",#N/A,#N/A,,,,,,,,,
+10-06755A,"Wall Bracket Asy, Battery Block, Type 2",Steve Gelphman,JPOND,,,7000,,, $ 15.490 ,,,2025/11/14
+10-06938A,"Fan Shroud with Inserts, DCDC, LFP ESS, Fan Mtg, Front",Steve Lee,Acetech,,,10000,,, $ 1.180 ,,,2025/10/27
+10-06945A,"Busbar Nest Assy, LFP DC ESS",Rita Lin,Acetech,,,10000,,, $ 9.55 ,,,2025/10/27
+10-06951A,"Screw, M4x0.7, 10mm L, Steel, ZiNi, Nylon Patch",#N/A,#N/A,,,,,,,,,
+10-07005A,"Packaging, LFP DC ESS module with Cover and Wall Bracket",Hazel Gomes,Veritiv Operating Company,,,2500,,, $ 44.730 ,,,2025/09/10
+10-06534A,"Chassis Base, MSA Controller",Steve Gelphman,Ripple,,,3000,3000,, $ 4.518 ,,,2025/08/07
+10-06535A,"PCBA Cover, MSA Controller",Steve Gelphman,Ripple,,,3000,3000,, $ 1.898 ,,,2025/08/07
+10-06536A,"Wiring Cover, MSA Controller",Steve Gelphman,Ripple,,,3000,3000,, $ 2.706 ,,,2025/08/07
+10-06915A,"Plug, Conduit, Sealing, Stepped, 1/2""",N/A - MRO,#N/A,,,,,,,,,
+20-06570B,60-06569B Lunar MSA Controller PCB Fabrication Data,Nhi Nguyen,Sunshine,,,3000,3000,, $ 2.760 ,,,LUA20250617101--20-06570B--MSA Controller(FCA HK)-U3.pdf
+10-000603,LED RED CLEAR 2SMD,,,,,,,,,,,
+10-000607,Green 570nm LED Indication - Discrete 2.1V 0402 (1005 Metric),,,,,,,,,,,
+10-000625,"16 MHz ±20ppm Crystal 12pF 70 Ohms 4-SMD, No Lead 0.126"" L x 0.098"" W (3.20mm x 2.50mm)",,,,,,,,,,,
+10-002501,Res Thick Film 0402 10K Ohm 1% 0.1W(1/10W) ±100ppm/C Pad SMD Automotive T/R,,,,,,,,,,,
+10-003982,1 µF ±10% 25V Ceramic Capacitor X5R 0402 (1005 Metric),,,,,,,,,,,
+10-07170A,"Harness protector ring, 64x24x12, PA66, UL94",Rita Lin,Kang Yang,,,10000,,, $ 0.32 ,,,Kang Yang International Lunar Energy  9_17_25 for PN 10-07170A
+10-004666, PV Disconnect Switch 0.1 mA at 3.3 VDC ,Hazel Gomes,Merz,,,2500,,, $ 11.54 ,,,2025/09/22
+10-06644A,"Rogowski Coil, Magnelab",Hazel Gomes,Magnelab,,,4800,,, $ 30.00 ,,,2025/08/21
+10-07240A,"SCREW, M5-0.8X12, PAN HD, T25, SEALING, STL+ZNNI",Hazel Gomes,Unisteel Technology Limited,Each,,18000,,, $ 0.12 ,,,2025/09/03
+10-07241A,"SCREW, M8-1.25X10, PAN HD, T40, SEALING, STL+ZNNI",Hazel Gomes,Unisteel Technology Limited,Each,,7000,,, $ 0.57 ,,,2025/09/03
+10-07029A,Label Compliance MSA Controller,Hazel Gomes,STEPHEN GOULD,,,5000,,, $ 0.34 ,,,2025/09/02
+10-06946A,"Terminal Cover Assy, DCDC to Enclosure, LFP DC ESS",Rita Lin,Acetech,,,300,,, $ 7.34 ,,,2025/09/09
+10-06946B,"Terminal Cover Assy, DCDC to Enclosure, LFP DC ESS",Rita Lin,Acetech,,,20000,,, $ 5.70 ,,,2025/10/27
+10-06950A,"Cell Array Assy, LFP DC ESS",Rita Lin,Acetech,,,4095,,, $ 398.45 ,,,2025/11/20
+10-06951A,"Screw, M4x0.7, 10mm L, Steel, ZiNi, Nylon Patch (Enclosure lid)",Rita Lin,Acetech,,,300,,, $ 0.06 ,,,2025/09/09
+10-06969A,"Module Fixing Plate, 1.2 mm thk, 4X mtg slot at 84 mm spacing, 60 deg flange",Rita Lin,Acetech,,,20000,,, $ 0.27 ,,,2025/10/27
+10-06970A,"Vent Valve, IP67, M12x1.5",Rita Lin,Acetech,,,10000,,, $ 2.09 ,,,2025/10/27
+10-06997B,Foam Seal,Rita Lin,Acetech,,,300,,, $ 2.68 ,,,2025/09/09
+10-07166A,"Shoulder Screw, M5x8, 6mm shoulder, 12 mm OD, A2-70 SS",Rita Lin,Acetech,,,300,,, $ 0.27 ,,,2025/10/27
+10-07166A,"Shoulder Screw, M5x8, 6mm shoulder, 12 mm OD, A2-70 SS",Rita Lin,Acetech,,,300,,, $ 0.32 ,,,2025/09/09
+10-07167A,"Clinch Nut, M12",Rita Lin,Acetech,,,300,,, $ 0.56 ,,,2025/09/09
+10-06943B,"Assy, Enclosure, LFP DC ESS",Steve Gelphman,Sytech,,,10000,,, $ 159.51 ,,,2025/08/15
+10-07170A,"Harness protector ring, 64x24x12, PA66, UL94",Rita Lin,Acetech,,,300,,, $ 1.21 ,,,2025/09/09
+10-002061,"Fir Tree,Cable Tie,1-Piece,1.0 - 35.0 mm",,,,,,,,,,,
+10-07078A,"Label, Compliance, LFP DC ESS",Hazel Gomes,Stephen Gould,,,5000,,, $ 0.31 ,,,2025/10/01
+ 10-006088 ," Inverter Packaging, Foam, Bottom, Left, V2 ",Hazel Gomes,Veritiv Operating Company,,,7000,,, $ 27.18 ,,,2025/08/05
+ 10-06572A ," Signal Harness, MSA Controller ",Hazel Gomes,Yuqiu,,,160,,, $ 16.80 ,,,2025/10/23
+10-07180A,"Label, Compliance, LFP AC ESS , 20KWh",,,,,,,, $ 0.31 ,,,
+10-07356A,"Seal, Cover, DC-DC",Ruairi Barnes,Global O-Ring,,,,,, $ 6.47 ,,,
+90-07679A,Battery Aesthetic Covers,Steve Gelphman,JPOND,Each,ME Non critical,8000,,, $ 69.57 ,,,2026/04/08
+10-07678A,"Packaging Kit, LFP BatteryBlock and Wall Bracket",Steve Gelphman,Veritiv Operating Company,Each,ME Non critical,8000,,, $ 11.79 ,,,2026/04/30

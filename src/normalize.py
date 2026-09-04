@@ -217,12 +217,27 @@ def normalize_onhand(oh: pd.DataFrame) -> pd.DataFrame:
     explicit steps so that what left the report is always countable.
 
     Negative inventory (backflush lag) is floored to 0 at source to prevent
-    negative WIP calculations downstream.
+    negative WIP calculations downstream. `unrestricted_value` is floored on the
+    same rows: flooring one and not the other made the quantity view and the
+    value view disagree by construction (Qualitel showed 0 units worth
+    -$199,325). The pre-floor figures stay on the row as `_qty_raw` /
+    `_value_raw` so the report can still count and show what was floored.
     """
     out = add_cm(oh)
     out["_lpn"] = clean_lpn(oh, "lpn")
-    # Floor negative inventory to 0 (backflush lag from CMs)
+    # Floor negative inventory to 0 (backflush lag from CMs), qty and value together
+    out["_qty_raw"] = out["unrestricted_qty"]
+    out["_value_raw"] = out["unrestricted_value"]
+    negative = out["unrestricted_qty"] < 0
+    if negative.any():
+        log.warning(
+            "floored %d negative on-hand rows (%.0f units, $%.2f) — backflush lag",
+            int(negative.sum()),
+            out.loc[negative, "unrestricted_qty"].sum(),
+            out.loc[negative, "unrestricted_value"].sum(),
+        )
     out["unrestricted_qty"] = out["unrestricted_qty"].clip(lower=0.0)
+    out["unrestricted_value"] = out["unrestricted_value"].clip(lower=0.0)
     return out
 
 

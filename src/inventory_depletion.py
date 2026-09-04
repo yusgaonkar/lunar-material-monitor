@@ -25,6 +25,86 @@ from . import normalize as nz
 log = logging.getLogger(__name__)
 
 
+def build_cm_runout_only(
+    demand_detail: pd.DataFrame,
+    onhand: pd.DataFrame,
+    onorder: pd.DataFrame,
+    pab: pd.DataFrame,
+    cfg,
+) -> pd.DataFrame:
+    """CM-level runout report: demand, CM inventory, PAB by period.
+
+    Simple output showing CM runout WITHOUT Lunar allocation.
+    Shows: Part, CM, Description, [Period columns with PAB values]
+
+    Args:
+        demand_detail: (cm, part, period, demand, ...) from engine
+        onhand: inventory on-hand
+        onorder: inventory on-order
+        pab: PAB by (cm, part, period) from engine
+        cfg: config object
+
+    Returns:
+        DataFrame for display: wide format with periods as columns
+    """
+    # Get unique (cm, part) combinations
+    parts_by_cm = (
+        demand_detail[["cm", "part", "description"]]
+        .drop_duplicates()
+        .reset_index(drop=True)
+    )
+
+    # Build CM inventory caches
+    cm_cache = _build_cm_inventory_cache(onhand, onorder)
+
+    # For each (cm, part), get opening inventory
+    rows = []
+    for _, row in parts_by_cm.iterrows():
+        cm = row["cm"]
+        part = row["part"]
+        desc = row["description"]
+
+        # Get CM inventory position at snapshot
+        cm_pos = get_cm_inventory_position(part, cm, cm_cache["oh"], cm_cache["oo"])
+
+        # Get demand for this (cm, part)
+        cm_part_demand = demand_detail[(demand_detail["cm"] == cm) & (demand_detail["part"] == part)]
+
+        # Get PAB for this (cm, part) across periods
+        cm_part_pab = pab[(pab["cm"] == cm) & (pab["part"] == part)].copy()
+
+        if cm_part_pab.empty:
+            continue
+
+        # Pivot to get periods as columns
+        pab_pivot = cm_part_pab.pivot_table(
+            index=["cm", "part"],
+            columns="period",
+            values="pab",
+            aggfunc="first"
+        )
+
+        # Add static columns
+        pab_pivot["description"] = desc
+        pab_pivot["cm_on_hand"] = cm_pos["raw_oh"]
+        pab_pivot["cm_on_order"] = cm_pos["on_order"]
+        pab_pivot["cm_total_oh"] = cm_pos["total_oh"]
+
+        rows.append(pab_pivot)
+
+    if not rows:
+        return pd.DataFrame()
+
+    result = pd.concat(rows, ignore_index=False)
+    result = result.reset_index()
+
+    # Reorder columns: static first, then periods
+    static_cols = ["cm", "part", "description", "cm_on_hand", "cm_on_order", "cm_total_oh"]
+    period_cols = [c for c in result.columns if c not in static_cols]
+
+    return result[static_cols + sorted(period_cols)]
+
+
 def classify_generation(part: str, bom: pd.DataFrame, stitch_list: pd.DataFrame) -> str:
     """Classify part by generation status based on which BOMs it appears in.
 
@@ -99,8 +179,13 @@ def _build_cm_inventory_cache(onhand: pd.DataFrame, onorder: pd.DataFrame) -> di
     oh_cache = {}
     for (part, cm), group in onhand.groupby(["_lpn", "_cm"]):
         qty = max(0.0, group["unrestricted_qty"].sum())
+        # `unrestricted_value` is the extract's own extended value and is what a
+        # pivot of the input file totals. Re-deriving it as qty x unit_price
+        # drifts from that, because unit_price is location-specific.
         value = 0.0
-        if "unit_price" in group.columns:
+        if "unrestricted_value" in group.columns:
+            value = group["unrestricted_value"].sum()
+        elif "unit_price" in group.columns:
             value = (group["unrestricted_qty"] * group["unit_price"]).sum()
         oh_cache[(part, cm)] = {"qty": qty, "value": value}
 
@@ -146,24 +231,81 @@ def get_cm_inventory_position(
     }
 
 
+def _build_price_cache(onhand: pd.DataFrame) -> dict:
+    """Quantity-weighted unit price per (part, cm) and per part.
+
+    unit_price in the On Hand extract is location-specific average cost, so one
+    part legitimately carries several different prices — and $0.00 on CM
+    line-side storage locations, which do not carry standard cost. Weighting
+    extended value by quantity is the only figure that reproduces the input
+    file's own totals.
+    """
+    if "unrestricted_value" in onhand.columns:
+        value = onhand["unrestricted_value"]
+    else:
+        value = onhand["unrestricted_qty"] * onhand.get("unit_price", 0.0)
+    work = pd.DataFrame({
+        "part": onhand["_lpn"],
+        "cm": onhand["_cm"],
+        "qty": onhand["unrestricted_qty"],
+        "value": value,
+    })
+
+    def _wavg(frame, keys):
+        # NaN (not dropped) marks "this key holds no positive quantity", which is
+        # a different situation from "this key is priced at zero" and has to stay
+        # distinguishable for the fallback below.
+        g = frame.groupby(keys)[["qty", "value"]].sum()
+        return (g["value"] / g["qty"].where(g["qty"] > 0)).to_dict()
+
+    return {
+        "by_part_cm": _wavg(work, ["part", "cm"]),
+        "by_part": _wavg(work, "part"),
+    }
+
+
+def _weighted_unit_price(price_cache: dict, part: str, cm: str) -> float:
+    """Weighted unit price for (part, cm); the part across all CMs as fallback.
+
+    The fallback fires only when that CM holds no quantity of the part — e.g.
+    when valuing Lunar stock earmarked for a CM that has none on its own book.
+    A (part, cm) that does hold quantity at a unit_price of 0 keeps its 0: the CM
+    feeds genuinely carry no standard cost on line-side storage locations, and
+    imputing a price there would make the value view stop tying to the input
+    file. Those rows are flagged in the UI instead.
+    """
+    price = price_cache["by_part_cm"].get((part, cm))
+    if price is None or pd.isna(price):
+        price = price_cache["by_part"].get(part)
+    if price is None or pd.isna(price):
+        return 0.0
+    return float(price)
+
+
 def _build_lunar_inventory_cache(onhand: pd.DataFrame, onorder: pd.DataFrame) -> dict:
     """Pre-build lookup caches for Lunar inventory by part."""
     lunar_oh_cache = {}
     lunar_oo_cache = {}
 
-    # Lunar on-hand cache (owned_by = "Lunar")
+    # Lunar on-hand cache (owned_by = "Lunar", use uncommitted_qty to avoid double-counting)
+    # uncommitted_qty = available inventory not spoken for by open CM POs
+    # committed qty is already counted in CM on-order
     if "_owner" in onhand.columns:
         lunar_oh = onhand[onhand["_owner"] == "Lunar"]
         for part, group in lunar_oh.groupby("_lpn"):
-            qty = max(0.0, group["unrestricted_qty"].sum())
+            # Use uncommitted_qty if available, else fall back to unrestricted_qty
+            qty_col = "uncommitted_qty" if "uncommitted_qty" in lunar_oh.columns else "unrestricted_qty"
+            qty = max(0.0, group[qty_col].sum())
             value = 0.0
+            # For value, use the qty we selected multiplied by unit price
             if "unit_price" in group.columns:
-                value = (group["unrestricted_qty"] * group["unit_price"]).sum()
+                value = (group[qty_col] * group["unit_price"]).sum()
             lunar_oh_cache[part] = {"qty": qty, "value": value}
 
-    # Lunar on-order cache (POs where vendor is Lunar)
-    if "_vendor" in onorder.columns and "_lpn" in onorder.columns and "quantity_open" in onorder.columns:
-        lunar_oo = onorder[onorder["_vendor"] == "Lunar"]
+    # Lunar on-order cache (Lunar Netsuite POs ONLY - Lunar's own on-order)
+    # Do NOT include Lunar POs to CMs (those are supply to the CMs, not Lunar's on-order)
+    if "_owner" in onorder.columns and "_lpn" in onorder.columns and "quantity_open" in onorder.columns:
+        lunar_oo = onorder[onorder["_owner"] == "Lunar"]
         for part, group in lunar_oo.groupby("_lpn"):
             qty = group["quantity_open"].sum()
             value = 0.0
@@ -200,178 +342,99 @@ def get_lunar_inventory_position(
 
 def compute_inventory_depletion(
     demand_detail: pd.DataFrame,
+    pab: pd.DataFrame,
     onhand: pd.DataFrame,
     onorder: pd.DataFrame,
-    bom: pd.DataFrame,
-    stitch_list: pd.DataFrame,
-    products: pd.DataFrame,
     cfg,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Compute inventory depletion: two-stage CM→Lunar bleed.
+) -> pd.DataFrame:
+    """Compute CM-level inventory depletion: PAB across periods.
 
-    For each (cm, part), calculates inventory balance (qty and $) across time periods:
-    1. CM inventory depletion: consume CM on-hand + on-order first
-    2. Lunar inventory depletion: allocate Lunar inventory proportionally to remaining net demand
+    For each (cm, part), shows:
+    - Static columns: part, description, cm, on_hand, on_order at snapshot
+    - Period columns: PAB (Position Available to Promise) at end of each period
+
+    Uses demand_detail from engine (which already has demand calculated
+    from build plan × BOM × WIP logic, same as shortage/drill-down modules).
 
     Returns:
-        tuple of (balance_table, summary_table)
-        - balance_table: long format with (cm, part, period, balance_qty, balance_value) rows
-        - summary_table: left columns only (static inventory positions)
+        DataFrame wide format: rows are (cm, part), columns are [static] + [periods]
     """
-    # Get all unique (cm, part) combinations from demand_detail
+    # Get unique (cm, part) combinations with description
     parts_by_cm = (
-        demand_detail[["cm", "part", "description", "category"]]
+        demand_detail[["cm", "part", "description", "item_category"]]
         .drop_duplicates()
         .reset_index(drop=True)
     )
 
-    # Skip generation classification for now (too slow with per-part BOM lookups)
-    # TODO: optimize with vectorized generation lookup
-    parts_by_cm["generation_status"] = "TBD"
-
-    # Rename category to item_category
-    parts_by_cm = parts_by_cm.rename(columns={"category": "item_category"})
-
-    # Pre-build lookup caches for fast access (avoid per-part filtering)
+    # Build CM inventory cache
     cm_cache = _build_cm_inventory_cache(onhand, onorder)
-    lunar_cache = _build_lunar_inventory_cache(onhand, onorder)
 
-    # Add inventory positions (static, not time-varying)
-    inventory_positions = []
+    # Process each (cm, part)
+    rows = []
     for _, row in parts_by_cm.iterrows():
-        cm = row["cm"]
-        part = row["part"]
+        try:
+            cm = row["cm"]
+            part = row["part"]
+            desc = row["description"]
 
-        cm_pos = get_cm_inventory_position(part, cm, cm_cache["oh"], cm_cache["oo"])
-        lunar_pos = get_lunar_inventory_position(part, lunar_cache["oh"], lunar_cache["oo"])
+            # Get CM inventory at snapshot
+            cm_pos = get_cm_inventory_position(part, cm, cm_cache["oh"], cm_cache["oo"])
 
-        inventory_positions.append({
-            "cm": cm,
-            "part": part,
-            "cm_raw_oh": cm_pos["raw_oh"],
-            "cm_wip_oh": cm_pos["wip_oh"],
-            "cm_total_oh": cm_pos["total_oh"],
-            "cm_on_order": cm_pos["on_order"],
-            "lunar_on_hand": lunar_pos["on_hand"],
-            "lunar_on_order": lunar_pos["on_order"],
-            "value_cm_raw_oh": cm_pos["value_raw_oh"],
-            "value_cm_on_order": cm_pos["value_on_order"],
-            "value_lunar_on_hand": lunar_pos["value_on_hand"],
-            "value_lunar_on_order": lunar_pos["value_on_order"],
-        })
+            # Get PAB for this (cm, part) across all periods
+            cm_part_pab = pab[(pab["cm"] == cm) & (pab["part"] == part)].copy()
 
-    inv_pos_df = pd.DataFrame(inventory_positions)
-    summary_table = parts_by_cm.merge(inv_pos_df, on=["cm", "part"], how="left")
+            if cm_part_pab.empty:
+                continue  # Skip if no PAB (shouldn't happen if demand exists)
 
-    # Group demand by (cm, part, period) and sort
-    demand_by_period = (
-        demand_detail.groupby(["cm", "part", "period"], as_index=False)["demand"].sum()
-        .sort_values(["cm", "part", "period"])
-    )
+            # Pivot periods to columns
+            pab_wide = cm_part_pab.pivot_table(
+                index=["cm", "part"],
+                columns="period",
+                values="pab",
+                aggfunc="first"
+            )
 
-    # Get all unique periods across all parts (sorted)
-    all_periods = sorted(demand_by_period["period"].unique())
+            # Add static columns
+            pab_wide["description"] = desc
+            pab_wide["on_hand"] = cm_pos["total_oh"]
+            pab_wide["on_order"] = cm_pos["on_order"]
 
-    # First pass: calculate total net demand for each (cm, part) to allocate Lunar proportionally
-    total_demand_by_cm_part = (
-        demand_by_period.groupby(["cm", "part"], as_index=False)["demand"].sum()
-        .rename(columns={"demand": "total_demand"})
-    )
+            rows.append(pab_wide)
+        except Exception as e:
+            log.error(f"Error processing (cm={cm}, part={part}): {e}", exc_info=True)
+            raise
 
-    # Compute balances for each (cm, part)
-    balance_rows = []
+    if not rows:
+        log.warning(f"No rows to concat. parts_by_cm had {len(parts_by_cm)} entries but none had PAB data.")
+        return pd.DataFrame()
 
-    for _, part_row in summary_table.iterrows():
-        cm = part_row["cm"]
-        part = part_row["part"]
+    log.info(f"Concatenating {len(rows)} DataFrames")
+    result = pd.concat(rows, ignore_index=False)
+    log.info(f"After concat, shape: {result.shape}, columns: {list(result.columns)}")
 
-        # Starting inventory
-        cm_available = part_row["cm_total_oh"] + part_row["cm_on_order"]
-        lunar_available = part_row["lunar_on_hand"] + part_row["lunar_on_order"]
+    result = result.reset_index()
+    log.info(f"After reset_index, columns: {list(result.columns)}")
 
-        # Get unit price for value calculations
-        oh = onhand[(onhand["_lpn"] == part) & (onhand["_cm"] == cm)]
-        unit_price = (
-            oh["unit_price"].iloc[0]
-            if len(oh) > 0 and pd.notna(oh["unit_price"].iloc[0])
-            else 0.0
-        )
+    # Reorder: static columns first, then period columns
+    static_cols = ["cm", "part", "description", "on_hand", "on_order"]
+    existing_static = [c for c in static_cols if c in result.columns]
+    period_cols = [c for c in result.columns if c not in static_cols]
 
-        # Get demand for this part at this CM
-        part_demand = demand_by_period[
-            (demand_by_period["cm"] == cm) & (demand_by_period["part"] == part)
-        ].copy()
-
-        # Calculate total net demand (after CM is consumed)
-        total_demand = part_demand["demand"].sum() if len(part_demand) > 0 else 0.0
-        net_demand_after_cm = max(0.0, total_demand - cm_available)
-
-        # Running balances
-        cm_balance = cm_available
-        lunar_balance = lunar_available
-
-        for period in all_periods:
-            # Demand for this period
-            period_demand_rows = part_demand[part_demand["period"] == period]
-            period_demand = period_demand_rows["demand"].sum() if len(period_demand_rows) > 0 else 0.0
-
-            # Stage 1: Consume CM inventory first
-            cm_consumed = min(cm_balance, period_demand)
-            cm_balance -= cm_consumed
-            demand_remaining = period_demand - cm_consumed
-
-            # Stage 2: Consume Lunar inventory (proportional allocation)
-            # Allocate Lunar proportionally to net demand
-            if net_demand_after_cm > 0 and demand_remaining > 0:
-                lunar_allocation = (
-                    demand_remaining / net_demand_after_cm * lunar_available
-                    if net_demand_after_cm > 0
-                    else 0.0
-                )
-                lunar_consumed = min(lunar_balance, demand_remaining)
-            else:
-                lunar_consumed = min(lunar_balance, demand_remaining)
-
-            lunar_balance -= lunar_consumed
-
-            # Calculate value balance
-            total_balance = cm_balance + lunar_balance
-            value_balance = total_balance * unit_price
-
-            balance_rows.append({
-                "cm": cm,
-                "part": part,
-                "description": part_row["description"],
-                "item_category": part_row["item_category"],
-                "generation_status": part_row["generation_status"],
-                "period": period,
-                "cm_balance_qty": cm_balance,
-                "lunar_balance_qty": lunar_balance,
-                "total_balance_qty": total_balance,
-                "total_balance_value": value_balance,
-            })
-
-    balance_table = pd.DataFrame(balance_rows) if balance_rows else pd.DataFrame()
-
-    return balance_table, summary_table
+    return result[existing_static + sorted(period_cols)]
 
 
 # --- Entry point for caching -----
 
 def run(
     demand_detail: pd.DataFrame,
+    pab: pd.DataFrame,
     onhand: pd.DataFrame,
     onorder: pd.DataFrame,
-    bom: pd.DataFrame,
-    stitch_list: pd.DataFrame,
-    products: pd.DataFrame,
     cfg,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Wrapper for inventory depletion calculation. Cacheable from app.py.
+) -> pd.DataFrame:
+    """Wrapper for CM-level inventory depletion. Cacheable from app.py.
 
     Returns:
-        tuple of (balance_table, summary_table)
+        DataFrame: CM runout with periods as columns
     """
-    return compute_inventory_depletion(
-        demand_detail, onhand, onorder, bom, stitch_list, products, cfg
-    )
+    return compute_inventory_depletion(demand_detail, pab, onhand, onorder, cfg)

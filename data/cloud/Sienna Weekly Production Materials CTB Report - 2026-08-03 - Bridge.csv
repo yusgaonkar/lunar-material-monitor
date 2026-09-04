@@ -1,0 +1,168 @@
+,,Updated Week,08/03/2026,,,,,On-hand,,,,,,
+,,,,,,,,,,,,,,
+x,,,,,,,,,,,,,,
+,,Product,Bridge,,,,,,,,,,,
+,,LPN,90-06801A,,,,,,,,,,,
+,,Description,"Bridge, Type B, Boxed, Lunar Blue",,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,Shipped to Date,5456,,Total quantity shipped to date against Lunar production PO,,,,,,,,,
+,,Inventory On Hand,2,Shipped a total of 387 units in July 2026,90- inventory transacted in SAP that has not shipped (i.e. FG inventory at Sienna),,,,,,,,,
+,,[W+4] Build Plan,400,,,,,,,,,,,
+,,Week of 08/03,100,,,,,,,,,12.37142857,,
+,,Week of 08/10,100,,,,,,,,,,,
+,,Week of 08/17,100,,,,,,,,,,,
+,,Week of 08/24,100,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,Sienna P/N,PN,Description,Supplier,On Hand Inventory,Sienna ESS usage,Coverage,Projected Runout Date,Next Supply Quantity,Next Supply Date,Risk Category,Next Supply Tracking #,Additional reference,Notes
+,1363-001-3025-02,10-002244,"Busbar, Neutral, bridge",Avalon,107,1,107,8/10/2026,"468
+  517
+ 180
+  1332
+  1350","7/22/2026
+  8/3/2026
+ 8/3/2026
+  08/30/2026
+  09/30/2026",,"Tracking number : 99 8426 9783 (DHL) - 468 pcs, waiting for GR.
+  Tracking number : 382824123078 (FedEx) - 517 pcs
+ Tracking number : 56 1739 0656 (DHL) - 180 pcs",,
+,1363-001-3084-00,10-002203,"Bus Bar, NBU, L1, Bridge (Insul Coat)",Avalon,401,1,401,8/31/2026,"195 
+ 240
+  850","8/3/2026
+ 8/3/2026
+  09/30/2026",,"Tracking number : 382824123078 (FedEx) - 195 pcs
+ Tracking number : 56 1739 0656 (DHL) - 240 pcs",,
+,1363-003-3069-03,10-002209,"Insulation Tray, Core Module, Bridge",Fictiv,485,1,485,8/31/2026,,,,"Accounted for 30% fallouts and reduced the inventory
+  Ocean shipment: week of 06/10, Ref# HLCUSHA2604BWKK7
+  Held back 1400 pcs at supplier end
+  Update as of 05/13: 646 pcs are getting AIR shipped from Fictiv
+  Update as of 05/19: Fictiv is not AIR shipping the 646 pcs by AIR and seeing more rejects at LINE
+  Update as of 06/16: Still waiting on the AIR shipment of 300 pcs from Fictiv; Fictiv still hasn't shared the packiong slip and cargo readiness for another 350 pcs to be moved via Ocean","Fictiv will be shipping 400 pcs on 08/08 via ocean
+ 200 pcs to be shipped by AIR on 08/22 and another 1218 pcs via Ocean",
+,1363-062-3068-00,10-005852,"Packaging, Bridge, Front Cap Pad",STEPHEN GOULD,"1,608",3,536,9/7/2026,,,,revised PO has been shared with Stephen Gould and waiting for firm ship dates,New pricing to be approved no later than 07.08 by Lunar team.,
+,1363-008-3022-03,10-003550,"ASSY, INNER COVER, BRIDGE, CHARCOAL SUED",Avalon,577,1,577,9/7/2026,240,8/15/2026,,"Ocean shipment: week of 08/15, Ref# HAMU2928615",,
+,1363-001-3024-02,10-002232,"Bus Bar, Ground, Bridge",Avalon,593,1,593,9/7/2026,"261
+ 180
+  1240
+  850","8/3/2026
+ 8/3/2026
+  08/30/2026
+  09/30/2026",,"Tracking number : 382824123078 (FedEx) - 261 pcs
+ Tracking number : 56 1739 0656 (DHL) - 180 pcs",,
+,1363-062-3081-00,10-006267,"Padded Bag, Accessories, Bridge",Uline,603,1,603,9/14/2026,1000,8/15/2026,,Domestic shipment,,
+,1363-001-3037-01,10-002579,"Offset Mounting Bracket, Wall, Bridge",Avalon,627,1,627,9/14/2026,240,08/15/2026,,"Ocean shipment: week of 08/15, Ref# HAMU2928615",,
+,1363-001-3086-00,10-002205,"Bus Bar, BU, L2, Bridge (Insul Coat)",Avalon,634,1,634,9/14/2026,564,8/3/2026,,Tracking number : 61 0230 3281 (DHL),,
+,1363-001-3088-00,10-002207,"Bus Bar, Load Tray, Left, Bridge (Insul",Avalon,637,1,637,9/14/2026,408,08/03/2026,,Tracking number : 61 0230 3281 (DHL),,
+,1363-008-3023-07,10-003551,"ASSY, ENCLOSURE DOOR, BRIDGE, LUNAR Blue",Avalon,664,1,664,9/14/2026,240,08/15/2026,,"Ocean shipment: week of 08/15, Ref# HAMU2928615",,
+,1363-008-3005-06,10-002173,"Assy Enclosure, Weldment, Bridge, Charco",Avalon,733,1,733,9/21/2026,208,08/15/2026,,"Ocean shipment: week of 08/15, Ref# HAMU2928615",,
+,1363-001-3026-00,10-002230,"Neutral/Ground Bar, GIP",GORDON ELECTRIC SUPPLY,"4,956",6,826,9/28/2026,"3500
+  3500
+ 5500","8/6/2026
+  9/28/2026
+ 10/05/2026",,Qty# 3500 shipped - THE CUSTOM COMPANIES- 70041792 - ETA 7/10 (waiting for GR),,
+,1363-062-3070-00,10-005857,"Packaging, Bridge, Back Cap Pad",STEPHEN GOULD,"2,479",3,826,9/28/2026,,,,revised PO has been shared with Stephen Gould and waiting for firm ship dates,,
+,1363-060-3085-00,10-003464,Hex head Set screw W/Cup point,Lunar Energy,"1,687",2,844,9/28/2026,,,,Domestic shipment,,
+,1363-062-3071-00,10-005855,"Packaging, Bridge, Back Cap Wrap",STEPHEN GOULD,887,1,887,9/28/2026,,,,revised PO has been shared with Stephen Gould and waiting for firm ship dates,,
+,1363-063-3040-00,10-06825A,"Label, Caution, 19.05mm Tall Triangle, U",Mysafetylabels,923,1,923,10/5/2026,250,7/20/2026,,Domestic shipment : will be ready on the week of 07/06 .,,
+,1363-001-3087-00,10-002206,"Bus Bar, BU, L1, Bridge (Insul Coat)",Avalon,943,1,943,10/5/2026,"350
+  850","7/22/2026
+  09/30/2026",,Tracking number : 382434353065 (FedEx) - 350 pcs,,
+,1363-063-3036-00,10-006099,"Label, Laminated Polyester UL969",Mysafetylabels,953,1,953,10/5/2026,,,,No more open order,,
+,1363-062-3073-00,10-005859,"Packaging, Bridge, Top Cover Support",STEPHEN GOULD,991,1,991,10/5/2026,,,,revised PO has been shared with Stephen Gould and waiting for firm ship dates,,
+,1363-065-3019-02,10-002248,"Wire Harness, Voltage Sense, Bridge",Avalon,"1,023",1,1023,10/12/2026,,,,In production. Waiting for ship date.,,
+,1363-065-3178-00,10-006362,"Wire Harness, Rogowski Coil Jumper, Brid",Avalon,"1,052",1,1052,10/12/2026,,,,Will ship towards - first week of August,,
+,1363-062-3074-00,10-005860,"Packaging, Bridge, Top Cover Support Pad",STEPHEN GOULD,"1,074",1,1074,10/12/2026,,,,revised PO has been shared with Stephen Gould and waiting for firm ship dates,,
+,1363-064-3016-00,10-002245,"LoadTray,20Space,40Ckt,225A(DEV-000062)",Eaton,"1,078",1,1078,10/12/2026,"1050
+  450
+  350","10/12/2026
+  11/12/2026
+  1/12/2026",,"Domestic shipment : will be ready on the week of 10/05; Yet to move.
+  Domestic shipment : will be ready on the week of 11/05; Yet to move
+  Domestic shipment : will be ready on the week of 01/05; Yet to move",,
+,1363-001-3089-00,10-002754,"Bus Bar, Load Tray, Right, Bridge (Insu",Avalon,"1,092",1,1092,10/12/2026,"550
+  494","7/22/2026
+  09/30/2026",,Tracking number : 382434353065 (FedEx) - 550 pcs,,
+,1363-001-3085-00,10-002204,"Bus Bar, NBU, L2, Bridge (Insul Coat)",Avalon,"1,121",1,1121,10/19/2026,"542
+  850.","8/3/2026
+  09/30/2026",,Tracking number : 382824123078 (FedEx) - 542 pcs,,
+,1363-013-3026-00,10-002208,"Wire Terminal Lug, 250MCM, Aluminum, Tin",GORDON ELECTRIC SUPPLY,"12,383",10,1238,10/26/2026,"6250
+  4000
+ 7250","10/05/2026
+  10/05/2026
+ 11/05/2026",,"Domestic shipment will be ready on the week of 09/28, yet to move
+ Domestic shipment will be ready on the week of 09/28, yet to move
+ Domestic shipment will be ready on the week of 10/28, yet to move",,
+,1363-062-3076-00,10-005858,"Packaging, Bridge, Top Cover Frame",STEPHEN GOULD,"1,277",1,1277,10/26/2026,,,,revised PO has been shared with Stephen Gould and waiting for firm ship dates,,
+,1363-065-3021-02,10-002322,"WIRE HARNESS, G/N BOND, Bridge",Avalon,"1,323",1,1323,11/2/2026,,,,,,
+,1363-062-3069-00,10-005856,"Packaging, Bridge, Back Cap Frame",STEPHEN GOULD,"6,645",5,1329,11/2/2026,,,,revised PO has been shared with Stephen Gould and waiting for firm ship dates,,
+,1363-062-3077-01,10-005851,Bridge- RSC Shipping Box,STEPHEN GOULD,"1,330",1,1330,11/2/2026,,,,revised PO has been shared with Stephen Gould and waiting for firm ship dates,,
+,1363-062-3075-00,10-005861,"Packaging, Bridge, Top Pad",STEPHEN GOULD,"1,360",1,1360,11/2/2026,,,,New pricing to be approved no later than 07.08 by Lunar team.,,
+,1363-003-3016-00,10-002548,CONNECTOR LOCK PLATE 3 POS,Heilind,"1,382",1,1382,11/2/2026,"1000
+  1000
+  250
+  250","10/12/2026
+  11/12/2026
+  01/12/2027
+  02/12/2027",,"Domestic shipment : will be ready on the week of 10/05; Yet to move.
+  Domestic shipment : will be ready on the week of 11/05; Yet to move.
+  
+  Domestic shipment : will be ready on the week of 01/05; Yet to move
+  Domestic shipment : will be ready on the week of 02/05; Yet to move",,
+,1363-062-3072-00,10-005854,"Packaging, Bridge, Front Cap Wrap",STEPHEN GOULD,"1,384",1,1384,11/2/2026,,,,New pricing to be approved no later than 07.08 by Lunar team.,,
+,1363-065-3028-02,10-005481,"Wire Harness, Earth Ground Sense, Bridge",Avalon,"1,391",1,1391,11/2/2026,,,,In production. Waiting for ship date.,,
+,1363-001-3017-04,10-002225,"Bracket Assembly, PCBA, Bridge",JPOND,"1,403",1,1403,11/9/2026,"1152
+  400
+  350","08/19/2026
+  12/17/2026
+  01/18/2027",,"Ocean shipment: week of 08/19, Ref# MEDUYE045941
+  Ocean shipment: will be ready on the week of 11/05; Yet to move.
+  Ocean shipment: will be ready on the week of 12/05; Yet to move.",,
+,1363-062-3067-00,10-005853,"Packaging, Bridge, Front Cap Frame",STEPHEN GOULD,"7,718",5,1544,11/16/2026,,,,revised PO has been shared with Stephen Gould and waiting for firm ship dates,,
+,1363-001-3052-00,10-06108A,"Closing Plate, Top Service Entry, Bridge",Avalon,"1,757",1,1757,11/23/2026,650,7/15/2026,,"Tracking number : 381951925290 (FedEx) - 650 pcs, waiting for GR.",,
+,1363-001-3064-02,10-002231,"Mount, Neutral/Ground Bar, Bridge",Axtonne,"11,123",6,1854,12/14/2026,800,5/8/2026,,Air shipment Week of 7/29,,
+,1363-001-3071-02,10-004072,"Bus Bar, Ground to Enclosure, Bridge",JPOND,"1,926",1,1926,12/28/2026,"1300
+  600","08/19/2026
+  12/17/2026",,"Ocean shipment: week of 08/19, Ref# MEDUYE045941
+  Ocean shipment: will be ready on the week of 11/05; Yet to move.",,
+,1363-003-3071-02,10-002219,"Standoff, Load Tray, Top, Bridge",Fictiv,"2,376",1,2376,1/5/2027,1500,10/10/2026,,Ocean shipment: will be ready on the week of 08/26; Yet to move.,,
+,1363-060-3070-00,10-002235,"PENCOM SW8247 Bolt, M5 x 14, T25 D",Pencom,"43,358",18,2409,1/5/2027,"16,797",11/16/2026,,Hardware items; Getting pulled by AIR,,
+,1363-060-3043-00,10-003068,"NUT, M5x0.8 6Hx5mm, NYLON INSERT, STEEL,",Pencom,"53,484",22,2431,1/5/2027,19766,12/10/2026,,Hardware items; Getting pulled by AIR,,
+,1363-065-3023-02,10-003805,"Wire Harness, CAN Jumper, Bridge",Avalon,"2,465",1,2465,1/5/2027,,,,In production. Waiting for ship date.,,
+,1363-003-3026-04,10-003002,"Guide, Header Pins, PCBA, Bridge",Fictiv,"4,976",2,2488,1/5/2027,"2,500",8/18/2026,,Ocean shipment: will be ready on the week of 07/07; Yet to move.,,
+,1363-062-3082-00,10-05006A,"Foam Seal, Top Service Entry, Bridge",Seal Methods Inc.,"2,490",1,2490,1/5/2027,882,12/10/2026,,Domestic shipment : will be ready on the week of 10/05; Yet to move.,,
+,1363-060-3014-00,10-06110A,"Screw, Button, 12-24x0.55, T25, Steel wi",Unisteel Technology Limited,"9,996",4,2499,1/5/2027,"7,000",11/26/2026,,Ocean shipment: will be ready on the week of 10/15; Yet to move.,,
+,1363-003-3104-01,10-005080,"Breaker Hold-Down, Bridge",Axtonne,"2,538",1,2538,1/5/2027,320,11/5/2026,,Air shipment,,
+,1363-003-3067-00,10-002215,"PENCOM SW8236 Bolt with Washers, M6x",Pencom,"38,291",15,2553,1/12/2027,"13,020",11/16/2026,,Hardware items; Getting pulled by AIR,,
+,1363-003-3073-03,10-002647,"Compression Bar, PCBA, Bridge",Fictiv,"5,192",2,2596,1/12/2027,"2,500",10/10/2026,,Ocean shipment: will be ready on the week of 08/26; Yet to move.,,
+,1363-003-3072-03,10-002221,"Enclosure, PCBA's, Bridge",Fictiv,"2,645",1,2645,1/19/2027,"1,500",11/10/2026,,Ocean shipment: will be ready on the week of 08/30; Yet to move.,,
+,1363-003-3048-00,10-002599,"Plastic Standoff, Wire Lug, S1/S2, Bridg",Fictiv,"2,712",1,2712,1/19/2027,"1,500",7/10/2026,,Ocean shipment: will be ready on the week of 08/26; Yet to move.,,
+,1363-003-3083-02,10-002243,"Insulator, Neutral Bar, Bridge",Fictiv,"2,728",1,2728,1/19/2027,1500,11/10/2026,,Ocean shipment: will be ready on the week of 08/30; Yet to move.,,
+,1363-060-3084-00,10-002212,M5X11MM-TX-BUT-CAP-FL-SEMS-SC-STL,Pencom,"43,973",16,2748,1/19/2027,20000,11/16/2026,,Hardware items; Getting pulled by AIR,,
+,1363-003-3081-02,10-002229,"Insulator, Ground Bar, Bridge",Fictiv,"2,760",1,2760,1/26/2027,1000,11/10/2026,,Ocean shipment: will be ready on the week of 08/30; Yet to move.,,
+,1363-003-3047-02,10-004611,"Safety Cover, Terminal Lug, Bridge",Fictiv,"11,145",4,2786,1/26/2027,4500,8/28/2026,,Ocean shipment: will be ready on the week of 07/17; Yet to move.,,
+,1363-003-3082-03,10-002190,"Insulator Cap Neutral, Bridge",Fictiv,"2,800",1,2800,1/26/2027,1000,8/18/2026,,Ocean shipment: will be ready on the week of 07/07; Yet to move.,,
+,1363-003-3070-03,10-002211,"Relay Cover, Bridge",Fictiv,"2,812",1,2812,1/26/2027,1500,8/18/2026,,Ocean shipment: will be ready on the week of 07/07; Yet to move.,,
+,1363-003-3078-02,10-002590,"Insulator, Load Tray, Bridge",Fictiv,"2,922",1,2922,2/5/2027,1000,8/18/2026,,Ocean shipment: will be ready on the week of 07/07; Yet to move.,,
+,1363-064-3015-03,10-002195,"Relay Assembly, Bridge",KG Technologies,"3,029",1,3029,2/5/2027,700,8/19/2026,,"Ocean shipment: week of 08/19, Ref# MEDUYE045941",,
+,1363-060-3015-00,10-003810,"Screw, Sheet Metal, M3x8mm, Steel, ZiNi",Pencom,"18,190",6,3032,2/5/2027,2033,5/10/2026,,Hardware items; Getting pulled by AIR,,
+,1363-060-3077-00,10-002109,M5X8mm TX-BUT-WA-CAP-SC-STL-ZINI-BLK-100,Pencom,"6,987",2,3494,3/5/2027,,,,Covered for current forecast,,
+,1363-060-3069-00,10-002234,"PENCOM SW8250 Bolt, Flat Head, M4 x",Pencom,"21,996",6,3666,3/5/2027,,,,Covered for current forecast,,
+,1363-003-3068-00,10-002324,"PENCOM WA5881Washer, 1/4-20, Steel,",Pencom,"7,577",2,3789,3/5/2027,,,,Covered for current forecast,,
+,1363-060-3066-00,10-002222,"PENCOM ST9399 Standoff, Male-Female,",Pencom,"15,394",4,3849,3/5/2027,,,,Covered for current forecast,,
+,1363-013-3030-00,10-003756,"PCB Pin, 0.762mm x 24mm",Digikey,"7,710",2,3855,3/5/2027,,,,Covered for current forecast,,
+,1363-048-3001-01,10-002691,"Plate, Thermal Break, PCBA, Bridge",Seal Methods Inc.,"3,876",1,3876,3/5/2027,,,,Covered for current forecast,,
+,1363-063-3039-00,10-06733A,"Label, Limit, PCS",STEPHEN GOULD,"8,190",2,4095,#N/A,,,,Covered for current forecast,,
+,1363-063-3020-00,10-004601,"Label, Branch Circuits, Inner Panel, Lef",Boyd Corporation,"4,373",1,4373,#N/A,,,,Covered for current forecast,,
+,1363-060-3089-00,10-002407,"Screw,M5x13,SEMS,BHT T-25,Steel,Class 8.",Pencom,"4,444",1,4444,#N/A,,,,Covered for current forecast,,
+,1363-063-3021-00,10-004970,"Label, Branch Circuits, Inner Panel, Rig",Boyd Corporation,"4,499",1,4499,#N/A,,,,Covered for current forecast,,
+,1363-063-3008-00,10-003600,"Label, Service Disconnect, Bridge",Boyd Corporation,"4,542",1,4542,#N/A,,,,Covered for current forecast,,
+,1363-063-3035-02,10-006108,"Label, Overcurrent Device, Bridge",STEPHEN GOULD,"4,583",1,4583,#N/A,,,,Covered for current forecast,,
+,1363-063-3017-00,10-003794,"Label, Wire Routing Diagram, PV Hub",Boyd Corporation,"4,618",1,4618,#N/A,"5,000",5/1/2027,,Domestic shipment : will be ready on the week of 12/29; Yet to move.,,
+,1363-063-3037-01,10-06833A,"Label, Compliance, Bridge, Type B",STEPHEN GOULD,"4,666",1,4666,#N/A,,,,Covered for current forecast,,
+,1363-003-3044-00,10-000395,"Washer,M5,Flat,5.3mm IDx 12.6mm OD,Steel",Pencom,"9,639",2,4820,#N/A,,,,Covered for current forecast,,
+,1363-060-3086-00,10-004293,"NUT, M5x0.8, 12mm DISC SPRING, STEEL, ZI",Pencom,"4,835",1,4835,#N/A,,,,Covered for current forecast,,
+,1363-063-3038-00,10-06732A,"Label, Warning, PCS",STEPHEN GOULD,"10,851",2,5426,#N/A,,,,Covered for current forecast,,
+,1363-063-3009-00,10-003601,"Label, MAC Address Bridge",Thomco,"6,426",1,6426,#N/A,4000,9/30/2026,,Domestic shipment : will be ready on the week of 09/30; Yet to move.,,
+,1363-063-3042-00,10-06847A,"Label, Low Voltage Wire Routing Diagram,",STEPHEN GOULD,"6,487",1,6487,#N/A,,,,Covered for current forecast,,
+,1363-063-3031-00,10-006277,"Label, Breaker Warning, Bridge",STEPHEN GOULD,"8,200",1,8200,#N/A,,,,Covered for current forecast,,
+,1363-063-3006-02,10-003598,"Label, Terminal Diagram, Bridge",STEPHEN GOULD,"9,236",1,9236,#N/A,,,,Covered for current forecast,,
+,1363-060-3078-00,10-002246,"Nut, 1/4-20, Hex Head, Steel, Zn-Ni Plat",Pencom,"43,863",2,21932,#N/A,,,,Covered for current forecast,,
