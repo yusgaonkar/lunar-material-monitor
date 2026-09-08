@@ -600,11 +600,14 @@ bp_hash = hash_build_plan(build_plan_for_engine)
 frames_with_plan = frames.copy()  # Shallow copy of dict
 frames_with_plan["build_plan.csv"] = build_plan_for_engine
 
-# Stage 4: Dynamic horizon based on build plan's end date
-# Ensure the Config generates periods through the END of the max month (not just its start)
-if len(build_plan_for_engine) > 0:
-    max_period = pd.to_datetime(build_plan_for_engine['period_start']).max()
-    # Extend to end of max month (last day of that month)
+# Stage 4: Dynamic horizon — CACHED to avoid recalculating on every page load
+@st.cache_data
+def calculate_horizon_weeks(build_plan_hash, max_period_str):
+    """Calculate minimum horizon_weeks to cover end of max period's month.
+
+    Cached by build_plan_hash so it only recalculates when the build plan changes.
+    """
+    max_period = pd.to_datetime(max_period_str)
     end_of_max_month = (max_period + pd.offsets.MonthEnd(0)).normalize()
 
     # Start with default, then expand if needed
@@ -612,19 +615,28 @@ if len(build_plan_for_engine) > 0:
     cfg_test = Config(snapshot=snapshot_date, horizon_weeks=horizon_weeks)
     last_period = cfg_test.periods()[-1]
 
-    # Keep adding weeks until Config's last period reaches the END of max month
+    # Keep adding weeks until Config's last period reaches end of max month
     while last_period < end_of_max_month:
         horizon_weeks += 4
         cfg_test = Config(snapshot=snapshot_date, horizon_weeks=horizon_weeks)
         last_period = cfg_test.periods()[-1]
 
-    log.info(f"📅 Dynamic horizon: build plan max {max_period.date()}, end of month {end_of_max_month.date()}, Config extends to {last_period.date()} ({horizon_weeks} weeks)")
+    return horizon_weeks, last_period
+
+if len(build_plan_for_engine) > 0:
+    max_period = pd.to_datetime(build_plan_for_engine['period_start']).max()
+    horizon_weeks, last_period = calculate_horizon_weeks(bp_hash, max_period.isoformat())
+    log.info(f"📅 Dynamic horizon: build plan max {max_period.date()}, Config extends to {last_period.date()} ({horizon_weeks} weeks)")
 else:
     horizon_weeks = 52
     log.warning("Build plan is empty, using default 52-week horizon")
 
 # Composite cache key: invalidate if either build plan OR horizon changes
 cache_key = f"{bp_hash}:h{horizon_weeks}"
+
+# Show status message for cold start
+st.info("⏳ **Initial load is slower (3-5 min cold start)**. Subsequent interactions are fast thanks to caching. Please wait...")
+
 result = run_engine(frames_with_plan, cache_key, horizon_weeks=horizon_weeks)
 
 # Override snapshot with dynamically extracted value from data files
