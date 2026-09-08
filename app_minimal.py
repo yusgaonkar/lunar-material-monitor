@@ -534,7 +534,9 @@ def run_engine(frames, cache_key, horizon_weeks=52):
 
 
 # Load data once - io.py automatically detects Cloud vs localhost
+_record_timing("Starting data load")
 frames = load_data()
+_record_timing("Data load complete")
 
 # VALIDATION: Check data consistency
 def validate_snapshot_consistency(frames):
@@ -634,8 +636,10 @@ else:
 # Composite cache key: invalidate if either build plan OR horizon changes
 cache_key = f"{bp_hash}:h{horizon_weeks}"
 
-# Show status message for cold start
-st.info("⏳ **Initial load is slower (3-5 min cold start)**. Subsequent interactions are fast thanks to caching. Please wait...")
+# Show status message for cold start only (when cache_key changes = new data to load)
+if st.session_state.get("last_cache_key") != cache_key:
+    st.info("⏳ **Initial load is slower (3-5 min cold start)**. Subsequent interactions are fast thanks to caching. Please wait...")
+    st.session_state.last_cache_key = cache_key
 
 result = run_engine(frames_with_plan, cache_key, horizon_weeks=horizon_weeks)
 
@@ -2956,10 +2960,12 @@ elif st.session_state.active_tab == "Inventory Projection":
                         return "Obsolete"
 
                 balance_table["obsolescence_state"] = balance_table["part"].apply(get_obsolescence_state)
+                _record_timing("Obsolescence state added")
 
                 # Display Lunar allocation validation
                 # Apply global filters to balance_table
                 filtered_balance = balance_table.copy()
+                _record_timing("Balance table copied")
 
                 if cm_filter != "All":
                     filtered_balance = filtered_balance[filtered_balance["cm"] == cm_filter]
@@ -2993,6 +2999,7 @@ elif st.session_state.active_tab == "Inventory Projection":
                     output_table["cm_on_order_extended_cost"] = (
                         output_table["cm_on_order"].fillna(0) * output_table["cm_on_order_unit_price"].fillna(0)
                     ).round(0).astype(int)
+                    _record_timing("Extended costs calculated")
 
                     # Calculate extended costs for Lunar inventory
                     output_table["lunar_on_hand_extended_cost"] = (
@@ -3055,6 +3062,7 @@ elif st.session_state.active_tab == "Inventory Projection":
 
                     # Combine: CM depletion rows + Lunar depletion rows
                     output_table = pd.concat([cm_depletion_table, lunar_depletion_table], ignore_index=True)
+                    _record_timing("Rows duplicated and combined")
 
                     # Update static_cols to include projection_type
                     static_cols_with_type = static_cols + ["projection_type"]
@@ -3066,6 +3074,8 @@ elif st.session_state.active_tab == "Inventory Projection":
                 if len(output_table) > 0:
                     try:
                         st.subheader("CM & Lunar Inventory Projection by Period")
+
+                        _record_timing("Table ready for display")
 
                         # Inventory source and segmentation options
                         col_inv_src, col_segment = st.columns(2)
