@@ -2483,6 +2483,11 @@ elif st.session_state.active_tab == "Inventory Projection":
                 item_cat = _onhand[["lpn", "item_category", "description"]].drop_duplicates().rename(columns={"lpn": "part"})
                 balance_table = cm_pab_full.merge(item_cat, on="part", how="left")
 
+                # Fill missing categories/descriptions from BOM (for NPI parts not yet in inventory)
+                bom_cat = bom[["item_number", "category_name", "item_name"]].drop_duplicates().rename(columns={"item_number": "part", "category_name": "item_category", "item_name": "description"})
+                balance_table["item_category"] = balance_table["item_category"].fillna(balance_table["part"].map(bom_cat.set_index("part")["item_category"]))
+                balance_table["description"] = balance_table["description"].fillna(balance_table["part"].map(bom_cat.set_index("part")["description"]))
+
                 # Extract CM from source_report for on-hand data (extract full name like "Sienna GA")
                 onhand_with_cm = onhand[onhand["source_report"] != "Lunar Netsuite"].copy()
                 onhand_with_cm["cm"] = onhand_with_cm["source_report"].str.extract(r"CM:\s*(.+)$", expand=False).str.strip()
