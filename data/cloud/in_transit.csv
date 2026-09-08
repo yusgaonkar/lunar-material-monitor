@@ -1,0 +1,5 @@
+# TLAs with an ASN submitted but not yet received by Lunar.
+# Components of these units sit in neither WIP Consumed nor Parent FG Built,
+# so without this the engine over-demands. See CLAUDE.md section 6.
+# Check first whether this is auto-derivable from waybill / is_fully_shipped.
+product_lpn,cm,qty,asn_date

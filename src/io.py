@@ -214,10 +214,20 @@ def _read_hand(name: str) -> pd.DataFrame:
     itself called io, so it also avoids needing to import the stdlib io — which
     resolves back to this file when it is run as a script.
 
-    Automatically selects the newest version if dated variants exist (e.g.,
-    build_plan_2026-09-03.csv over build_plan.csv).
+    Hand-maintained files are read by their exact filename — NO dated-variant
+    auto-detection. This is deliberate. The dated build_plan_YYYY-MM-DD.csv files
+    are the raw WIDE pivot exports (LPN | Description | CM | Aug-26 | Sep-26 | ...)
+    that get converted into the flat product_lpn/period_start/qty schema this
+    loader expects. Letting _find_newest_csv pick one selects a file that cannot
+    satisfy HAND_COLS, and because that helper sorts by mtime, a git clone (which
+    gives every file the same checkout time) makes the choice arbitrary. That is
+    what broke Streamlit Cloud: it selected a wide pivot file and raised
+    "expected columns absent: ['product_lpn', 'period_start', 'qty']".
+
+    The glob was also too loose — build_plan_*.csv matched build_plan_with_asn.csv,
+    which is not a dated variant at all.
     """
-    path = _find_newest_csv(name, DATA)
+    path = DATA / name
     spec = HAND_COLS[name]
     comments = {
         i for i, ln in enumerate(path.read_text().splitlines())
