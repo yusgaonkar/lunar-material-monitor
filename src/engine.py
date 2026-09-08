@@ -873,115 +873,98 @@ def calculate_dos_and_runout_metrics(
     grid_unshifted_no_onorder = grid_unshifted.copy()
     grid_unshifted_no_onorder.loc[:, "receipts"] = 0.0
 
-    dos_data = []
-    runout_data = []
+    # PERF: this was a Python loop over every (cm, part) key (~7.5k), and each
+    # iteration ran 3-5 full boolean-mask scans over the DAILY grid (504 days x 7.5k
+    # keys = millions of rows). That is ~30k full scans of a multi-million-row frame,
+    # and it was essentially the whole ~220s engine cold start.
+    #
+    # Below is the same arithmetic expressed as sort + groupby().cumsum() over each
+    # grid once. The per-key defaults (999 / 0.0 / None) are reproduced exactly.
+    unique_keys = opening[["cm", "part"]].drop_duplicates().reset_index(drop=True)
 
-    # Iterate through each (cm, part) combination
-    unique_keys = opening[["cm", "part"]].drop_duplicates()
+    # Opening inventory per (cm, part). first row wins, matching the old .iloc[0].
+    op = opening.drop_duplicates(subset=["cm", "part"], keep="first").copy()
+    op["raw_inv"] = op["raw_inventory"].astype(float)
+    op["raw_and_wip"] = op["raw_inv"] + op["wip_inventory"].astype(float)
+    op = op[["cm", "part", "raw_inv", "raw_and_wip"]]
 
-    for idx, key_row in unique_keys.iterrows():
-        cm = key_row["cm"]
-        part = key_row["part"]
-        is_pcba = part in pcba_parts
+    def _first_exhaustion(g: pd.DataFrame, on_hand_col: str) -> pd.Series:
+        """First period where cumulative demand >= on-hand, per (cm, part)."""
+        if len(g) == 0:
+            return pd.Series(dtype="datetime64[ns]")
+        g = g.sort_values(["cm", "part", "period"])
+        g["_cum"] = g.groupby(["cm", "part"], sort=False)["demand"].cumsum()
+        hit = g[g["_cum"] >= g[on_hand_col]]
+        if len(hit) == 0:
+            return pd.Series(dtype="datetime64[ns]")
+        return hit.groupby(["cm", "part"], sort=False)["period"].min()
 
-        # Get opening inventory
-        opening_row = opening[(opening["cm"] == cm) & (opening["part"] == part)]
-        if len(opening_row) == 0:
-            continue
+    def _first_negative_pab(g: pd.DataFrame, on_hand_col: str) -> pd.Series:
+        """First period where opening + cumulative net flow goes negative, per key."""
+        if len(g) == 0:
+            return pd.Series(dtype="datetime64[ns]")
+        g = g.sort_values(["cm", "part", "period"])
+        g["_net"] = g["receipts"] - g["demand"]
+        g["_pab"] = g[on_hand_col] + g.groupby(["cm", "part"], sort=False)["_net"].cumsum()
+        short = g[g["_pab"] < 0]
+        if len(short) == 0:
+            return pd.Series(dtype="datetime64[ns]")
+        return short.groupby(["cm", "part"], sort=False)["period"].min()
 
-        raw_inv = float(opening_row["raw_inventory"].iloc[0])
-        wip_inv = float(opening_row["wip_inventory"].iloc[0])
-        raw_and_wip = raw_inv + wip_inv
+    is_pcba_grid = grid["part"].isin(pcba_parts)
 
-        # ===== DOS_FATP (all parts, raw+wip, unshifted demand) =====
-        on_hand_fatp = raw_and_wip
-        part_grid_fatp = grid_unshifted[
-            (grid_unshifted["cm"] == cm) &
-            (grid_unshifted["part"] == part) &
-            (grid_unshifted["period"] >= cfg.snapshot)
-        ].copy()
-        part_grid_fatp = part_grid_fatp.sort_values("period").reset_index(drop=True)
+    # DOS_FATP: all parts, raw+wip, unshifted demand, from snapshot forward
+    exh_fatp = _first_exhaustion(
+        grid_unshifted[grid_unshifted["period"] >= cfg.snapshot].merge(op, on=["cm", "part"], how="inner"),
+        "raw_and_wip",
+    )
+    # DOS_PCBA_KITTING: PCBA only, raw only, shifted demand, from snapshot forward
+    exh_pcba = _first_exhaustion(
+        grid[is_pcba_grid & (grid["period"] >= cfg.snapshot)].merge(op, on=["cm", "part"], how="inner"),
+        "raw_inv",
+    )
+    # RUNOUT_DATE_FATP: all parts, raw+wip, unshifted, NO on-order
+    ro_fatp = _first_negative_pab(
+        grid_unshifted_no_onorder.merge(op, on=["cm", "part"], how="inner"), "raw_and_wip"
+    )
+    # RUNOUT_DATE_PCBA_KITTING: PCBA only, raw only, shifted, NO on-order
+    ro_pcba = _first_negative_pab(
+        grid_no_onorder[grid_no_onorder["part"].isin(pcba_parts)].merge(op, on=["cm", "part"], how="inner"),
+        "raw_inv",
+    )
 
-        dos_fatp = 999.0
-        if on_hand_fatp > 0 and len(part_grid_fatp) > 0:
-            part_grid_fatp["cumsum_demand"] = part_grid_fatp["demand"].cumsum()
-            exhausted_mask = part_grid_fatp["cumsum_demand"] >= on_hand_fatp
-            if exhausted_mask.any():
-                exhausted_idx = exhausted_mask.idxmax()
-                exhaustion_date = part_grid_fatp.loc[exhausted_idx, "period"]
-                dos_fatp = max(0, (exhaustion_date - cfg.snapshot).days)
-        elif on_hand_fatp <= 0:
-            dos_fatp = 0.0
+    out = unique_keys.merge(op, on=["cm", "part"], how="left")
+    out["is_pcba"] = out["part"].isin(pcba_parts)
+    key_index = pd.MultiIndex.from_arrays([out["cm"], out["part"]], names=["cm", "part"])
 
-        # ===== DOS_PCBA_KITTING (PCBA only, raw only, shifted demand) =====
-        dos_pcba = 999.0
-        if is_pcba:
-            on_hand_pcba = raw_inv  # Raw only
-            part_grid_pcba = grid[
-                (grid["cm"] == cm) &
-                (grid["part"] == part) &
-                (grid["period"] >= cfg.snapshot)
-            ].copy()
-            part_grid_pcba = part_grid_pcba.sort_values("period").reset_index(drop=True)
+    def _align(series: pd.Series) -> pd.Series:
+        """Line a per-key result up against `out`, NaT where the key had no hit."""
+        if len(series) == 0:
+            return pd.Series(pd.NaT, index=out.index, dtype="datetime64[ns]")
+        return pd.Series(
+            pd.to_datetime(series.reindex(key_index).values), index=out.index
+        )
 
-            if on_hand_pcba > 0 and len(part_grid_pcba) > 0:
-                part_grid_pcba["cumsum_demand"] = part_grid_pcba["demand"].cumsum()
-                exhausted_mask = part_grid_pcba["cumsum_demand"] >= on_hand_pcba
-                if exhausted_mask.any():
-                    exhausted_idx = exhausted_mask.idxmax()
-                    exhaustion_date = part_grid_pcba.loc[exhausted_idx, "period"]
-                    dos_pcba = max(0, (exhaustion_date - cfg.snapshot).days)
-            elif on_hand_pcba <= 0:
-                dos_pcba = 0.0
+    def _to_dos(exhaustion: pd.Series, on_hand: pd.Series) -> pd.Series:
+        # on_hand > 0 -> days to exhaustion, or 999 if it never exhausts.
+        # on_hand <= 0 -> 0.0. Matches the original if/elif exactly.
+        dos = (exhaustion - cfg.snapshot).dt.days.astype("float64").clip(lower=0)
+        return dos.fillna(999.0).where(on_hand > 0, 0.0)
 
-        dos_data.append({
-            "cm": cm,
-            "part": part,
-            "dos_fatp": dos_fatp,
-            "dos_pcba_kitting": dos_pcba
-        })
+    dos_metrics = pd.DataFrame({
+        "cm": out["cm"],
+        "part": out["part"],
+        "dos_fatp": _to_dos(_align(exh_fatp), out["raw_and_wip"]),
+        # non-PCBA parts never enter the PCBA branch, so they keep the 999 default
+        "dos_pcba_kitting": _to_dos(_align(exh_pcba), out["raw_inv"]).where(out["is_pcba"], 999.0),
+    })
 
-        # ===== RUNOUT_DATE_FATP (all parts, raw+wip, unshifted, NO on-order) =====
-        part_grid_runout_fatp = grid_unshifted_no_onorder[
-            (grid_unshifted_no_onorder["cm"] == cm) &
-            (grid_unshifted_no_onorder["part"] == part)
-        ].copy()
-
-        if len(part_grid_runout_fatp) == 0:
-            runout_date_fatp = None
-        else:
-            part_grid_runout_fatp = part_grid_runout_fatp.sort_values("period").reset_index(drop=True)
-            part_grid_runout_fatp["net_flow"] = part_grid_runout_fatp["receipts"] - part_grid_runout_fatp["demand"]
-            part_grid_runout_fatp["pab"] = raw_and_wip + part_grid_runout_fatp["net_flow"].cumsum()
-
-            short = part_grid_runout_fatp[part_grid_runout_fatp["pab"] < 0]
-            runout_date_fatp = short["period"].min() if len(short) > 0 else None
-
-        # ===== RUNOUT_DATE_PCBA_KITTING (PCBA only, raw only, shifted, NO on-order) =====
-        runout_date_pcba = None
-        if is_pcba:
-            part_grid_runout_pcba = grid_no_onorder[
-                (grid_no_onorder["cm"] == cm) &
-                (grid_no_onorder["part"] == part)
-            ].copy()
-
-            if len(part_grid_runout_pcba) > 0:
-                part_grid_runout_pcba = part_grid_runout_pcba.sort_values("period").reset_index(drop=True)
-                part_grid_runout_pcba["net_flow"] = part_grid_runout_pcba["receipts"] - part_grid_runout_pcba["demand"]
-                part_grid_runout_pcba["pab"] = raw_inv + part_grid_runout_pcba["net_flow"].cumsum()
-
-                short = part_grid_runout_pcba[part_grid_runout_pcba["pab"] < 0]
-                runout_date_pcba = short["period"].min() if len(short) > 0 else None
-
-        runout_data.append({
-            "cm": cm,
-            "part": part,
-            "runout_date_fatp": runout_date_fatp,
-            "runout_date_pcba_kitting": runout_date_pcba
-        })
-
-    dos_metrics = pd.DataFrame(dos_data)
-    runout_metrics = pd.DataFrame(runout_data)
+    runout_metrics = pd.DataFrame({
+        "cm": out["cm"],
+        "part": out["part"],
+        "runout_date_fatp": _align(ro_fatp),
+        "runout_date_pcba_kitting": _align(ro_pcba).where(out["is_pcba"], pd.NaT),
+    })
 
     return dos_metrics, runout_metrics, grid_unshifted
 
