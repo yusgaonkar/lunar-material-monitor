@@ -290,7 +290,15 @@ def load_onhand() -> pd.DataFrame:
     drill-down only, never a join key (CLAUDE.md 5.1). Contains negative
     quantities and consigned rows; both are real and handled downstream.
     """
-    return _read_export("onhand.csv")
+    df = _read_export("onhand.csv")
+
+    # Validation: Check for duplicate parts across locations
+    duplicates = df.groupby("lpn").size()
+    if (duplicates > 1).any():
+        dup_parts = duplicates[duplicates > 1]
+        log.warning(f"onhand.csv: {len(dup_parts)} parts have multiple rows (different locations/statuses): {dup_parts.to_dict()}")
+
+    return df
 
 
 def load_onorder() -> pd.DataFrame:
