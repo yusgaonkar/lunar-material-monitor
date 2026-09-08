@@ -20,6 +20,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 from src import io as lio, engine as eng, inventory_depletion, normalize as nz
+from src.engine import Config
 from src import supabase_io, asn_processor
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -397,6 +398,18 @@ def get_buy_parts_under_product(product_lpn: str, bom: pd.DataFrame) -> set:
     return buy_parts
 
 
+# --- Cost database loading ---
+@st.cache_data(ttl=3600)
+def load_cost_frames():
+    """Load EE and ME cost databases. Returns dict: {'2026 EE costs.csv': df, '2026 ME costs.csv': df}"""
+    cost_ee = lio.load_cost_ee()
+    cost_me = lio.load_cost_me()
+    return {
+        "2026 EE costs.csv": cost_ee if len(cost_ee) > 0 else None,
+        "2026 ME costs.csv": cost_me if len(cost_me) > 0 else None
+    }
+
+
 # --- ASN adjustment ---
 @st.cache_data(ttl=3600)
 def load_asn_adjustments():
@@ -504,13 +517,19 @@ def hash_build_plan(build_plan_df):
 
 
 @st.cache_data(show_spinner="Running engine...")
-def run_engine(frames, build_plan_hash):
-    """Cached by build_plan_hash: run the engine.
+def run_engine(frames, cache_key, horizon_weeks=52):
+    """Cached by cache_key: run the engine.
 
-    Only re-runs if build_plan_hash changes (i.e., build plan or ASN changes).
+    cache_key = f"{build_plan_hash}:h{horizon_weeks}" ensures the cache
+    invalidates when either the build plan OR the horizon changes.
     The frames dict should already have 'build_plan.csv' populated.
+
+    horizon_weeks: dynamic weeks to plan for, based on build plan's max date.
     """
-    result = eng.run(frames)
+    snap = lio.snapshot_date(frames.get("onhand.csv"))
+    snap = pd.Timestamp(snap) if snap is not None else pd.Timestamp.today()
+    cfg = Config(snapshot=snap, horizon_weeks=horizon_weeks)
+    result = eng.run(frames, cfg=cfg)
     return result
 
 
@@ -580,7 +599,33 @@ bp_hash = hash_build_plan(build_plan_for_engine)
 # Add build plan to frames and run engine
 frames_with_plan = frames.copy()  # Shallow copy of dict
 frames_with_plan["build_plan.csv"] = build_plan_for_engine
-result = run_engine(frames_with_plan, bp_hash)
+
+# Stage 4: Dynamic horizon based on build plan's end date
+# Ensure the Config generates periods through the END of the max month (not just its start)
+if len(build_plan_for_engine) > 0:
+    max_period = pd.to_datetime(build_plan_for_engine['period_start']).max()
+    # Extend to end of max month (last day of that month)
+    end_of_max_month = (max_period + pd.offsets.MonthEnd(0)).normalize()
+
+    # Start with default, then expand if needed
+    horizon_weeks = 52
+    cfg_test = Config(snapshot=snapshot_date, horizon_weeks=horizon_weeks)
+    last_period = cfg_test.periods()[-1]
+
+    # Keep adding weeks until Config's last period reaches the END of max month
+    while last_period < end_of_max_month:
+        horizon_weeks += 4
+        cfg_test = Config(snapshot=snapshot_date, horizon_weeks=horizon_weeks)
+        last_period = cfg_test.periods()[-1]
+
+    log.info(f"📅 Dynamic horizon: build plan max {max_period.date()}, end of month {end_of_max_month.date()}, Config extends to {last_period.date()} ({horizon_weeks} weeks)")
+else:
+    horizon_weeks = 52
+    log.warning("Build plan is empty, using default 52-week horizon")
+
+# Composite cache key: invalidate if either build plan OR horizon changes
+cache_key = f"{bp_hash}:h{horizon_weeks}"
+result = run_engine(frames_with_plan, cache_key, horizon_weeks=horizon_weeks)
 
 # Override snapshot with dynamically extracted value from data files
 result['snapshot'] = snapshot_date
@@ -1250,11 +1295,17 @@ pcba_plan = get_pcba_build_plan(build_plan, bom_stitched, products, cm_filter, p
 def get_unit_prices_with_source(onhand, onorder, frames):
     """
     Get unit prices for CM and Lunar with source tracking.
-    CM priority: Cost DB → CM on-hand (weighted avg) → CM on-order (weighted avg)
+    CM blended (cm_prices, used for the CM Projection balance calc):
+        Cost DB, if a part has one -> else weighted average price BLENDED across
+        both CM on-hand and CM on-order together (not an on-hand-first fallback).
+    CM per-bucket (cm_onhand_prices / cm_onorder_prices): always the plain weighted
+        average of that bucket alone, regardless of Cost DB - used for
+        cm_on_hand_extended_cost / cm_on_order_extended_cost.
     Lunar On-Hand: Lunar on-hand inventory (weighted avg)
     Lunar On-Order: Lunar on-order inventory (weighted avg, separate from on-hand)
 
-    Returns: cm_prices, lunar_prices (blended), cm_sources, lunar_onhand_prices, lunar_onorder_prices
+    Returns: cm_prices, lunar_prices (blended), cm_sources, lunar_onhand_prices,
+             lunar_onorder_prices, cm_onhand_prices, cm_onorder_prices
     """
     cm_prices = {}  # {part: (price, source)}
     lunar_prices = {}  # {part: price} - blended for depletion
@@ -1263,13 +1314,21 @@ def get_unit_prices_with_source(onhand, onorder, frames):
     lunar_onorder_prices = {}  # {part: price} - on-order specific
 
     # 1. Try cost database (EE and ME costs) for CM
+    # EE costs use "Min Quote" column; ME costs use "Unit Price (@MOQ/EAU)" column
     cost_files = [frames.get("2026 EE costs.csv"), frames.get("2026 ME costs.csv")]
     for cost_file in cost_files:
         if cost_file is not None and len(cost_file) > 0:
-            if "LPN" in cost_file.columns and "Unit Price (@MOQ/EAU)" in cost_file.columns:
+            # Determine which price column this cost file uses (EE vs ME)
+            price_col = None
+            if "Min Quote" in cost_file.columns:
+                price_col = "Min Quote"  # EE costs
+            elif "Unit Price (@MOQ/EAU)" in cost_file.columns:
+                price_col = "Unit Price (@MOQ/EAU)"  # ME costs
+
+            if price_col and "LPN" in cost_file.columns:
                 for _, row in cost_file.iterrows():
-                    lpn = row.get("LPN")
-                    price_str = row.get("Unit Price (@MOQ/EAU)", "")
+                    lpn = row.get("LPN", "").strip() if isinstance(row.get("LPN", ""), str) else str(row.get("LPN", ""))
+                    price_str = row.get(price_col, "")
                     if lpn and pd.notna(price_str):
                         try:
                             price = float(str(price_str).replace("$", "").strip())
@@ -1279,29 +1338,61 @@ def get_unit_prices_with_source(onhand, onorder, frames):
                         except:
                             pass
 
-    # 2. Calculate from CM on-hand (weighted avg, for parts not in cost DB)
+    # cm_onhand_prices / cm_onorder_prices: per-bucket weighted avg, always computed
+    # regardless of Cost DB status. These feed cm_on_hand_extended_cost /
+    # cm_on_order_extended_cost, which must reflect what's actually on hand / on
+    # order, not the blended cm_unit_price.
+    cm_onhand_prices = {}
+    cm_onorder_prices = {}
+
+    # Running (qty, value) totals per part, used below to build the TRUE blended
+    # weighted average across on-hand AND on-order together - not an on-hand-first,
+    # on-order-as-fallback priority. Spec: "use the cm cost from input database when
+    # pricing is available and if not available then use weighted average price
+    # BETWEEN on hand and on order."
+    cm_onhand_totals = {}   # {part: (qty, value)}
+    cm_onorder_totals = {}  # {part: (qty, value)}
+
+    # 2. CM on-hand: per-bucket price + totals for the blend below.
+    # NOTE the two guards differ deliberately. The totals only require qty > 0:
+    # a part sitting at a $0 unit price still occupies real units and MUST enter
+    # the blend's denominator, or the blend collapses to the other bucket's price.
+    # The per-bucket price additionally requires value > 0 so we report 0.0 rather
+    # than a misleading fabricated price.
     if "lpn" in onhand.columns:
         cm_onhand = onhand[onhand["source_report"] != "Lunar Netsuite"]
         for part, group in cm_onhand.groupby("lpn"):
-            if part not in cm_prices:
-                total_qty = group["unrestricted_qty"].sum()
-                total_value = (group["unrestricted_qty"] * group.get("unit_price", 0)).sum()
-                if total_qty > 0 and total_value > 0:
-                    weighted_price = total_value / total_qty
-                    cm_prices[part] = (weighted_price, "CM On-Hand")
-                    cm_sources[part] = "CM On-Hand"
+            total_qty = group["unrestricted_qty"].sum()
+            total_value = (group["unrestricted_qty"] * group.get("unit_price", 0)).sum()
+            if total_qty > 0:
+                cm_onhand_totals[part] = (total_qty, total_value)
+                if total_value > 0:
+                    cm_onhand_prices[part] = total_value / total_qty
 
-    # 3. Calculate from CM on-order (weighted avg, for parts still missing)
+    # 3. CM on-order: per-bucket price + totals for the blend below (same guard split)
     if "lunar_lpn" in onorder.columns:
         cm_onorder = onorder[onorder["source_report"] != "Lunar Netsuite"]
         for part, group in cm_onorder.groupby("lunar_lpn"):
-            if part not in cm_prices:
-                total_qty = group["quantity_open"].sum()
-                total_value = (group["quantity_open"] * group.get("unit_price", 0)).sum()
-                if total_qty > 0 and total_value > 0:
-                    weighted_price = total_value / total_qty
-                    cm_prices[part] = (weighted_price, "CM On-Order")
-                    cm_sources[part] = "CM On-Order"
+            total_qty = group["quantity_open"].sum()
+            total_value = (group["quantity_open"] * group.get("unit_price", 0)).sum()
+            if total_qty > 0:
+                cm_onorder_totals[part] = (total_qty, total_value)
+                if total_value > 0:
+                    cm_onorder_prices[part] = total_value / total_qty
+
+    # 3b. Blended cm_unit_price for parts Cost DB didn't cover: weighted average
+    # combining BOTH buckets' qty and value together (not a fallback chain).
+    for part in set(cm_onhand_totals) | set(cm_onorder_totals):
+        if part in cm_prices:
+            continue  # Cost DB already covers this part
+        oh_qty, oh_val = cm_onhand_totals.get(part, (0, 0))
+        oo_qty, oo_val = cm_onorder_totals.get(part, (0, 0))
+        combined_qty = oh_qty + oo_qty
+        combined_val = oh_val + oo_val
+        if combined_qty > 0:
+            weighted_price = combined_val / combined_qty
+            cm_prices[part] = (weighted_price, "Weighted Avg (On-Hand + On-Order)")
+            cm_sources[part] = "Weighted Avg (On-Hand + On-Order)"
 
     # 4. PRIMARY: Calculate from Lunar on-hand (weighted avg from unrestricted_value / unrestricted_qty)
     # Store separate on-hand prices
@@ -1333,7 +1424,7 @@ def get_unit_prices_with_source(onhand, onorder, frames):
             # If part exists in both on-hand and on-order, lunar_prices stays as on-hand
             # (blended calculation will happen later when we have qty data)
 
-    return cm_prices, lunar_prices, cm_sources, lunar_onhand_prices, lunar_onorder_prices
+    return cm_prices, lunar_prices, cm_sources, lunar_onhand_prices, lunar_onorder_prices, cm_onhand_prices, cm_onorder_prices
 
 def get_unit_prices(onhand, onorder, frames):
     """
@@ -2201,8 +2292,21 @@ elif st.session_state.active_tab == "Inventory Projection":
             # Cache with inventory_source as part of key by using hash
             # Cache the function with inventory_source_key in the name to force cache differentiation
             @st.cache_data(show_spinner=False, ttl=None)
-            def _compute_inventory_depletion_base(_pab, _onhand, _onorder, _cache_bust_key=None):
-                """Compute balance table once and cache it."""
+            def _compute_inventory_depletion_base(_pab, _onhand, _onorder, cache_bust_key=None):
+                """Compute balance table once and cache it.
+
+                cache_bust_key (no leading underscore, so Streamlit DOES hash it) must
+                capture everything that should invalidate this cache: the inventory
+                source toggle, plus a version marker for the pricing/column-structure
+                logic in get_unit_prices_with_source(). Previously this was named
+                _cache_bust_key - the underscore told Streamlit to skip hashing it
+                entirely, so the cache silently never invalidated on inventory-source
+                changes, and never picked up edits to get_unit_prices_with_source()
+                (a separate function this one calls, whose own source Streamlit does
+                not track). Bump PRICING_LOGIC_VERSION whenever that function's pricing
+                rules change, so a code change forces recomputation even though _pab/
+                _onhand/_onorder are unchanged and unhashed.
+                """
                 # --- CM name normalization ---
                 # Create mapping from full CM names (from inventory) to short CM names (from engine/stitch_list)
                 # Examples: "Sienna GA" → "Sienna", "Qualitel WA" → "Qualitel", "Plexus" → "Plexus"
@@ -2602,7 +2706,7 @@ elif st.session_state.active_tab == "Inventory Projection":
 
                 # NOW calculate lunar depletion using the allocated amounts
                 # Extract month columns from balance_table
-                static_cols_exclude = ["cm", "part", "description", "item_category", "cm_on_hand", "cm_on_order", "cm_unit_price", "cm_price_source", "lunar_on_hand_alloc", "lunar_on_order_alloc", "lunar_unit_price", "obsolescence_state"]
+                static_cols_exclude = ["cm", "part", "description", "item_category", "cm_on_hand", "cm_on_order", "cm_unit_price", "cm_unit_price_source", "lunar_on_hand_alloc", "lunar_on_order_alloc", "lunar_unit_price", "obsolescence_state"]
                 months = sorted([col for col in balance_table.columns if col not in static_cols_exclude and not col.startswith("Lunar_")])
 
                 # Pre-compute PAB minimums by (cm, part, month) for efficiency
@@ -2690,10 +2794,20 @@ elif st.session_state.active_tab == "Inventory Projection":
                         balance_table.loc[idx, f"Lunar_balance_{month}"] = max(0, balance)  # Floor at 0
 
                 # Add unit prices and source
-                cm_prices, lunar_prices, cm_sources, lunar_onhand_prices, lunar_onorder_prices = get_unit_prices_with_source(_onhand, _onorder, {})
+                cost_frames = load_cost_frames()  # Load EE and ME cost databases
+                cm_prices, lunar_prices, cm_sources, lunar_onhand_prices, lunar_onorder_prices, cm_onhand_prices, cm_onorder_prices = get_unit_prices_with_source(_onhand, _onorder, cost_frames)
 
+                # Blended CM price: Cost DB first, else weighted avg of on-hand/on-order.
+                # Used for the CM Projection balance calc (per row's "when row is CM
+                # depletion" spec) - this is cm_unit_price / cm_unit_price_source below.
                 balance_table["cm_unit_price"] = balance_table["part"].map(lambda p: cm_prices.get(p, (0, ""))[0])
-                balance_table["cm_price_source"] = balance_table["part"].map(lambda p: cm_prices.get(p, (0, ""))[1])
+                balance_table["cm_unit_price_source"] = balance_table["part"].map(lambda p: cm_prices.get(p, (0, ""))[1])
+
+                # CM prices split by bucket (mirrors the Lunar on-hand/on-order split
+                # below), so cm_on_hand_extended_cost / cm_on_order_extended_cost each
+                # use the price that actually applies to that bucket, not the blended one.
+                balance_table["cm_on_hand_unit_price"] = balance_table["part"].map(lambda p: cm_onhand_prices.get(p, 0))
+                balance_table["cm_on_order_unit_price"] = balance_table["part"].map(lambda p: cm_onorder_prices.get(p, 0))
 
                 # Lunar prices: separate on-hand and on-order
                 balance_table["lunar_unit_price_onhand"] = balance_table["part"].map(lambda p: lunar_onhand_prices.get(p, 0))
@@ -2776,9 +2890,19 @@ elif st.session_state.active_tab == "Inventory Projection":
                 # "On Hand Only": zero out ALL on-order quantities
                 onorder_for_calc["quantity_open"] = 0
 
+            # PRICING_LOGIC_VERSION: bump this whenever get_unit_prices_with_source()'s
+            # rules change (e.g. Stage 2's on-hand+on-order blend, Stage 3's Cost DB loading).
+            # It's baked into the cache key below so a logic change forces recomputation
+            # even though _pab/_onhand/_onorder are unhashed and inventory_source_key alone
+            # wouldn't change.
+            PRICING_LOGIC_VERSION = 4
+
             with st.spinner("Loading inventory projection..."):
                 try:
-                    balance_table = _compute_inventory_depletion_base(pab_filtered, onhand_filtered, onorder_for_calc, _cache_bust_key=inventory_source_key)
+                    balance_table = _compute_inventory_depletion_base(
+                        pab_filtered, onhand_filtered, onorder_for_calc,
+                        cache_bust_key=f"{inventory_source_key}:v{PRICING_LOGIC_VERSION}"
+                    )
                 except Exception as e:
                     import traceback
                     st.error(f"Error in depletion function:\n{str(e)}\n\n{traceback.format_exc()}")
@@ -2789,37 +2913,6 @@ elif st.session_state.active_tab == "Inventory Projection":
                 # Columns: cm, part, description, on_hand, on_order, [period1, period2, ...]
 
                 # DATA AUDIT: Check extended cost discrepancies vs input reports
-                with st.expander("📋 Extended Cost Reconciliation", expanded=True):
-                    col_rec1, col_rec2, col_rec3, col_rec4 = st.columns(4)
-
-                    # Lunar On-Hand
-                    app_oh_lunar = balance_table[balance_table["cm"] == "Lunar"]["lunar_onhand_extended"].sum() if "lunar_onhand_extended" in balance_table.columns else 0
-                    input_oh_lunar = onhand[onhand["source_report"] == "Lunar Netsuite"]["unrestricted_value"].sum() if "unrestricted_value" in onhand.columns else 0
-                    oh_lunar_delta = app_oh_lunar - input_oh_lunar
-                    with col_rec1:
-                        st.metric("Lunar On-Hand Δ", f"${oh_lunar_delta:,.0f}", delta="0" if abs(oh_lunar_delta) < 1 else f"{oh_lunar_delta:,.0f}")
-
-                    # CM On-Hand
-                    app_oh_cm = balance_table[balance_table["cm"] != "Lunar"]["lunar_onhand_extended"].sum() if "lunar_onhand_extended" in balance_table.columns else 0
-                    input_oh_cm = onhand[onhand["source_report"] != "Lunar Netsuite"]["unrestricted_value"].sum() if "unrestricted_value" in onhand.columns else 0
-                    oh_cm_delta = app_oh_cm - input_oh_cm
-                    with col_rec2:
-                        st.metric("CM On-Hand Δ", f"${oh_cm_delta:,.0f}", delta="0" if abs(oh_cm_delta) < 1 else f"{oh_cm_delta:,.0f}")
-
-                    # Lunar On-Order
-                    app_oo_lunar = balance_table[balance_table["cm"] == "Lunar"]["lunar_onorder_extended"].sum() if "lunar_onorder_extended" in balance_table.columns else 0
-                    input_oo_lunar = (onorder[onorder["source_report"] == "Lunar Netsuite"]["quantity_open"] * onorder[onorder["source_report"] == "Lunar Netsuite"]["unit_price"]).sum() if "quantity_open" in onorder.columns else 0
-                    oo_lunar_delta = app_oo_lunar - input_oo_lunar
-                    with col_rec3:
-                        st.metric("Lunar On-Order Δ", f"${oo_lunar_delta:,.0f}", delta="0" if abs(oo_lunar_delta) < 1 else f"{oo_lunar_delta:,.0f}")
-
-                    # CM On-Order
-                    app_oo_cm = balance_table[balance_table["cm"] != "Lunar"]["lunar_onorder_extended"].sum() if "lunar_onorder_extended" in balance_table.columns else 0
-                    input_oo_cm = (onorder[onorder["source_report"] != "Lunar Netsuite"]["quantity_open"] * onorder[onorder["source_report"] != "Lunar Netsuite"]["unit_price"]).sum() if "quantity_open" in onorder.columns else 0
-                    oo_cm_delta = app_oo_cm - input_oo_cm
-                    with col_rec4:
-                        st.metric("CM On-Order Δ", f"${oo_cm_delta:,.0f}", delta="0" if abs(oo_cm_delta) < 1 else f"{oo_cm_delta:,.0f}")
-
                 # Add Generation/Obsolescence columns
                 # Build mapping of products by generation from stitch_list
                 gen_1_products = set(stitch_list[stitch_list["Generation Alias"].str.contains("Gen 1", na=False)]["Parent Product LPN"].unique())
@@ -2856,24 +2949,11 @@ elif st.session_state.active_tab == "Inventory Projection":
                 # Apply global filters to balance_table
                 filtered_balance = balance_table.copy()
 
-                # Debug logging for filter application
-                st.session_state.filter_log = {
-                    "initial_rows": len(filtered_balance),
-                    "available_parts": sorted(filtered_balance["part"].unique().tolist())[:10],  # first 10 for brevity
-                    "selected_parts": list(part_filter)[:10] if part_filter else [],
-                }
-
                 if cm_filter != "All":
                     filtered_balance = filtered_balance[filtered_balance["cm"] == cm_filter]
-                    st.session_state.filter_log["after_cm"] = len(filtered_balance)
 
                 if part_filter:
-                    parts_before = len(filtered_balance)
                     filtered_balance = filtered_balance[filtered_balance["part"].isin(part_filter)]
-                    parts_after = len(filtered_balance)
-                    st.session_state.filter_log["part_filter_before"] = parts_before
-                    st.session_state.filter_log["part_filter_after"] = parts_after
-                    st.session_state.filter_log["parts_in_filter"] = len(part_filter)
 
                 if category_filter:
                     filtered_balance = filtered_balance[filtered_balance["item_category"].isin(category_filter)]
@@ -2892,21 +2972,35 @@ elif st.session_state.active_tab == "Inventory Projection":
                         output_table["cm_on_order"] = 0
                         output_table["lunar_on_order_alloc"] = 0
 
+                    # Calculate extended costs for CM inventory (mirrors Lunar logic below,
+                    # using the bucket-specific cm_on_hand_unit_price / cm_on_order_unit_price
+                    # added in get_unit_prices_with_source, not the blended cm_unit_price)
+                    output_table["cm_on_hand_extended_cost"] = (
+                        output_table["cm_on_hand"].fillna(0) * output_table["cm_on_hand_unit_price"].fillna(0)
+                    ).round(0).astype(int)
+                    output_table["cm_on_order_extended_cost"] = (
+                        output_table["cm_on_order"].fillna(0) * output_table["cm_on_order_unit_price"].fillna(0)
+                    ).round(0).astype(int)
+
                     # Calculate extended costs for Lunar inventory
-                    output_table["lunar_onhand_extended"] = (
+                    output_table["lunar_on_hand_extended_cost"] = (
                         output_table["lunar_on_hand_alloc"].fillna(0) * output_table["lunar_unit_price_onhand"].fillna(0)
                     ).round(0).astype(int)
-                    output_table["lunar_onorder_extended"] = (
+                    output_table["lunar_on_order_extended_cost"] = (
                         output_table["lunar_on_order_alloc"].fillna(0) * output_table["lunar_unit_price_onorder"].fillna(0)
                     ).round(0).astype(int)
 
-                    # Static columns
+                    # Static columns, ordered per spec: identity/classification, then the
+                    # full CM block (qty/price/extended per bucket, then blended price +
+                    # source), then the full Lunar block, mirroring the same shape.
                     static_cols = [
-                        "cm", "part", "description", "item_category",
-                        "cm_on_hand", "cm_on_order", "cm_unit_price", "cm_price_source",
-                        "lunar_on_hand_alloc", "lunar_unit_price_onhand", "lunar_onhand_extended",
-                        "lunar_on_order_alloc", "lunar_unit_price_onorder", "lunar_onorder_extended",
-                        "lunar_unit_price", "obsolescence_state"
+                        "cm", "part", "description", "item_category", "obsolescence_state",
+                        "cm_on_hand", "cm_on_hand_unit_price", "cm_on_hand_extended_cost",
+                        "cm_on_order", "cm_on_order_unit_price", "cm_on_order_extended_cost",
+                        "cm_unit_price", "cm_unit_price_source",
+                        "lunar_on_hand_alloc", "lunar_unit_price_onhand", "lunar_on_hand_extended_cost",
+                        "lunar_on_order_alloc", "lunar_unit_price_onorder", "lunar_on_order_extended_cost",
+                        "lunar_unit_price"
                     ]
 
                     # Separate CM and Lunar month columns
@@ -2918,9 +3012,17 @@ elif st.session_state.active_tab == "Inventory Projection":
                         output_table[col] = output_table[col].fillna(0).astype(int)
 
                     for col in ["cm_on_hand", "cm_on_order", "lunar_on_hand_alloc", "lunar_on_order_alloc",
-                                "lunar_onhand_extended", "lunar_onorder_extended"]:
+                                "cm_on_hand_extended_cost", "cm_on_order_extended_cost",
+                                "lunar_on_hand_extended_cost", "lunar_on_order_extended_cost"]:
                         if col in output_table.columns:
                             output_table[col] = output_table[col].fillna(0).astype(int)
+
+                    # Reindex to the exact static_cols order, followed by projection_type
+                    # (added downstream) and then the period columns. Guards against any
+                    # column absent for a given filter/inventory-source combination.
+                    _ordered = [c for c in static_cols if c in output_table.columns]
+                    _rest = [c for c in output_table.columns if c not in _ordered]
+                    output_table = output_table[_ordered + _rest]
 
                     # ========== RESTRUCTURE: Duplicate rows - one for CM depletion, one for Lunar depletion ==========
                     # Create duplicate rows: original shows CM depletion, duplicate shows Lunar depletion
@@ -3161,24 +3263,6 @@ elif st.session_state.active_tab == "Inventory Projection":
                         log.error(f"Format error: {format_error}", exc_info=True)
                         st.dataframe(output_table, use_container_width=True, height=500)
 
-                    # Display filter debug info
-                    with st.expander("🔧 Filter Debug Info"):
-                        if "filter_log" in st.session_state:
-                            log_data = st.session_state.filter_log
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                st.metric("Initial rows", log_data.get("initial_rows", 0))
-                                st.metric("Rows after CM filter", log_data.get("after_cm", 0))
-                                st.metric("Parts in filter", log_data.get("parts_in_filter", 0))
-                            with col2:
-                                st.metric("Rows before part filter", log_data.get("part_filter_before", 0))
-                                st.metric("Rows after part filter", log_data.get("part_filter_after", 0))
-                                st.metric("Final rows", len(filtered_balance))
-
-                            if log_data.get("selected_parts"):
-                                st.write("**Selected parts (first 10):**", log_data["selected_parts"])
-                            if log_data.get("available_parts"):
-                                st.write("**Available parts (first 10):**", log_data["available_parts"])
                 else:
                     st.info("No data matches the selected filters.")
             else:

@@ -471,5 +471,51 @@ def main() -> None:
         )
 
 
+def load_cost_ee() -> pd.DataFrame:
+    """EE costs from Cost Database. LPN → Min Quote (unit price) mapping.
+
+    Uses 'Min Quote' column as the unit price for EE components.
+    Cost files are always in data/cloud/ regardless of localhost vs Streamlit Cloud.
+    """
+    filename = "2026 Product Cost Database.xlsx - 2026 EE costs.csv"
+    # Cost files are always in data/cloud - append if needed
+    if "cloud" in str(DATA):
+        path = DATA / filename
+    else:
+        path = DATA / "cloud" / filename
+    if not path.exists():
+        return pd.DataFrame(columns=["LPN", "Min Quote"])
+    df = pd.read_csv(path, dtype=str, keep_default_na=False, na_values=[])
+    # Strip whitespace from column names
+    df.columns = df.columns.str.strip()
+    # Extract only LPN and Min Quote columns
+    if "Min Quote" in df.columns:
+        df = df[["LPN", "Min Quote"]].copy()
+    return df
+
+
+def load_cost_me() -> pd.DataFrame:
+    """ME costs from Cost Database. LPN → Unit Price (@MOQ/EAU) mapping.
+
+    Uses 'Unit Price (@MOQ/EAU)' column as the unit price for ME components.
+    Cost files are always in data/cloud/ regardless of localhost vs Streamlit Cloud.
+    """
+    filename = "2026 Product Cost Database.xlsx - 2026 ME costs.csv"
+    # Cost files are always in data/cloud - append if needed
+    if "cloud" in str(DATA):
+        path = DATA / filename
+    else:
+        path = DATA / "cloud" / filename
+    if not path.exists():
+        return pd.DataFrame(columns=["LPN", "Unit Price (@MOQ/EAU)"])
+    df = pd.read_csv(path, dtype=str, keep_default_na=False, na_values=[])
+    # Strip whitespace from column names
+    df.columns = df.columns.str.strip()
+    # Extract only LPN and Unit Price columns
+    if "Unit Price (@MOQ/EAU)" in df.columns:
+        df = df[["LPN", "Unit Price (@MOQ/EAU)"]].copy()
+    return df
+
+
 if __name__ == "__main__":
     main()
