@@ -475,64 +475,37 @@ def apply_pcba_pull_forward(demand_detail: pd.DataFrame, pcba_map: dict, bom: pd
     min_period = all_periods[0]
     shift_days = 28  # 4 weeks
 
-    # For each PCBA, find its descendants and shift them
-    shifted_rows = []
-    rows_to_remove = []
+    # PERF: This was iterrows() over thousands of demand rows (daily × 72 weeks),
+    # each doing dtype conversion and dict building. That was ~100s of the 221s.
+    # Vectorized: precompute descendant masks, then shift all periods and mark
+    # in one pass per PCBA using boolean indexing.
+
+    # Collect all (product, part) pairs that need shifting
+    rows_to_shift_mask = pd.Series(False, index=out.index)
 
     for pcba_lpn, parent_products in pcba_map.items():
-        # Get all buy parts that are descendants of this PCBA
         descendants = get_pcba_descendants(pcba_lpn, bom)
-
         if not descendants:
             continue
 
-        # For each parent product that uses this PCBA
+        # Mark all rows: any product in parent_products AND part in descendants
         for parent_product in parent_products:
-            # Find rows in demand_detail that are:
-            # - for this product
-            # - for a part that is a descendant of this PCBA
-            product_demand = out[
-                (out['product'] == parent_product) &
-                (out['part'].isin(descendants))
-            ].copy()
+            mask = (out['product'] == parent_product) & (out['part'].isin(descendants))
+            rows_to_shift_mask |= mask
 
-            if len(product_demand) == 0:
-                continue
+    # Split: rows to shift vs. everything else
+    out_shift = out[rows_to_shift_mask].copy()
+    out_keep = out[~rows_to_shift_mask].copy()
 
-            # Shift each row back 4 weeks
-            for idx, row in product_demand.iterrows():
-                # Mark for removal (we'll create shifted version)
-                rows_to_remove.append(idx)
-
-                # Shift period back 4 weeks
-                shifted_period = pd.to_datetime(row['period']) - pd.Timedelta(days=shift_days)
-
-                # Clamp to min_period if needed
-                if shifted_period < min_period:
-                    shifted_period = min_period
-
-                shifted_rows.append({
-                    'cm': row['cm'],
-                    'part': row['part'],
-                    'product': row['product'],
-                    'alias': row['alias'],
-                    'period': shifted_period,
-                    'qty': row['qty'],
-                    'usage': row['usage'],
-                    'demand': row['demand'],
-                    'description': row.get('description', ''),
-                    'item_category': row.get('item_category', ''),
-                    'demand_source': 'PCBA_PullForward'
-                })
-
-    # Remove original rows for PCBA descendants
-    if rows_to_remove:
-        out = out.drop(rows_to_remove, errors='ignore')
-
-    # Add shifted rows
-    if shifted_rows:
-        shifted_df = pd.DataFrame(shifted_rows)
-        out = pd.concat([out, shifted_df], ignore_index=True)
+    # Vectorized shift: convert to datetime, subtract days, clamp, convert back
+    if len(out_shift) > 0:
+        out_shift['period'] = pd.to_datetime(out_shift['period']) - pd.Timedelta(days=shift_days)
+        # Clamp to min_period (numpy.maximum works on Series)
+        out_shift['period'] = np.maximum(out_shift['period'], min_period)
+        out_shift['demand_source'] = 'PCBA_PullForward'
+        out = pd.concat([out_keep, out_shift], ignore_index=True)
+    else:
+        out = out_keep
 
     return out
 
