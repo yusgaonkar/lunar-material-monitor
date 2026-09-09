@@ -3050,7 +3050,7 @@ elif st.session_state.active_tab == "Inventory Projection":
             # It's baked into the cache key below so a logic change forces recomputation
             # even though _pab/_onhand/_onorder are unhashed and inventory_source_key alone
             # wouldn't change.
-            PRICING_LOGIC_VERSION = 5  # v5: demand-driven depletion + 3-bucket Lunar model
+            PRICING_LOGIC_VERSION = 6  # v6: past-due receipts in Lunar pool; shipped CM POs netted off
 
             with st.spinner("Loading inventory projection..."):
                 try:
