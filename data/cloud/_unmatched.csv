@@ -1,0 +1,593 @@
+part,description,source,source_report,rows,extended_value
+10-003933,"Lithium Ion Cell,E41,Untrimmed",onorder,Lunar Netsuite,8,5084357.7312
+10-00522D,"Maximizer, Potted Assembly, Type D",onorder,Lunar Netsuite,1,919666.2
+90-07679A,LFP Battery Cover,onhand,Lunar Netsuite,5,875673.5936
+10-001238,IC GATE DRVR HALF-BRIDGE 12WLCSP,onhand,Lunar Netsuite,1,674024.1
+10-07938A,"Thermal Shim Assy, Lunar 3 Inverter",onorder,Lunar Netsuite,1,616000.0
+10-07285B,"Heat Spreader Assy, HE Inverter",onhand,Lunar Netsuite,1,566100.0
+90-06533A,"Battery With Cover and Brackets, Boxed, Lunar Blue,HU",onhand,Lunar Netsuite,4,480398.10000000003
+90-002878,"Maximizer, Boxed, Box of 20",onhand,Lunar Netsuite,5,305534.22
+10-001637,CAP CER 4.7UF 100V X7R 2220,onhand,Lunar Netsuite,2,247092.0
+90-003540,"Inverter with Cover and Brackets, Boxed, Lunar Blue",onorder,Lunar Netsuite,1,233536.75
+10-004191,"Thermal gap filler, Non-Curing, 6.2 W/mK, Dispensed, Single Part",onorder,CM: Qualitel WA,13,185341.7973
+10-001403,CONN TERM PIN SOLDER 3.6MM,onhand,Lunar Netsuite,3,166894.0
+10-001671,HIGH POWER SWITCHING AC LATCHING,onhand,Lunar Netsuite,1,151680.0
+10-002701,CAP CER 270PF 3KV C0G/NP0 2225,onhand,Lunar Netsuite,1,147744.0978
+10-002941,DC DC CONVERTER 12V 3W,onhand,Lunar Netsuite,2,133159.5
+90-002878,"Maximizer, Boxed, Box of 20",onorder,Lunar Netsuite,1,106049.52
+90-07042A,"MSA, ConnectDER, Boxed",onhand,Lunar Netsuite,3,103687.384
+10-004339,TVS DIODE 12.8VWM 27.2VC SMB AEC-Q,onhand,Lunar Netsuite,1,90500.04
+10-00522D,"Maximizer, Potted Assembly, Type D",onhand,Lunar Netsuite,4,85254.2794
+10-002292,IC GATE DRVR HIGH-SIDE 8SOIC,onhand,Lunar Netsuite,2,81115.6776
+10-002275,"DC-DC ISOLATED 3K, 1 W, 22.8~25.",onhand,Lunar Netsuite,1,79650.0
+10-06529A,"Submodule,HU",onhand,CM: Celestica MX,1,77362.28
+10-002272,"DC-DC ISOLATED 1.5KV, 1 W, 21.6~",onhand,Lunar Netsuite,2,72579.725
+90-06823A,"15kWh Hardware Kit, Lunar Blue",onorder,Lunar Netsuite,1,70962.0
+10-001208,IC BAT LIFEPO4/LI-ION 3-16C TQFP,onhand,Lunar Netsuite,1,61922.5
+10-005221,"DCDC SUBASSEMBLY, BATTERY BLOCK",onhand,Lunar Netsuite,2,61555.56
+10-004067,CAP FILM 50UF 5% 500VDC RADIAL,onhand,Lunar Netsuite,2,59786.387
+10-002080,"Wire Harness,Inverter,Antenna (900Mhz/BT/WiFi/LTE)",onhand,Lunar Netsuite,1,52995.5
+90-002802,"Battery With Cover and Brackets, Boxed, Lunar Blue",onhand,Lunar Netsuite,4,46009.81
+10-002513,"Fuse,Class T,200 A",onhand,Lunar Netsuite,1,44865.0
+10-001810,Safety Capacitors 300Vol 0.0022uF 10% LS=7.5mm AECQ2,onhand,Lunar Netsuite,1,44400.0
+10-002001,CAP CER 0.47UF 500V X7R 1812,onhand,Lunar Netsuite,1,44250.25
+10-002698,DIODE ZENER 5.1V 1W PMDTM AEC-Q,onhand,Lunar Netsuite,3,41513.1672
+10-001812,Safety Capacitors 1.00UF 330V,onhand,Lunar Netsuite,1,40458.0
+10-005221,"DCDC SUBASSEMBLY, BATTERY BLOCK",onhand,CM: Celestica MX,1,40437.64
+10-07539C,"Enclosure, Bottom, Maximizer 2",onorder,Lunar Netsuite,1,39880.0
+10-004675,"Inductor Assy, DCDC, 22.8uH",onorder,Lunar Netsuite,2,38520.0
+10-006689,RES 6.2 OHM 1% 1W 2512 AEC-Q,onhand,CM: Qualitel WA,2,38330.2811
+10-001389,TERM REDCUBE M4 4PIN PCB,onhand,Lunar Netsuite,1,36540.9658
+10-001975,IC EEPROM 1MBIT I2C 1MHZ 8TSSOP,onhand,Lunar Netsuite,1,33280.0
+10-001212,12-Channel Multicell Battery Monitor AEC-Q,onhand,Lunar Netsuite,1,32437.5
+10-001216,IC REG BUCK ADJ 300MA 8SOIC AEC-Q,onorder,Lunar Netsuite,1,32000.0
+10-002080,"Wire Harness,Inverter,Antenna (900Mhz/BT/WiFi/LTE)",onhand,CM: Sienna GA,7,30622.46
+30-06795C,Lunar 3 Inverter PCBA,onorder,Lunar Netsuite,1,29998.0
+10-002719,3.4MM STD PRESS FIT UNPLT,onhand,Lunar Netsuite,1,28340.62
+10-002694,FIXED IND 6.8UH 710MA 443MOHM SM,onhand,Lunar Netsuite,2,26955.1985
+10-002733,PMEG100T10ELR-QX AEC-Q,onhand,Lunar Netsuite,2,26291.714500000002
+10-002862,DGTL ISO 2500VRMS 2CH GP 8SOIC,onhand,Lunar Netsuite,2,26222.13
+10-003479,CAP FILM 0.1UF 10% 1KVDC RADIAL,onhand,Lunar Netsuite,1,26014.8
+10-003533,TVS DIODE 58.1VWM 121VC SMC,onhand,Lunar Netsuite,2,25452.699999999997
+90-003540,"Inverter with Cover and Brackets, Boxed, Lunar Blue",onhand,Lunar Netsuite,4,24547.56
+10-002141,CONN HEADER SMD R/A 2POS 3MM,onhand,Lunar Netsuite,3,22762.3635
+10-004156,DIODE SCHOTTKY 100V 1A SOD123H,onhand,Lunar Netsuite,1,22592.4
+10-002281,CAP CER 10UF 25V X7R 1206 AEC-Q,onorder,Lunar Netsuite,1,21960.0
+10-001404,CONN HEADER SMD 4POS 2.54MM,onhand,Lunar Netsuite,1,21924.72
+10-000983,CONN HEADER SMD 4POS 1.27MM,onhand,Lunar Netsuite,1,21671.76
+10-002767,"HOUSED PTC THERMISTORS AS ICL, 2 AEC-Q",onhand,Lunar Netsuite,2,19671.05
+10-002946,RES 0.51 OHM 1% 1/6W 0402,onhand,Lunar Netsuite,2,19147.0
+10-001391,CONN HEADER R/A 24POS 2.54MM,onhand,Lunar Netsuite,1,19059.624
+90-07096A,"Smart Breaker, 60A, Boxed",onhand,Lunar Netsuite,5,18933.300000000003
+10-006689,RES 6.2 OHM 5% 1W 2512,onorder,CM: Qualitel WA,3,18013.9
+10-002279,FUSE 500VAC 40A,onhand,Lunar Netsuite,1,17500.0
+90-07094A,"Smart Breaker, 40A, Boxed",onhand,Lunar Netsuite,4,17363.7
+10-08536A,"IND CMC 660UH 50A 3LN THROUGH HOLE 2.480""L X 1.772""W (63.00MM X 45.00MM)",onorder,Lunar Netsuite,1,17357.76
+90-07093A,"Smart Breaker, 30A, Boxed",onhand,Lunar Netsuite,6,17265.6
+90-07091A,"Smart Breaker, 15A, Boxed",onhand,Lunar Netsuite,4,16971.3
+10-005203,Battery Block,onhand,Lunar Netsuite,2,16900.3504
+90-07095A,"Smart Breaker, 50A, Boxed",onhand,Lunar Netsuite,5,16873.2
+10-002986,"Fan,DC-DC,Jacketed Leads",onhand,Lunar Netsuite,1,16758.0
+10-003406,CAP CER 0.5UF 700V SMD AEC-Q,onhand,CM: Sienna GA,2,16356.48
+90-07679A,LFP Battery Cover,onorder,Lunar Netsuite,1,15862.88
+30-06909C,Gen 2 Inverter - Home Controller 2 - PCBA,onorder,Lunar Netsuite,1,15395.500000000002
+90-07187A,"Lifting Tool, LFP Battery Block",onorder,Lunar Netsuite,1,15084.0
+90-07092A,"Smart Breaker, 20A, Boxed",onhand,Lunar Netsuite,6,13832.099999999999
+10-003852,CONN MICRO SIM CARD PUSH-PULL,onhand,Lunar Netsuite,1,13800.0
+10-07814A,"Wall Bracket, Battery Block, HE",onorder,Lunar Netsuite,2,13594.14
+10-005220,"Maximizer, Potted Assembly, Type C",onhand,Lunar Netsuite,3,13308.8313
+90-001221,"Bridge, Boxed, Lunar Blue",onhand,Lunar Netsuite,3,12370.92
+10-003358,CAP FILM 0.22UF 10% 1KVDC RADIAL,onhand,Lunar Netsuite,2,12074.006
+10-06527A,"Lithium Ion Cell,S004a,Untrimmed,HU",onhand,Lunar Netsuite,1,11661.4531
+10-005362,SENSOR CURRENT FLUX 300MA AC/DC,onhand,Lunar Netsuite,1,11599.5135
+10-07481A,"Assy, Battery Cover, Gen 2",onorder,Lunar Netsuite,1,11359.199999999999
+10-002759,RES SMD 25 OHM 2% 3.5W 2512,onhand,Lunar Netsuite,1,11200.0
+10-001748,RES 100K OHM 1% 1/2W 1210,onhand,Lunar Netsuite,2,10933.034
+10-004175,IC TRNSLTR BIDIRECTIONAL 20TSSOP,onhand,Lunar Netsuite,1,10400.0
+10-005154,"Power PCBA with Conformal Coat, Inverter, D",onhand,CM: Sienna GA,1,10297.56
+10-001685,RES SMD 845K OHM 1% 1/4W 1206,onhand,Lunar Netsuite,2,10226.6286
+10-06952A,"Module Assy with Enclosure, LFP DC ESS",onhand,Lunar Netsuite,2,10135.68
+10-003440,RES SMD 2M OHM 1% 1/4W 1206,onhand,Lunar Netsuite,1,10125.0
+10-07067B,"AC Filter Inductor, HE Inverter",onhand,Lunar Netsuite,1,10108.3
+10-004117,FIXED IND 1UH 69A 0.89 MOHM SMD,onhand,CM: Sienna GA,1,10010.92
+10-001046,CAP ALUM 150UF 20% 35V RADIAL,onhand,Lunar Netsuite,2,9840.0
+10-004191,"Thermal gap filler, Non-Curing, 6 W/mK, Dispensed",onhand,CM: Qualitel WA,3,9647.969168
+10-08503A,"Front Panel Gasket, Inverter, Gen 2",onorder,Lunar Netsuite,1,9600.0
+10-001163,RES SMD 2 OHM 5% 1/4W 0603 AEC-Q,onhand,Lunar Netsuite,2,9194.5
+10-001984,SWITCH SLIDE DPDT 200MA 12V,onhand,Lunar Netsuite,1,9033.5
+90-06948B,"LFP DC ESS With Cover and Brackets, Boxed, Lunar Blue",onhand,Lunar Netsuite,2,8984.5
+10-004591,SURGE SUPP TBU 200MA 850VIMP SMD,onhand,Lunar Netsuite,1,8880.0
+10-001398,CONN HEADER SMD R/A 4POS 3MM,onhand,Lunar Netsuite,1,8858.0
+90-002878,"Maximizer, Boxed, Box of 20",onhand,CM: Sienna GA,1,8822.1
+10-000587,S2-LP is a 900 MHz RF radio,onhand,CM: Qualitel WA,1,8503.74
+10-006328,RELAY DIRECT CURRENT 60AMP SWITCH VOLTAGE 1000VDC 24V CONTACT -40℃～85℃ 50L x 39.8W X 37MM,onhand,Lunar Netsuite,1,8422.48
+10-004596,CAP CER 2220 2.2NF 3000V X7R 10% AEC-Q,onhand,CM: Sienna GA,2,8092.1
+10-000844,"Connector, 16 Contact, 2 Row, Male, Straight, SMT",onorder,Lunar Netsuite,2,7980.0
+10-000844,"Connector, 16 Contact, 2 Row, Male, Straight, SMT",onhand,Lunar Netsuite,2,7913.5
+20-06815C,Lunar 3 Inverter PCB,onorder,Lunar Netsuite,1,7898.400000000001
+10-002702,RES SMD 7.5 OHM 1% 1/2W 1206,onhand,Lunar Netsuite,1,7740.0
+10-000587,S2-LP is a 900 MHz RF radio,onhand,CM: Sienna GA,1,7680.3297
+10-002767,"HOUSED PTC THERMISTORS AS ICL, 2 AEC-Q",onorder,Lunar Netsuite,2,7440.0
+90-06823A,"15kWh Hardware Kit, Lunar Blue",onhand,Lunar Netsuite,3,7235.709999999999
+10-002614,IC TRANSCEIVER HALF 1/1 8SOIC,onhand,Lunar Netsuite,2,6860.8169
+10-002002,CAP CER 10UF 50V X7S 1210,onhand,Lunar Netsuite,1,6854.0
+10-005216,"MOSFET OptiMOSTM6Power-Transistor,80V PG-TDSON-8 FL",onhand,CM: Sienna GA,1,6250.0
+10-004609,"DC CMC, 3 Phase, 4 Turns",onhand,CM: Sienna GA,3,6227.900000000001
+10-000697,"Parallel - Fundamental Quartz Crystal, 0.032768MHz Nom",onorder,Lunar Netsuite,1,6120.0
+10-002701,CAP CER 270PF 3KV C0G/NP0 2225,onhand,CM: Sienna GA,1,6068.7
+10-003060,CAP CER 100UF 6.3V X7S 1210,onhand,Lunar Netsuite,1,6040.0
+10-000586,860 to 930 MHz High-Power RF Front-End Module,onhand,CM: Qualitel WA,1,5743.87
+10-002908,MOSFET P-CH 60V 300MA SOT23-3,onhand,Lunar Netsuite,1,5687.0244
+10-002272,"DC-DC ISOLATED 1.5KV, 1 W, 21.6~",onhand,CM: Sienna GA,3,5505.6
+10-002005,CAP CER 4700PF 400VAC Y5U RADIAL,onhand,Lunar Netsuite,1,5320.0
+10-005512,"Sled, Filter Module",onhand,CM: Sienna GA,1,5271.2
+10-005002,"CLOCK OSCILLATOR,2.0X1.6X0.8MM S",onhand,CM: Sienna GA,2,5100.836
+10-006831,IC SDRAM DDR4 MEMORY 16Gbit 96-FBGA (9x13),onhand,Lunar Netsuite,1,5039.58
+10-005382,"Packaging, ESS Hardware Kit 20kWh Lunar Blue",onhand,CM: Sienna GA,2,5023.9800000000005
+10-000642,"Electric Fuse, Time Lag Blow, 2A, 65A (IR)",onhand,Lunar Netsuite,1,4945.6
+10-001835,"FILM, RADIAL, METALLIZED POLYPRO",onorder,Lunar Netsuite,2,4920.0
+10-001089,FIXED IND 2.2UH 9.3A 15MOHM SMD,onhand,Lunar Netsuite,1,4785.0
+10-07176B,"Front Panel Gasket, Inverter, Gen 2",onorder,Lunar Netsuite,1,4700.0
+10-006621,Module GLOBAL LTE CAT1BIS W/ GNSS 26.5mm x 22.5mm,onhand,Lunar Netsuite,1,4633.568
+10-000224,Vertical Header,onhand,Lunar Netsuite,1,4575.144
+10-001067,CAP ALUM 330UF 20% 25V RADIAL,onhand,Lunar Netsuite,1,4466.0
+10-002019,"Lithium Ion Cell,S004a,Untrimmed",onhand,Lunar Netsuite,1,4428.1624
+10-003682,RAIL-TO-RAIL INPUT PUSH-PULL OUT,onhand,Lunar Netsuite,1,4261.32
+10-002160,CAP FILM 1UF 10% 305VAC RADIAL,onorder,Lunar Netsuite,2,4224.0
+10-001975,IC EEPROM 1MBIT I2C 1MHZ 8TSSOP,onorder,Lunar Netsuite,1,4160.0
+10-003772,"Clip, Wire Harness Pair, Maximizer",onhand,CM: Sienna GA,2,4082.2200000000003
+10-000586,860 to 930 MHz High-Power RF Front-End Module,onhand,Lunar Netsuite,1,3919.5
+10-004643,"Adhesive, Double-sided, Heat Sink, Maximizer",onhand,CM: Sienna GA,4,3875.76
+20-005200,"Maximizer PCB, Type B",onhand,Lunar Netsuite,1,3869.9244
+10-08132A,"bracket, rib, side panel, Press-Brake",onorder,Lunar Netsuite,1,3840.0
+10-002249,"Wire Harness, Earth Ground Sense, Bridge",onhand,Lunar Netsuite,1,3750.0
+10-001739,CAP CER 0.47UF 450V X7T 20% 1812,onhand,Lunar Netsuite,1,3672.0
+10-003368,"Thermal Bridge, GaN, DCDC",onhand,Lunar Netsuite,2,3600.0
+10-07240A,"SCREW, M5-0.8X12, PAN HD, T25, SEALING, STL+ZNNI",onhand,CM: Qualitel WA,3,3552.5723
+10-08540A,IC 16-CHANNEL BATTERY PACK MONITORING SYSTEM 64-PIN QFN-SS AEC-Q100,onorder,Lunar Netsuite,1,3487.0
+10-001429,CONN HEADER VERT 4POS 2.5MM,onhand,Lunar Netsuite,1,3456.0
+10-002125,CAP CER 0.047UF 1KV X7S 2220,onhand,Lunar Netsuite,1,3418.5
+10-08540A,IC 16-CHANNEL BATTERY PACK MONITORING SYSTEM 64-PIN QFN-SS AEC-Q100,onhand,Lunar Netsuite,1,3388.0
+10-001915,IC OPAMP GP 2 CIRCUIT 8TSSOP,onhand,Lunar Netsuite,1,3384.0
+30-07320G,Maximizer 2.0 PCBA,onhand,Lunar Netsuite,1,3372.84
+10-001056,CAP ALUM 470UF 20% 25V RADIAL,onhand,Lunar Netsuite,2,3317.5
+10-003755,DC DC CONVERTER 15V 2W,onhand,Lunar Netsuite,1,3263.7988
+10-000586,860 to 930 MHz High-Power RF Front-End Module,onhand,CM: Sienna GA,1,3097.2
+10-000845,"Connector, 6 Contact, 1 Row, Male, Straight, TH",onhand,Lunar Netsuite,1,3019.2
+10-003533,TVS DIODE 58.1VWM 121VC SMC,onorder,Lunar Netsuite,2,2936.8500000000004
+10-003503,CAP FILM 0.15UF 10% 800VDC RAD,onhand,Lunar Netsuite,1,2922.5
+90-07187A,"Lifting Tool, LFP Battery Block",onhand,Lunar Netsuite,6,2796.967
+10-07233A,IND FIXED 47UH Shielded 1.15A 274.3 MOHM 2424 (6060 Metric),onorder,Lunar Netsuite,1,2793.15
+10-006898,"IND 10UH 21A 3.88 MOHM SMD (0.886"" L x 0.866"" W (22.50mm x 22.00mm))",onhand,Lunar Netsuite,1,2643.5
+10-005002,"CLOCK OSCILLATOR,2.0X1.6X0.8MM S",onhand,CM: Qualitel WA,1,2612.0
+10-004053,MOSFET P-CH 60V 300MA SOT23-3,onhand,Lunar Netsuite,1,2520.0
+10-002276,IC BUFFER NON-INVERT 6V 20SOIC,onhand,Lunar Netsuite,2,2492.46
+10-003440,RES SMD 2M OHM 1% 1/4W 1206,onorder,Lunar Netsuite,2,2430.0
+10-003472,"Schottky Diode, Trench-based, 500 mA,30 V, 01005 (0402 Metric)",onhand,Lunar Netsuite,1,2357.439
+10-003856,CONN HEADER VERT 3POS 2.5MM,onhand,Lunar Netsuite,2,2348.4
+10-004481,IC TRANSLTR BIDIRECTIONAL 8TSSOP,onhand,Lunar Netsuite,1,2340.0
+10-08101A,"Lunar 3 Front Cover Weldment, DVT1",onorder,Lunar Netsuite,3,2332.0
+10-000613,CAP CER 1UF 25V X5R 0402,onhand,Lunar Netsuite,1,2322.702
+10-004547,RES 5.1 OHM 1% 1/10W 0402 SMD AEC-Q,onhand,CM: Qualitel WA,1,2260.8342
+10-002926,RES 1 OHM 1% 2W 2512,onhand,Lunar Netsuite,1,2240.0
+10-003889,FIXED IND 33UH 30A 2.4 MOHM SMD,onhand,Lunar Netsuite,1,2220.4
+10-08504A,IC 16-CHANNEL BATTERY PACK MONITORING SYSTEM 64-PIN QFN-SS AEC-Q100,onorder,Lunar Netsuite,1,2211.0
+10-001096,IC MULTIPLEXER 4 X 2:1 16SSOP,onhand,Lunar Netsuite,1,2200.8732
+10-002377,CAP CER 0.47UF 25V X5R 0402,onhand,Lunar Netsuite,1,2200.0
+10-001646,Bridge Rectifier DBS 1KV 2A,onhand,Lunar Netsuite,1,2160.0
+90-07117A,"Adapter for Lifting Tool, LFP Battery Block",onhand,Lunar Netsuite,2,2004.08
+10-002497,IC TRANSCEIVER HALF 1/1 8SOIC,onorder,Lunar Netsuite,2,2004.0
+10-000985,CMC 8.2MH 500MA 2LN TH,onhand,Lunar Netsuite,1,2003.4
+10-002920,DIODE SCHOTTKY 60V 5A SMC,onhand,Lunar Netsuite,1,1992.0
+10-07266A,Roof Doctor Assembly,onhand,Lunar Netsuite,1,1934.0985
+10-002027,"Thread Forming Screw, M2.5 X 5mm, Torx",onhand,CM: Sienna GA,2,1902.85
+10-08128A,"Panel, Wall, Press-Brake",onorder,Lunar Netsuite,1,1840.0
+10-08131A,"Panel, Side, Press-Brake",onorder,Lunar Netsuite,1,1840.0
+10-003871,RES SMD 5.1K OHM 1% 1/10W 0603,onhand,Lunar Netsuite,1,1794.5
+10-000856,CRYSTAL 16.3840MHZ 18PF SMD,onhand,Lunar Netsuite,1,1707.3
+10-003081,Circuit Board Hardware - PCB 10u AU OVER NI,onhand,Lunar Netsuite,1,1695.0
+10-005598,"Wire, RED, 10AWG High Flex, UL Listed as AWM, 105C",onhand,CM: Sienna GA,1,1690.0
+10-005538,"Wire, BLK, 10AWG High Flex, UL Listed as AWM, 105C",onhand,CM: Sienna GA,1,1690.0
+10-06833A,"Label, Compliance, Bridge, Type B",onhand,CM: Sienna GA,3,1644.06
+10-005154,"Power PCBA with Conformal Coat, Inverter, D",onhand,Lunar Netsuite,1,1643.88
+10-001667,DIODE ZENER 62V 590MW SOD123,onhand,Lunar Netsuite,2,1638.5244
+10-002294,FLASH - NOR Memory IC 16Mb (2M x 8) SPI - Quad I/O 133 MHz 8-SOIC,onorder,Lunar Netsuite,1,1636.32
+10-003415,MOSFET N-CH 55V 5A SOT223,onorder,Lunar Netsuite,2,1627.5
+10-002881,CONN HEADER SMD 12POS 2.5MM,onhand,Lunar Netsuite,1,1620.0
+10-001686,RES SMD 1K OHM 5% 2/3W 1206,onhand,Lunar Netsuite,1,1620.0
+10-002983,RES 150K OHM 1% 1/4W 1206,onhand,Lunar Netsuite,3,1615.0
+10-001563,RES SMD 39K OHM 5% 2W 2512,onhand,Lunar Netsuite,1,1595.2
+10-004041,IC FLASH 1GBIT SPI 16SOW,onhand,CM: Sienna GA,1,1565.19
+10-08126A,"Lunar 3 Inverter Enclosure, Front Cover, DVT1",onorder,Lunar Netsuite,1,1533.0
+10-06647C,"PCBA DCDC/BMS, with Conformal Coating",onhand,Lunar Netsuite,1,1488.96
+30-07320C,Maximizer 2.0 C2000 Variant,onhand,Lunar Netsuite,1,1460.3008
+10-06951A,"Screw, M4x0.7, 10mm L, Steel, ZiNi, Nylon Patch",onhand,CM: Qualitel WA,1,1440.0
+10-008504A,,onhand,CM: Qualitel WA,1,1435.5
+10-001355,MOSFET N CH 30V 3.5A 2-3Z1A,onorder,Lunar Netsuite,2,1379.76
+10-001135,RES 100 mOHM 1% 1/5W 0603,onhand,Lunar Netsuite,2,1360.5
+10-001208,IC BAT LIFEPO4/LI-ION 3-16C TQFP,onorder,Lunar Netsuite,1,1321.5
+10-002817,SENSOR OPT 560NM AMBIENT 6WSOF,onorder,Lunar Netsuite,2,1321.2
+10-001331,IC VREF SHUNT 2% SOT23,onhand,Lunar Netsuite,1,1320.0
+10-005940,RES SMD 5M OHM 5% 1W 2512,onhand,CM: Sienna GA,1,1316.64
+20-005240,Inverter - Power PCB Type A,onhand,CM: Sienna GA,1,1295.07
+10-002271,Linear Voltage Regulator IC Positive Fixed 1 Output 1.5A D2PAK,onhand,Lunar Netsuite,1,1286.5
+10-002227,"Nut, M3, Hex, SS",onhand,CM: Sienna GA,1,1270.346
+10-006722,CAP CER 33NF 650V C0G 1812 AEC-Q,onhand,Lunar Netsuite,1,1260.0
+10-001979,CRYSTAL 25.0000MHZ 20PF SMD,onhand,Lunar Netsuite,1,1257.2
+10-08385A,"Brkt, Emboss, Press-Brake, RH",onorder,Lunar Netsuite,1,1200.0
+10-08129A,"Brkt, Emboss, Press-Brake, LH",onorder,Lunar Netsuite,1,1200.0
+10-002002,CAP CER 10UF 50V X7S 1210,onorder,Lunar Netsuite,1,1192.0
+10-004628,Automotive Compliant Low Knee Current 3.3V Voltage Reference AEC-Q,onhand,CM: Sienna GA,1,1170.288
+10-005140,"Terminal Board with Conformal Coat, Inverter, D",onhand,Lunar Netsuite,1,1131.46
+10-002382,RES SMD 2.2 OHM 5% 1/10W 0402,onhand,Lunar Netsuite,2,1120.0
+10-000846,RES 5.1K OHM 0.1% 1/16W 0402,onhand,Lunar Netsuite,1,1100.0
+10-001810,Safety Capacitors 300Vol 0.0022uF 10% LS=7.5mm AECQ2,onorder,Lunar Netsuite,1,1080.0
+10-003415,MOSFET N-CH 55V 5A SOT223,onhand,Lunar Netsuite,1,1071.25
+10-000577,"General Purpose Inductor, 0.0056uH, 2%, 1 Element, SMD AEC-Q",onhand,Lunar Netsuite,1,1064.0
+10-001685,RES SMD 845K OHM 1% 1/4W 1206,onorder,Lunar Netsuite,1,1057.0
+10-000568,CAP CER 5.6PF 50V C0G/NP0 0402 AEC-Q,onhand,Lunar Netsuite,2,1040.0
+10-001812,Safety Capacitors 1.00UF 330V,onorder,Lunar Netsuite,1,1020.0
+10-08440A,RES 390K OHM 1% 1/2W PULSE WITHSTANDING 1206 AEC-Q,onhand,Lunar Netsuite,1,1015.8085
+10-005597,"Wire, WHT, 10AWG High Flex, UL Listed as AWM, 105C",onhand,CM: Sienna GA,1,1014.0
+90-06533A,"Battery With Cover and Brackets, Boxed, Lunar Blue,HU",onhand,CM: Celestica MX,1,1006.52
+10-001134,RES SMD 169K OHM 1% 1/10W 0603 AEC-Q,onhand,Lunar Netsuite,1,1006.5
+10-005002,"Clock Oscillator,2.0X1.6X0.8Mm S",onorder,CM: Qualitel WA,1,1000.0
+10-005370,Conn Shrouded Header (4 Sides) HDR 4 POS 5.08mm Solder RA Side Entry Thru-Hole Cardboard,onhand,CM: Sienna GA,1,976.689
+10-08539A,"Fan with Connector, 92mm Fan, Amphenol Connector, YS Tech",onorder,Lunar Netsuite,1,970.0
+10-000575,"General Purpose Inductor, 0.0047uH, 2.128%, 1 Element, SMD AEC-Q",onhand,CM: Sienna GA,1,968.072
+10-002702,RES SMD 7.5 OHM 1% 1/2W 1206,onorder,Lunar Netsuite,1,967.5
+10-006718,IC CURRENT SENSOR HALL EFFECT 275kHz 15mV/A 10-SOIC,onorder,Lunar Netsuite,1,944.5500000000001
+10-001070,CAP ALUM 10UF 20% 50V RADIAL,onhand,Lunar Netsuite,1,943.1956
+10-006906,IC FLASH 512MBIT SPI/QUAD 24-BGA (8x6),onorder,Lunar Netsuite,2,940.0
+10-006898,"IND 10UH 21A 3.88 MOHM SMD (0.886"" L x 0.866"" W (22.50mm x 22.00mm))",onorder,Lunar Netsuite,2,933.0
+10-006906,IC FLASH 512MBIT SPI/QUAD 24-BGA (8x6),onhand,Lunar Netsuite,1,876.55
+10-002868,"CONN OFP PIN RCPT .015/.025"" DIA",onhand,Lunar Netsuite,1,852.0
+10-003552,CAP FILM 0.82UF 10% 630VDC RAD,onorder,Lunar Netsuite,2,834.0
+10-003879,DIODE SCHOTTKY 80V 3A SMC,onhand,Lunar Netsuite,1,798.0
+10-004465,CAP CER 1UF 250V X7R 2220,onhand,Lunar Netsuite,1,790.0
+10-002858,DIODE ZENER 17V 500MW SOD123,onhand,Lunar Netsuite,1,769.5
+20-004050,Inverter EMC Filter,onhand,CM: Sienna GA,1,756.0
+10-000573,"General Purpose Inductor, 0.0068uH, 3%, 1 Element, SMD AEC-Q",onhand,CM: Sienna GA,1,738.3363
+10-000580,"General Purpose Inductor, 0.018uH, 5%, 1 Element, SMD AEC-Q",onhand,CM: Sienna GA,2,737.0264
+10-003371,NANO-FIT HDR SMT VT DLR 4CKT 15A,onhand,Lunar Netsuite,1,729.0
+10-004580,CAP CER 10000PF 3KV X7R 2220,onhand,CM: Sienna GA,2,722.7280000000001
+10-08127A,"Panel, End Cap, Vent, Press-Brake",onorder,Lunar Netsuite,1,720.0
+10-004116,"Enclosure, Bottom, Maximizer",onhand,CM: Sienna GA,5,713.88
+10-004547,Res 5.1 Ohm 1% 1/10W 0402 Smd Aec-Q,onorder,CM: Qualitel WA,1,696.0
+10-001667,DIODE ZENER 62V 590MW SOD123,onorder,Lunar Netsuite,1,687.2
+10-000642,"Electric Fuse, Time Lag Blow, 2A, 65A (IR)",onorder,Lunar Netsuite,2,673.1999999999999
+10-005134,"Front Cover with Capacitors,Inverter, D",onhand,Lunar Netsuite,1,661.05
+10-000578,"General Purpose Inductor, 0.0062uH, 2%, 1 Element, SMD AEC-Q",onhand,CM: Sienna GA,1,634.2457
+10-003507,KC-LINK 2220 0.1UF 650VDC C0G,onhand,CM: Sienna GA,1,628.524
+10-002728,CAP CER 0.016UF 50V X7R 0603,onhand,Lunar Netsuite,1,620.0
+10-003892,CAP FILM .033UF 20% 1.25KVDC RAD,onhand,Lunar Netsuite,1,616.0
+10-07233A,IND FIXED 47UH Shielded 1.15A 274.3 MOHM 2424 (6060 Metric),onhand,Lunar Netsuite,2,614.529
+10-003415,MOSFET N-CH 55V 5A SOT223,onhand,CM: Sienna GA,2,585.9
+10-000575,"General Purpose Inductor, 0.0047uH, 2.128%, 1 Element, SMD AEC-Q",onhand,Lunar Netsuite,1,574.2
+10-000557,CAP CER 100PF 50V CH 0402,onhand,Lunar Netsuite,2,560.0
+10-000583,"General Purpose Inductor, 0.033uH, 5%, 1 Element, SMD AEC-Q",onhand,CM: Sienna GA,2,556.266
+10-003552,CAP FILM 0.82UF 10% 630VDC RAD,onhand,Lunar Netsuite,1,550.02
+10-000846,RES 5.1K OHM 0.1% 1/16W 0402,onorder,Lunar Netsuite,1,550.0
+10-001772,TVS DIODE 54VWM 87.1VC DO214AB,onhand,Lunar Netsuite,1,540.175
+10-001686,RES SMD 1K OHM 5% 2/3W 1206,onorder,Lunar Netsuite,1,540.0
+10-000563,"Ceramic Capacitor, Multilayer, Ceramic, 35V, 10% +Tol, 10% -Tol, X7R, 15% TC, 0.15uF, SMT AEC-Q,",onhand,CM: Sienna GA,2,537.6552
+10-007028,BATTERY RETAINER COIN 20MM SMD,onorder,Lunar Netsuite,1,537.5
+10-005348,"RCD Adapter, Inverter",onhand,CM: Sienna GA,1,536.0
+10-000556,CAP CER 0.47UF 6.3V X7R 0402 AEC-Q,onhand,CM: Sienna GA,1,531.806
+10-004555,CONN PCB TERMINAL BLOCK; 2.5 MM; PIN,onhand,Lunar Netsuite,1,510.432
+10-002377,CAP CER 0.47UF 25V X5R 0402,onorder,Lunar Netsuite,1,500.0
+10-001106,RES SMD 680 OHM 0.1% 1/16W 0402,onhand,Lunar Netsuite,1,495.0
+10-002767,"HOUSED PTC THERMISTORS AS ICL, 2 AEC-Q",onhand,CM: Sienna GA,2,486.08
+10-005572,"Enclosure with Holes, Plastic, Wiring Compartment, Inverter, D",onhand,CM: Sienna GA,2,485.09999999999997
+10-001573,RES 634K OHM 1% 1/10W 0603,onhand,Lunar Netsuite,1,482.6122
+10-000608,FUSE 3.0A 63VAC/DC SLOW 1206,onhand,Lunar Netsuite,1,482.5
+10-003926,"Wire Harness,Inverter Exterior,Antenna Left",onhand,Lunar Netsuite,1,475.47
+10-000578,"General Purpose Inductor, 0.0062uH, 2%, 1 Element, SMD AEC-Q",onhand,Lunar Netsuite,1,463.68
+10-002905,IC REG LINEAR 3.3V 1A DPAK,onorder,Lunar Netsuite,1,462.5
+10-07902A,"L1 Adapter ,Wall Bracket, Battery Block, HE",onorder,Lunar Netsuite,1,444.0
+10-000576,"General Purpose Inductor, 0.015uH, 5%, 1 Element, SMD AEC-Q",onhand,CM: Sienna GA,1,441.3192
+10-002848,"Standoff, Threaded, Male-Male, M4, 8mm, Nylon",onhand,CM: Sienna GA,1,440.0
+10-000856,CRYSTAL 16.3840MHZ 18PF SMD,onorder,Lunar Netsuite,1,438.0
+10-000583,"General Purpose Inductor, 0.033uH, 5%, 1 Element, SMD AEC-Q",onhand,CM: Qualitel WA,1,437.1
+10-002470,FLASH - NAND (MLC) Memory IC 8Gb (512M x 16) eMMC 153-LFBGA (11.5x13),onhand,Lunar Netsuite,1,433.4
+10-002849,"Nut, Captive Washer, M4, Steel",onhand,CM: Sienna GA,1,428.4448
+10-000608,FUSE 3.0A 63VAC/DC SLOW 1206,onhand,CM: Sienna GA,1,426.916
+10-000556,CAP CER 0.47UF 6.3V X7R 0402 AEC-Q,onhand,CM: Qualitel WA,1,421.8875
+10-005100,PTC RESET FUSE 400V 12MA 1210,onhand,CM: Sienna GA,1,419.166
+10-000575,"General Purpose Inductor, 0.0047uH, 2.128%, 1 Element, SMD AEC-Q",onhand,CM: Qualitel WA,1,415.223
+10-000577,"General Purpose Inductor, 0.0056uH, 2%, 1 Element, SMD AEC-Q",onhand,CM: Qualitel WA,1,413.7804
+10-000578,"General Purpose Inductor, 0.0062uH, 2%, 1 Element, SMD AEC-Q",onhand,CM: Qualitel WA,1,413.5439
+10-004477,RES SMD 845K OHM 0.1% 1/4W 1206,onhand,Lunar Netsuite,1,410.125
+10-002983,RES 150K OHM 1% 1/4W 1206,onorder,Lunar Netsuite,1,408.0
+10-002160,CAP FILM 1UF 10% 305VAC RADIAL,onhand,Lunar Netsuite,1,404.67
+10-003565,"Screw,M3x0.5 6g x10mm,BHT T8,Flange,Steel,Zinc,Nylon Patch",onhand,CM: Sienna GA,1,393.44
+10-002728,CAP CER 0.016UF 50V X7R 0603,onorder,Lunar Netsuite,1,372.0
+30-07555B,LFP DVT SPIN-2 DC-DC BMS PCBA,onhand,Lunar Netsuite,1,366.67
+10-003683,RES 500 OHM 0.1% 1/10W 0603,onhand,Lunar Netsuite,1,360.0
+10-002117,"Screw,Captive,M5x0.8 6gx14mm,5mm Thread,SHCS,Flanged,DP,Steel,ZiNi BC",onhand,CM: Sienna GA,1,359.632
+10-003689,"Screw, SEMS, M3x0.5x8, Belleville Conical Washer",onhand,CM: Sienna GA,1,353.247
+10-000664,CAP CER 4.7UF 6.3V X5R 0402,onorder,Lunar Netsuite,1,348.6
+10-000664,CAP CER 4.7UF 6.3V X5R 0402,onhand,Lunar Netsuite,1,348.0
+10-06548A,"Label, Compliance, Class 9 with UN3480",onhand,CM: Qualitel WA,1,340.42272
+10-000576,"General Purpose Inductor, 0.015uH, 5%, 1 Element, SMD AEC-Q",onhand,CM: Qualitel WA,1,318.6942
+10-000576,"General Purpose Inductor, 0.015uH, 5%, 1 Element, SMD AEC-Q",onhand,Lunar Netsuite,1,313.92
+10-08350A,"Assy, Enclosure Press-Brake, L2.1",onhand,Lunar Netsuite,1,313.38
+10-002325,CAP CER 0.1UF 630V X7T 1210 AUTO,onhand,Lunar Netsuite,1,313.0
+20-005925,PCB TRM AFCI Amplifier Board,onhand,CM: Sienna GA,1,306.0
+10-000583,"General Purpose Inductor, 0.033uH, 5%, 1 Element, SMD AEC-Q",onhand,Lunar Netsuite,1,298.5
+10-001267,"Enclosure, Top, Maximizer",onhand,CM: Sienna GA,2,293.67
+10-000565,CAP CER 3.3PF 50V C0G/NPO 0402 AEC-Q,onhand,CM: Sienna GA,2,284.7354
+10-002261,22 µF ±10% 25V Ceramic Capacitor X5R 1210 (3225 Metric),onorder,Lunar Netsuite,1,280.0
+10-001073,DIODE GEN PURP 200V 1A SMA,onhand,Lunar Netsuite,1,278.9442
+10-005510,"Filter Module, Common Mode Choke, Inverter Wire Compartment",onhand,Lunar Netsuite,1,272.6
+10-001695,CAP CER 6800PF 50V X7R 0603,onhand,Lunar Netsuite,1,268.8
+10-000580,"General Purpose Inductor, 0.018uH, 5%, 1 Element, SMD AEC-Q",onhand,CM: Qualitel WA,1,267.424
+10-000581,"General Purpose Inductor, 0.003uH, 6.667%, 1 Element, SMD AEC-Q",onhand,CM: Sienna GA,1,265.7924
+10-000574,"General Purpose Inductor, 0.0033uH, 6.061%, 1 Element, SMD AEC-Q",onhand,CM: Sienna GA,1,265.2999
+10-000582,"General Purpose Inductor, 0.0013uH, 15.385%, 1 Element, SMD AEC-Q",onhand,CM: Sienna GA,1,264.8862
+10-07683A,RES SMD 845K OHM 0.1% 1/4W 1206,onhand,CM: Qualitel WA,1,264.4992
+10-000573,"General Purpose Inductor, 0.0068uH, 3%, 1 Element, SMD AEC-Q",onhand,CM: Qualitel WA,1,261.345
+10-000563,"Ceramic Capacitor, Multilayer, Ceramic, 35V, 10% +Tol, 10% -Tol, X7R, 15% TC, 0.15uF, SMT AEC-Q,",onhand,CM: Qualitel WA,1,259.5346
+10-002382,RES SMD 2.2 OHM 5% 1/10W 0402,onorder,Lunar Netsuite,1,256.1
+10-06647C,"PCBA DCDC/BMS, with Conformal Coating",onorder,Lunar Netsuite,1,248.16
+10-003381,IC BUFFER NON-INVERT 5.5V USV AEC-Q,onhand,Lunar Netsuite,1,247.775
+10-07833A,"Assy, Panel, End Cap, DCDC",onhand,Lunar Netsuite,1,247.7199
+10-004857,TVS DIODE 58VWM 67VC 2DFN,onhand,Lunar Netsuite,1,244.6224
+10-002381,RES 2 OHM 5% 1/16W 0402,onhand,Lunar Netsuite,2,238.0
+10-000577,"General Purpose Inductor, 0.0056uH, 2%, 1 Element, SMD AEC-Q",onhand,CM: Sienna GA,1,231.5964
+10-08445A,RES 390K OHM 1% 1/2W 1206,onorder,Lunar Netsuite,2,230.276
+10-005888,"Wall Bracket Assembly, Battery Block",onhand,Lunar Netsuite,1,225.0
+10-000579,"General Purpose Inductor, 10uH, 20%, 1 Element, Ferrite-Core, SMD, 0805 AEC-Q",onhand,CM: Sienna GA,2,222.0295
+10-001748,RES 100K OHM 1% 1/2W 1210,onorder,Lunar Netsuite,1,220.5
+10-001355,MOSFET N CH 30V 3.5A 2-3Z1A,onhand,Lunar Netsuite,1,209.0
+10-001535,CAP CER 0.1UF 25V X7R 0603,onhand,Lunar Netsuite,1,207.6
+20-005927,PCB TRM AFCI Connector Board,onhand,CM: Sienna GA,1,202.4
+10-000573,"General Purpose Inductor, 0.0068uH, 3%, 1 Element, SMD AEC-Q",onorder,Lunar Netsuite,1,197.0
+10-001138,RES 1K OHM 1% 1/4W 0603 AEC-Q,onorder,Lunar Netsuite,1,195.29999999999998
+10-000580,"General Purpose Inductor, 0.018uH, 5%, 1 Element, SMD AEC-Q",onorder,Lunar Netsuite,1,195.20000000000002
+10-000574,"General Purpose Inductor, 0.0033uH, 6.061%, 1 Element, SMD AEC-Q",onhand,CM: Qualitel WA,1,191.878
+10-000581,"General Purpose Inductor, 0.003uH, 6.667%, 1 Element, SMD AEC-Q",onhand,CM: Qualitel WA,1,191.681
+10-000582,"General Purpose Inductor, 0.0013uH, 15.385%, 1 Element, SMD AEC-Q",onhand,CM: Qualitel WA,1,189.12
+10-000582,"General Purpose Inductor, 0.0013uH, 15.385%, 1 Element, SMD AEC-Q",onhand,Lunar Netsuite,1,189.12
+10-002220,"PCBA Module, Bridge",onhand,Lunar Netsuite,2,188.18
+10-000613,CAP CER 1UF 25V X5R 0402,onorder,Lunar Netsuite,1,180.0
+10-002733,PMEG100T10ELR-QX AEC-Q,onhand,CM: Sienna GA,1,179.177
+10-000563,"Ceramic Capacitor, Multilayer, Ceramic, 35V, 10% +Tol, 10% -Tol, X7R, 15% TC, 0.15uF, SMT AEC-Q,",onorder,Lunar Netsuite,1,177.0
+20-005550,"Maximizer PCB, Type C",onhand,CM: Sienna GA,4,175.68
+10-005434,"Assy, Inner Cover, Bridge, W/ Labels, Lunar Blue",onhand,Lunar Netsuite,1,167.65
+10-004305,"Seal, Cover, DC-DC",onhand,Lunar Netsuite,1,167.5
+10-004675,"Inductor Assy, DCDC, 22.8uH",onhand,Lunar Netsuite,1,166.9815
+10-000557,CAP CER 100PF 50V CH 0402,onorder,Lunar Netsuite,1,162.0
+10-004732,"Wire Harness, Inverter, Battery IF, Cap Board",onhand,CM: Sienna GA,1,159.52
+10-003928,"Harness, Trunk, 20 kWh, Type B",onhand,Lunar Netsuite,2,142.5
+10-002261,22 µF ±10% 25V Ceramic Capacitor X5R 1210 (3225 Metric),onhand,Lunar Netsuite,1,140.0
+10-000568,CAP CER 5.6PF 50V C0G/NP0 0402 AEC-Q,onhand,CM: Sienna GA,1,139.0688
+10-001134,RES SMD 169K OHM 1% 1/10W 0603 AEC-Q,onorder,Lunar Netsuite,1,132.0
+10-06528A,"Lithium Ion Cell,S004a,Trimmed,HU",onhand,CM: Celestica MX,1,130.94
+10-003839,"SEMS Screw, M3x0.5x5,ConicalLockingWasher,BHT,Cl8.8,Zn",onhand,CM: Sienna GA,1,128.7
+10-07962A,Ultra-Low-Profile Socket Head Screw M5 x 12,onhand,Lunar Netsuite,1,128.1
+10-005518,"Mounting Plate, Filter Module",onhand,CM: Sienna GA,1,127.3
+10-005164,"Wire Harness,Inverter Exterior,Blowers/Ambient T, D",onhand,CM: Sienna GA,1,126.12
+20-005737,PCB Inverter - Power Board Type B,onhand,CM: Sienna GA,1,123.52
+10-005121,"Wall Bracket Assembly, Inverter",onhand,CM: Sienna GA,1,123.0
+10-004164,RES 49.9 OHM 1% 1/16W 0402 AEC-Q,onhand,Lunar Netsuite,1,121.5974
+10-006147,RES 0.0025 OHM .25 W 1% 0402 SMD,onhand,CM: Sienna GA,1,121.104
+10-002694,FIXED IND 6.8UH 710MA 443MOHM SM,onhand,CM: Sienna GA,1,120.912
+10-003809,"N/G Bar Sock, Right Side, Bridge",onhand,CM: Sienna GA,1,119.83
+10-000556,CAP CER 0.47UF 6.3V X7R 0402 AEC-Q,onorder,Lunar Netsuite,1,110.39999999999999
+10-000571,CAP CER 1.8PF 50V C0G/NP0 0402 AEC-Q,onhand,CM: Sienna GA,2,106.664
+10-08101A,"Lunar 3 Front Cover Weldment, DVT1",onhand,Lunar Netsuite,1,105.4298
+10-003808,"N/G Bar Sock, Left Side, Bridge",onhand,CM: Sienna GA,1,103.04
+10-000579,"General Purpose Inductor, 10uH, 20%, 1 Element, Ferrite-Core, SMD, 0805 AEC-Q",onhand,CM: Qualitel WA,1,100.302
+10-06647D,"PCBA DCDC/BMS, with Conformal Coat, LFP DC ESS",onorder,Lunar Netsuite,1,100.0
+10-003381,IC BUFFER NON-INVERT 5.5V USV AEC-Q,onorder,Lunar Netsuite,1,92.10000000000001
+10-000761,CAP CER 2.2UF 16V X5R 0603,onhand,Lunar Netsuite,1,92.0
+10-004677,"Potted Pin Passthrough and Inductor Housing, Inverter Power Module C3",onhand,CM: Sienna GA,1,91.25
+10-002758,RESHV ST 1206 10M 5% 0.25W TCR20,onhand,Lunar Netsuite,1,89.5
+10-000566,CAP CER 2.7PF ±0.25PF 50V C0G 0402 AEC-Q,onhand,CM: Qualitel WA,1,88.1015
+10-002381,RES 2 OHM 5% 1/16W 0402,onorder,Lunar Netsuite,1,85.5
+10-000567,CAP CER 3.9PF 50V C0G/NPO 0402 AEC-Q,onhand,CM: Qualitel WA,1,82.1419
+10-002156,RES SMD 18K OHM 5% 1/3W 0603,onhand,Lunar Netsuite,1,82.0
+10-000567,CAP CER 3.9PF 50V C0G/NPO 0402 AEC-Q,onhand,CM: Sienna GA,1,80.1961
+10-001695,CAP CER 6800PF 50V X7R 0603,onorder,Lunar Netsuite,1,78.4
+10-06527A,"Lithium Ion Cell,S004a,Untrimmed,HU",onhand,CM: Celestica MX,2,77.36
+10-07527A,CAP FILM 5UF 10% 800VDC RADIAL,onhand,CM: Qualitel WA,1,76.82
+10-07994A,"Weld Stud, M4 x 8mm",onorder,Lunar Netsuite,1,74.52
+10-001172,RES SMD 390 OHM 5% 1/4W 0603,onhand,Lunar Netsuite,1,74.0
+10-000565,CAP CER 3.3PF 50V C0G/NPO 0402 AEC-Q,onhand,CM: Qualitel WA,1,73.134
+10-000579,"General Purpose Inductor, 10uH, 20%, 1 Element, Ferrite-Core, SMD, 0805 AEC-Q",onorder,Lunar Netsuite,2,73.0
+10-002913,FUSE BOARD MOUNT 2A 250VAC 2SMD,onhand,Lunar Netsuite,1,68.82
+10-005022,Res Thick Film 0603 22K Ohm 5% 0.1W(1/10W) ±100ppm/°C Pad SMD T/R,onhand,CM: Sienna GA,2,65.7764
+10-000570,CAP CER 1.5PF ± 0.25pF 50V C0K/CK 0402 AEC-Q,onhand,CM: Sienna GA,1,63.9844
+10-000566,CAP CER 2.7PF ±0.25PF 50V C0G 0402 AEC-Q,onhand,CM: Sienna GA,1,63.3372
+10-001764,RES SMD 20 OHM 1% 3/4W 1206,onhand,Lunar Netsuite,1,59.44
+10-001679,RES SMD 120 OHM 5% 1/8W 0805,onhand,Lunar Netsuite,1,58.0
+10-000568,CAP CER 5.6PF 50V C0G/NP0 0402 AEC-Q,onhand,CM: Qualitel WA,1,54.999
+10-003381,IC BUFFER NON-INVERT 5.5V USV AEC-Q,onhand,CM: Sienna GA,1,53.6943
+10-000557,CAP CER 100PF 50V CH 0402,onhand,CM: Sienna GA,1,42.4278
+10-000571,CAP CER 1.8PF 50V C0G/NP0 0402 AEC-Q,onhand,CM: Qualitel WA,1,40.1396
+10-002698,DIODE ZENER 5.1V 1W PMDTM AEC-Q,onhand,CM: Sienna GA,1,34.4288
+10-002869,CAP CER 22UF 20% 25V X7R 1210,onhand,CM: Sienna GA,1,31.58
+10-005421,"Cable Tie, REUSABLE",onhand,CM: Sienna GA,1,31.46
+20-005341,PCB Lunar Bridge Rogowski Coil Pigtail Board Rev 1,onhand,CM: Sienna GA,1,28.8
+10-005102,IC GATE DRVR HALF-BRIDGE 12DSBGA,onhand,CM: Sienna GA,1,26.55
+10-003684,RES 750 OHM 1% 1/8W 0603,onhand,Lunar Netsuite,1,26.5
+10-002709,"Heat spreader, Aluminum Nitride, TIM and pre-applied",onhand,CM: Sienna GA,1,24.6
+10-000570,CAP CER 1.5PF ± 0.25pF 50V C0K/CK 0402 AEC-Q,onhand,CM: Qualitel WA,1,23.9584
+10-002330,RES 28K OHM 1% 1/10W 0603,onhand,Lunar Netsuite,1,21.0
+10-003064,RES SMD 93.1K OHM 1% 1/10W 0603,onhand,Lunar Netsuite,1,19.11
+10-002903,RES 24K OHM 1% 1/10W 0603 AEC-Q,onhand,Lunar Netsuite,1,17.883
+10-005250,Fuse Chip Slow Blow Acting 0.5A 250V SMD Solder Pad 10.1 X 3.12 X 3.12mm Ceramic T/R cULus,onhand,CM: Sienna GA,1,15.49
+10-003729,RES 0 OHM JUMPER 1/4W 1206 AEC-Q,onhand,CM: Sienna GA,1,15.345
+10-000995,RES 18K OHM 1% 1/16W 0402 AEC-Q,onorder,Lunar Netsuite,1,15.0
+10-003064,RES SMD 93.1K OHM 1% 1/10W 0603,onhand,CM: Sienna GA,1,14.9682
+10-005042,Res Thick Film 0603 340 Ohm 1% 0.1W(1/10W) ±100ppm/°C Pad SMD T/R,onhand,CM: Sienna GA,1,13.263
+10-002266,CAP CER 0.1UF 50V X7R 0603,onhand,Lunar Netsuite,1,12.92
+10-002470,FLASH - NAND (MLC) Memory IC 8Gb (512M x 16) eMMC 153-LFBGA (11.5x13),onhand,CM: Sienna GA,1,11.82
+10-004787,Cap Ceramic 0.1uF 16V X7R 10% Pad SMD 0402 125°C T/R,onhand,CM: Sienna GA,1,10.6612
+20-005508,"PCB, Inverter Wire Compartment Filter Module",onhand,CM: Sienna GA,1,10.08
+10-004472,RES 100 mOHM 1% 1/5W 0603,onhand,Lunar Netsuite,1,8.957
+10-003685,RES 240 OHM 1% 1/10W 0603,onhand,Lunar Netsuite,1,8.5
+10-005008,Inductor Power Shielded Wirewound 1000uH 20% 100KHz Ferrite 0.72A 1.4Ohm DCR T/R,onhand,CM: Sienna GA,1,8.28
+10-003957,RES SMD 93.1K OHM 1% 1/10W 0603,onhand,CM: Sienna GA,1,7.8225
+10-004301,DIODE ZENER 62V 5W DO214AA,onhand,CM: Sienna GA,1,6.018
+10-001545,RES 499 OHM 1% 1/10W 0603 AEC-Q,onhand,CM: Sienna GA,1,5.474
+10-002501,"10 kOhms ±1% 0.1W, 1/10W Chip Resistor 0402 (1005 Metric) Automotive AEC-Q200",onhand,CM: Qualitel WA,1,5.0
+10-002884,IC REG CHARG PUMP INV 12MSOP,onhand,CM: Sienna GA,1,2.5
+10-001142,RES 1 OHM 1% 1/10W 0603 AEC-Q,onhand,CM: Sienna GA,1,1.46
+60-06855B,Battery Block Emulator -16 cell LPF_1 Production PCBA,onorder,Lunar Netsuite,1,1.20756
+10-005537,"Ferrule, 7 AWG, 18mm Pin",onhand,CM: Sienna GA,1,0.54
+90-0028023MS-R,,onhand,CM: Celestica MX,1,0.02
+10-003358,CAP FILM 0.22UF 10% 1KVDC RADIAL,onhand,CM: Sienna GA,1,0.0
+10-003544,"Full Functional Assy, Bridge, Nebulous White",onhand,CM: Sienna GA,1,0.0
+10-000565,CAP CER 3.3PF 50V C0G/NPO 0402,onorder,CM: Sienna GA,1,0.0
+10-003484,"PCB TERMINAL BLOCK, NOMINAL CURR",onhand,CM: Sienna GA,1,0.0
+10-003368,"Thermal Bridge, GaN, DCDC",onhand,CM: Qualitel WA,1,0.0
+10-003517,"Lid with Insulator, Foam Pad",onhand,CM: Celestica MX,1,0.0
+10-003533,TVS DIODE 58.1VWM 121VC SMC,onhand,CM: Celestica MX,1,0.0
+10-003561,"Nut,M5,5mm,Flange,Serrated,ZnNi BC",onhand,CM: Celestica MX,1,0.0
+10-002862,DGTL ISO 2500VRMS 2CH GP 8SOIC,onhand,CM: Sienna GA,1,0.0
+10-000586,860 to 930 MHz High-Power RF Front-End M,onorder,CM: Sienna GA,3,0.0
+10-002941,DC DC CONVERTER 12V 3W,onhand,CM: Celestica MX,1,0.0
+10-002941,DC DC CONVERTER 12V 3W,onhand,CM: Sienna GA,1,0.0
+10-002983,RES 150K OHM 1% 1/4W 1206,onhand,CM: Sienna GA,1,0.0
+10-003005,"Adhesive, Double-sided, Heat Sink, Maximizer",onhand,CM: Sienna GA,1,0.0
+10-006604,CONN CONTACT IDC 12AWG SMD,onhand,Lunar Netsuite,1,0.0
+10-002862,DGTL ISO 2500VRMS 2CH GP 8SOIC,onhand,CM: Celestica MX,1,0.0
+10-001056,CAP ALUM 470UF 20% 25V RADIAL,onhand,CM: Sienna GA,1,0.0
+10-07240A,"Screw, M5-0.8X12, Pan HD, T25, Sealing, STL+ZnNi",onorder,CM: Qualitel WA,8,0.0
+10-001208,IC BAT LIFEPO4/LI-ION 3-16C TQFP,onhand,CM: Celestica MX,1,0.0
+10-07607A,"Mount, Neutral/Ground Bar, Bridge",onorder,CM: Sienna GA,4,0.0
+10-07683A,RES SMD 845K OHM 0.1% 1/4W 1206,onorder,CM: Sienna GA,3,0.0
+10-07793A,"10-07793A Wire Harness, Inverter Exterio",onorder,CM: Sienna GA,1,0.0
+10-07817A,"10-07817A Wire Harness, Inverter Exterio",onorder,CM: Sienna GA,1,0.0
+10-001138,RES 1K OHM 1% 1/4W 0603 AEC-Q,onhand,CM: Celestica MX,1,0.0
+10-000944,"Exhaust Duct,Inverter",onhand,CM: Sienna GA,1,0.0
+10-002080,"Wire Harness,Inverter,Antenna (900Mhz/BT",onorder,CM: Sienna GA,9,0.0
+10-08110A,"Wire Harness, Inverter Ext, Blow/Amb.T,S",onorder,CM: Sienna GA,7,0.0
+10-000799,"Sticker,Vent,Subassembly",onhand,CM: Celestica MX,1,0.0
+10-000587,S2-LP is a 900 MHz RF radio,onhand,Lunar Netsuite,1,0.0
+10-000537,Can with Terminals,onhand,CM: Celestica MX,1,0.0
+10-000533,Terminals with Fuse and Bracket,onhand,CM: Celestica MX,1,0.0
+10-000398,Busbar Tray with Interconnects,onhand,CM: Celestica MX,1,0.0
+10-000170,Submodule,onhand,CM: Celestica MX,1,0.0
+10-001212,12-Channel Multicell Battery Monitor AEC-Q,onhand,CM: Celestica MX,1,0.0
+10-001267,"Enclosure, Top, Maximizer",onhand,Lunar Netsuite,1,0.0
+10-001355,MOSFET N CH 30V 3.5A 2-3Z1A,onhand,CM: Celestica MX,1,0.0
+10-001403,CONN TERM PIN SOLDER 3.6MM,onhand,CM: Celestica MX,1,0.0
+10-002591,DIODE ZENER 5.23V 960MW DO219AC,onhand,CM: Sienna GA,2,0.0
+10-002426,"Fan with Connector,DC-DC, with Splice",onhand,CM: Celestica MX,1,0.0
+10-002420,"Screw,M2x0.4 6gx4mm,Flat Head T-6,Steel,ZiNi BC,Nylon Patch",onhand,CM: Sienna GA,1,0.0
+10-002294,FLASH - NOR Memory IC 16Mb (2M x 8) SPI - Quad I/O 133 MHz 8-SOIC,onhand,CM: Sienna GA,2,0.0
+10-002281,CAP CER 10UF 25V X7R 1206 AEC-Q,onhand,CM: Celestica MX,1,0.0
+10-002271,Linear Voltage Regulator IC Positive Fixed 1 Output 1.5A D2PAK,onhand,CM: Sienna GA,1,0.0
+10-002249,"Wire Harness, Earth Ground Sense, Bridge",onhand,CM: Sienna GA,2,0.0
+10-002172,"Full Functional Assy, Bridge, Lunar Blue",onhand,Lunar Netsuite,1,0.0
+10-002141,CONN HEADER SMD R/A 2POS 3MM,onhand,CM: Sienna GA,1,0.0
+10-001818,"Inductor Caddy,Triple",onhand,CM: Sienna GA,1,0.0
+10-004643,"Adhesive, Double-sided, Heat Sink, Maxim",onorder,CM: Sienna GA,3,0.0
+10-001637,CAP CER 4.7UF 100V X7R 2220,onhand,CM: Sienna GA,1,0.0
+10-001508,"Insulator,Busbar,Battery Block",onhand,CM: Celestica MX,1,0.0
+10-001468,"Harness,Ground,Frame",onhand,CM: Celestica MX,1,0.0
+10-001420,CONN SMA JACK STR 50OHM PCB,onhand,Lunar Netsuite,1,0.0
+10-002020,"Pouch,Water Filled,Half Submodule",onhand,CM: Celestica MX,1,0.0
+10-004310,"Cover with Seal, DC-DC",onhand,CM: Celestica MX,1,0.0
+S-747,,onhand,CM: Qualitel WA,1,0.0
+10-005113,"Shroud with Inserts, Rear",onhand,Lunar Netsuite,1,0.0
+10-07681A,IC DRAM 4GBIT POD 78FBGA,onhand,Lunar Netsuite,1,0.0
+10-005113,"Shroud with Inserts, Rear",onhand,CM: Celestica MX,1,0.0
+10-07683A,RES SMD 845K OHM 0.1% 1/4W 1206,onhand,CM: Sienna GA,3,0.0
+10-07720A,"Hinge Door Mount, Front Door, Inverter, Gen 2",onhand,Lunar Netsuite,1,0.0
+10-07769A,"Heatsink, AC Safe Harbor, 11kW Inverter",onhand,Lunar Netsuite,1,0.0
+10-07770A,"Heatsink, PV Safe Harbor, 11kW Inverter",onhand,Lunar Netsuite,1,0.0
+10-07770B,"Heatsink, PV Safe Harbor, 11kW Inverter",onhand,Lunar Netsuite,1,0.0
+10-07793A,"Wire Harness, Inverter Exterior, Blowers/Ambient T, SS 540-22",onhand,CM: Sienna GA,1,0.0
+10-07817A,"Wire Harness, Inverter Exterior, Blowers/Ambient T, D TP48",onhand,CM: Sienna GA,1,0.0
+10-005112,"Shroud with Inserts, Front",onhand,Lunar Netsuite,1,0.0
+10-07839A,CAP 2.2UF ±10% 10% 305VAC 630VDC AEC-Q200 X2 RADIAL 42.00mm x 12.00mm,onhand,CM: Sienna GA,2,0.0
+10-07939A,"Terminal Cover, L2.1",onhand,Lunar Netsuite,1,0.0
+10-08349A,"ASSY, HARNESS, TRUNK, 30 kWh,TYPE C INVERTER TO LFP 2.1",onhand,Lunar Netsuite,1,0.0
+10-005112,"Shroud with Inserts, Front",onhand,CM: Celestica MX,1,0.0
+10-08453A,"Hinge Base, Enclosure, Inverter Gen 2, Press Brake",onhand,Lunar Netsuite,1,0.0
+20-000737,"PCB DCDC/BMS, Battery Block",onhand,Lunar Netsuite,1,0.0
+20-003034,"PCB, Capacitor Board",onhand,Lunar Netsuite,1,0.0
+10-005025,"Inverter, D",onhand,Lunar Netsuite,3,0.0
+20-005200,"Maximizer PCB, Type B",onhand,CM: Sienna GA,1,0.0
+20-005339,"PCB DCDC/BMS, Battery Block",onhand,CM: Celestica MX,1,0.0
+20-005377,PCB LEM CSTR RCD Adapter Board,onhand,Lunar Netsuite,1,0.0
+10-07527A,CAP FILM 5UF 10% 800VDC RADIAL,onhand,CM: Sienna GA,2,0.0
+10-005118,"Maximizer, Potted Assembly, Type A",onhand,Lunar Netsuite,1,0.0
+20-005508,"PCB, Inverter Wire Compartment Filter Module",onhand,Lunar Netsuite,1,0.0
+10-07188A,"Lifting Tool Assy, LFP Battery Block",onhand,Lunar Netsuite,1,0.0
+10-006076,"PCBA, Terminal Board, Type B, Coated",onhand,Lunar Netsuite,1,0.0
+10-005891,"Cover with Seal, Busbar, Type B",onhand,CM: Celestica MX,1,0.0
+10-006732,IC SIGMA-DELTA 16BIT 40K 24TSSOP,onhand,Lunar Netsuite,1,0.0
+10-006836,IC USB 2.0 HUB AND FLASH MEDIA CARD CONTROLLER COMBO 48-QFN (7x7),onhand,Lunar Netsuite,1,0.0
+10-005366,"Scarf with Adhesive, Battery Block",onhand,CM: Celestica MX,1,0.0
+10-005296,Inverter Power Board Type A PCBA with DC Input Pins Attached,onhand,Lunar Netsuite,1,0.0
+10-005286,"O-ring,291.69mm ID,3.53mm C/S",onhand,CM: Qualitel WA,1,0.0
+10-06532A,"Battery Block,HU",onhand,Lunar Netsuite,2,0.0
+10-005271,"Harness, Sense, Battery Block, Type B",onhand,CM: Celestica MX,1,0.0
+10-06647A,"PCBA DCDC/BMS, with Conformal Coating",onhand,Lunar Netsuite,1,0.0
+10-06738B,"Asy, Harness, Trunk, 15 kWh, Type B",onhand,Lunar Netsuite,1,0.0
+10-06824A,"Packaging, Assy, ESS Hardware Kit 15kWh Lunar Blue",onhand,CM: Sienna GA,1,0.0
+10-00522D,"Maximizer, Potted Assembly, Type D",onhand,CM: Sienna GA,5,0.0
+10-06949A,LFP DC ESS,onhand,Lunar Netsuite,1,0.0
+10-005220,"Maximizer, Potted Assembly, Type C",onhand,CM: Sienna GA,2,0.0
+10-005211,"Heat Sink Assy, DCDC",onhand,CM: Celestica MX,1,0.0
+10-06954A,"Label, Compliance, Maximizer",onhand,CM: Sienna GA,3,0.0
+10-07065A,"CONTACT, FEMALE, TE, PWR TRIPLE LOCK, 14AWG, 15A, 600V,Cu ALLOY, Sn PLT",onhand,Lunar Netsuite,1,0.0
+10-005210,"TIM, PCBA, DC-DC",onhand,CM: Celestica MX,1,0.0
+10-07076A,"CONTACT, FEMALE, TE, PWR TRIPLE LOCK, 12AWG, 20A, 600V,Cu ALLOY, Sn PLT",onhand,Lunar Netsuite,1,0.0
+10-07180A,"Label, Compliance, LFP AC ESS System, 20kWh",onhand,CM: Sienna GA,2,0.0
+20-005507,Terminal Board Type B PCB,onhand,CM: Sienna GA,1,0.0
+10-004857,TVS DIODE 58VWM 67VC 2DFN,onhand,CM: Celestica MX,1,0.0
+10-003856,CONN HEADER VERT 3POS 2.5MM,onhand,CM: Sienna GA,1,0.0
+60-005957,PCBA DCDC_BMS_GND-North-Cut,onhand,Lunar Netsuite,1,0.0
+60-005960,PCB DCDC_BMS_GND-South-Cut,onhand,Lunar Netsuite,1,0.0
+60-006103,PCBA Power Board Light Copper Type B,onhand,Lunar Netsuite,1,0.0
+60-006155,PCB DC-DC_BMS_1.1_Cost_Down,onhand,Lunar Netsuite,1,0.0
+60-006228,PCBA 4 Channel Gate Drive Power Supply,onhand,Lunar Netsuite,1,0.0
+60-006250,PCB Power Board Switch Node Traces,onhand,Lunar Netsuite,1,0.0
+60-006477,"PCBA, Terminal Board Type C - Light Copper",onhand,Lunar Netsuite,1,0.0
+60-006481,"PCBA, Power board Type C Light Cu",onhand,Lunar Netsuite,1,0.0
+60-06569A,60-06569A Lunar MSA Controller_1 Production PCBA,onhand,Lunar Netsuite,1,0.0
+60-06570A,60-06569A Lunar MSA Controller PCB,onhand,Lunar Netsuite,1,0.0
+60-06742A,"Power Conversion Board A Sample, PCBA",onhand,Lunar Netsuite,1,0.0
+60-06803A,"PCB, Mini Busbar Validation",onhand,Lunar Netsuite,1,0.0
+90-001221,"Bridge, Boxed, Lunar Blue",onhand,CM: Sienna GA,1,0.0
+10-000062,"Cover, Battery Block",onhand,CM: Celestica MX,1,0.0
+10-004675,"Inductor Assy, DCDC, 22.8uH",onhand,CM: Celestica MX,1,0.0
+10-004547,RES 5.1 OHM 1% 1/10W 0402 SMD AEC-Q,onhand,CM: Celestica MX,1,0.0
+10-004474,"Exhaust Manifold Assy w/ CWool and Label, Battery Block",onhand,CM: Celestica MX,1,0.0
+90-003540,"Inverter with Cover and Brackets, Boxed, Lunar Blue",onhand,CM: Sienna GA,1,0.0
+10-004302,50 OHM 1% 50PPM 0402 1/16W AEC-Q,onhand,CM: Sienna GA,1,0.0
+10-003999,"Inter-Submodule Seal, Ceramic Wool",onhand,CM: Celestica MX,1,0.0
+10-003985,RES SMD 1K OHM 1% 1/10W 0603,onhand,Lunar Netsuite,1,0.0
+10-003933,"Lithium Ion Cell,E41,Untrimmed",onhand,Lunar Netsuite,1,0.0
+60-005959,PCBA DCDC_BMS_GND-South-Cut,onhand,Lunar Netsuite,1,0.0
+60-005955,PCBA DCDC_BMS_GND-Full,onhand,Lunar Netsuite,1,0.0
+10-004776,RES 0.1 OHM 0.5% 1/2W 1206,onhand,CM: Celestica MX,1,0.0
+30-07552A,AFCI CT Breakout PCBA,onhand,Lunar Netsuite,1,0.0
+20-06955A,"PCB, Roof Doctor",onhand,Lunar Netsuite,1,0.0
+30-000738,"PCBA DCDC/BMS, Battery Block",onhand,Lunar Netsuite,1,0.0
+30-000827,BMS-INV Data Collect - PCBA,onhand,Lunar Netsuite,1,0.0
+30-002866,Inverter Terminal PBCA,onhand,Lunar Netsuite,1,0.0
+30-003827,Lunar Bridge Rogowski Coil Pigtail PCBA,onhand,CM: Sienna GA,1,0.0
+30-004051,Inverter EMC Filter,onhand,Lunar Netsuite,1,0.0
+30-005029,"PCBA 1, Interface, Bridge, Type A",onhand,Lunar Netsuite,1,0.0
+30-005030,"PCBA, Control, Bridge Type A",onhand,Lunar Netsuite,1,0.0
+30-005127,Terminal TypeA PCBA,onhand,Lunar Netsuite,1,0.0
+30-005205,Terminal Board Type A Light Copper PCBA,onhand,Lunar Netsuite,1,0.0
+30-005239,Inverter Power Board Type A PCBA,onhand,Lunar Netsuite,1,0.0
+30-005506,Terminal Board Type B PCBA,onhand,Lunar Netsuite,1,0.0
+30-005549,"Maximizer PCBA, Type C",onhand,CM: Sienna GA,7,0.0
+30-005549,"Maximizer PCBA, Type C",onhand,Lunar Netsuite,1,0.0
+30-005599,DCDC Battery Block Type B,onhand,CM: Celestica MX,1,0.0
+30-06829D,"Maximizer PCBA, Type D",onhand,CM: Sienna GA,2,0.0
+30-06829D,"Maximizer PCBA, Type D",onhand,Lunar Netsuite,1,0.0
+30-06904C,30-06904C DC-DC BMS Lunar 2 LFP DVT Spin 1 PCBA,onhand,Lunar Netsuite,1,0.0
+30-06909A,30-06909A Home Controller 2.0 PCBA,onhand,Lunar Netsuite,1,0.0
+30-06956A,"PCBA, Roof Doctor",onhand,Lunar Netsuite,1,0.0
+10-004771,IC CURR SENSE 1 CIRCUIT SC70-5 AEC-Q,onhand,CM: Celestica MX,1,0.0
+10-000042,"Lithium Ion Cell,S004a,Trimmed",onhand,CM: Celestica MX,1,0.0
