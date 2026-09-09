@@ -1,0 +1,31 @@
+name: Daily Google Sheets Sync
+on:
+  schedule:
+    # 5 AM UTC daily (= midnight EST, 9 PM PST previous day)
+    - cron: '0 5 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - run: pip install gspread pandas
+
+      - name: Download Google Sheets
+        run: python scripts/sync_gsheets.py
+        env:
+          GSHEETS_KEY: ${{ secrets.GSHEETS_SERVICE_ACCOUNT }}
+
+      - name: Commit and push
+        run: |
+          git config user.name "Lunar Auto-Sync"
+          git config user.email "bot@lunar.energy"
+          git add data/cloud/*.csv
+          git commit -m "data: auto-sync from google sheets" || echo "no changes"
+          git push
