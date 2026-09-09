@@ -2834,6 +2834,8 @@ elif st.session_state.active_tab == "Inventory Projection":
                 lunar_cols = {m: [0.0] * n_rows for m in months}
                 lunar_bucket_total = [0.0] * n_rows
 
+                _LUNAR_DBG = []  # diagnostic: (part, pool, B1, B2, B3, lunar_on_hand)
+
                 rows_by_part = {}
                 for i, (cm, part) in enumerate(zip(cm_arr, part_arr)):
                     rows_by_part.setdefault(part, []).append((i, cm))
@@ -2896,6 +2898,11 @@ elif st.session_state.active_tab == "Inventory Projection":
 
                     b3 = avail  # free remainder — stays on Lunar's book, flat
 
+                    _LUNAR_DBG.append((
+                        part, lunar_pool, sum(b1_alloc.values()), sum(b2_alloc.values()), b3,
+                        float(lunar_oh_lookup.get(part, 0.0)),
+                    ))
+
                     for i, cm in rows:
                         if cm == "Lunar":
                             # B3: flat across the horizon. Holds no CM stock.
@@ -2939,6 +2946,17 @@ elif st.session_state.active_tab == "Inventory Projection":
                 # lunar_on_hand_alloc now means "Lunar stock held in this row's buckets",
                 # so the displayed allocation column matches the projection it drives.
                 balance_table["lunar_on_hand_alloc"] = lunar_bucket_total
+
+                # --- DIAGNOSTIC: where does the Lunar pool actually go, by category? ---
+                try:
+                    _dbg = pd.DataFrame(_LUNAR_DBG, columns=["part", "pool", "B1", "B2", "B3", "lunar_oh"])
+                    _pmap = dict(zip(balance_table["part"], balance_table.get("item_category", "")))
+                    _dbg["cat"] = _dbg["part"].map(_pmap).fillna("(none)")
+                    _dbg.to_csv("data/cloud/_lunar_debug.csv", index=False)
+                    log.warning("LUNAR POOL DIAG (qty):\n" +
+                                _dbg.groupby("cat")[["lunar_oh", "pool", "B1", "B2", "B3"]].sum().to_string())
+                except Exception as _e:
+                    log.warning(f"lunar diag failed: {_e}")
 
                 balance_table = pd.concat(
                     [
@@ -3050,7 +3068,7 @@ elif st.session_state.active_tab == "Inventory Projection":
             # It's baked into the cache key below so a logic change forces recomputation
             # even though _pab/_onhand/_onorder are unhashed and inventory_source_key alone
             # wouldn't change.
-            PRICING_LOGIC_VERSION = 6  # v6: past-due receipts in Lunar pool; shipped CM POs netted off
+            PRICING_LOGIC_VERSION = 7  # v7: + Lunar pool diagnostic
 
             with st.spinner("Loading inventory projection..."):
                 try:
