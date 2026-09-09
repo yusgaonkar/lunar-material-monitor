@@ -418,7 +418,11 @@ def load_asn_adjustments():
     Reads from data/cloud/asn_latest.csv (synced from Google Sheet).
     Uses process_asn_pivot() to extract current month's shipped quantities.
     """
-    from src.asn_processor import process_asn_pivot
+    try:
+        from src.asn_processor import process_asn_pivot
+    except ImportError:
+        # Fallback if module not available
+        return pd.DataFrame(columns=['product_lpn', 'asn_qty'])
 
     asn_path = 'data/cloud/asn_latest.csv'
 
@@ -426,12 +430,11 @@ def load_asn_adjustments():
         # Try to load from synced Google Sheet
         asn_agg = process_asn_pivot(asn_path)
         if len(asn_agg) > 0:
-            st.write(f"✓ Loaded ASN from Google Sheet: {len(asn_agg)} products")
             return asn_agg
     except FileNotFoundError:
-        st.warning(f"ASN file not found at {asn_path}. Sync may not have run yet.")
+        pass  # File not synced yet
     except Exception as e:
-        st.warning(f"Could not load ASN: {e}")
+        pass  # Other errors
 
     # Fallback: empty ASN (no deductions)
     return pd.DataFrame(columns=['product_lpn', 'asn_qty'])
