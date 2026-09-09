@@ -2461,6 +2461,15 @@ elif st.session_state.active_tab == "Inventory Projection":
                     unrestricted=("unrestricted_qty", "sum")
                 ).rename_axis("part").reset_index()
 
+                # Capture the part -> Lunar on-hand qty map NOW. The scenario loop below
+                # rebinds `lunar_unrestricted` to a scalar (lunar_data["unrestricted"]
+                # .values[0]), so by the time the depletion model runs it is an int, not
+                # this frame. Reading it there silently yielded an empty pool and drove
+                # every B3 balance to zero.
+                LUNAR_ONHAND_QTY = dict(
+                    zip(lunar_unrestricted["part"], lunar_unrestricted["unrestricted"])
+                )
+
                 # 2. CM orders placed against Lunar (where Lunar is the vendor)
                 # Filter: po_vendor contains "Lunar" and extract CM from source_report
                 cm_orders_lunar = _onorder[_onorder["po_vendor"].str.contains("Lunar", case=False, na=False)].copy()
@@ -2822,10 +2831,10 @@ elif st.session_state.active_tab == "Inventory Projection":
                             ["cm_extracted", "lunar_lpn"],
                         )
 
-                # Safe dict creation from lunar_unrestricted DataFrame
-                lunar_oh_lookup = {}
-                if isinstance(lunar_unrestricted, pd.DataFrame) and len(lunar_unrestricted) > 0:
-                    lunar_oh_lookup = dict(zip(lunar_unrestricted["part"], lunar_unrestricted["unrestricted"]))
+                # Built before the scenario loop shadowed `lunar_unrestricted` (see above).
+                lunar_oh_lookup = LUNAR_ONHAND_QTY
+                if not lunar_oh_lookup:
+                    log.error("Lunar on-hand lookup is EMPTY - every Lunar balance will be zero")
 
                 cm_arr = balance_table["cm"].tolist()
                 part_arr = balance_table["part"].tolist()
@@ -3068,7 +3077,7 @@ elif st.session_state.active_tab == "Inventory Projection":
             # It's baked into the cache key below so a logic change forces recomputation
             # even though _pab/_onhand/_onorder are unhashed and inventory_source_key alone
             # wouldn't change.
-            PRICING_LOGIC_VERSION = 7  # v7: + Lunar pool diagnostic
+            PRICING_LOGIC_VERSION = 8  # v8: fix shadowed lunar_unrestricted -> Lunar pool was empty
 
             with st.spinner("Loading inventory projection..."):
                 try:
