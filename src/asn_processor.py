@@ -1,15 +1,74 @@
 """Process ASN (Advanced Shipping Notice) data from CM exports.
 
-Aggregates shipments by product and date range.
+Handles two formats:
+1. Pivot table (monthly grid) from Google Sheet
+2. Legacy raw ASN files from CMs
 """
 
 import pandas as pd
 from datetime import datetime
 
 
+def process_asn_pivot(filepath: str) -> pd.DataFrame:
+    """
+    Process ASN pivot table from Google Sheet (monthly grid format).
+
+    Format:
+      LPN | Description | Sep-26 | Oct-26 | Nov-26 | ...
+      90-06948B | Non Compliant BB | 10 | 5 | ...
+
+    Extracts current month's column and returns product LPN + shipped qty.
+
+    Args:
+        filepath: Path to asn_latest.csv (from Google Sheet sync)
+
+    Returns:
+        DataFrame with columns: [product_lpn, asn_qty] for current month
+    """
+    df = pd.read_csv(filepath)
+
+    # Columns: LPN, Description, then month columns (Sep-26, Oct-26, etc.)
+    if 'LPN' not in df.columns or 'Description' not in df.columns:
+        raise ValueError("ASN sheet must have 'LPN' and 'Description' columns")
+
+    # Find month columns (all except LPN and Description)
+    month_cols = [c for c in df.columns if c not in ['LPN', 'Description']]
+
+    if not month_cols:
+        return pd.DataFrame(columns=['product_lpn', 'asn_qty'])
+
+    # Get current month in format "Sep-26" (MMM-YY)
+    today = datetime.now()
+    current_month = today.strftime('%b-%y')  # e.g., "Sep-26"
+
+    # Try to find exact month column match, case-insensitive
+    current_col = None
+    for col in month_cols:
+        if col.lower() == current_month.lower():
+            current_col = col
+            break
+
+    if current_col is None:
+        # If exact match not found, use the first month column as fallback
+        print(f"Warning: Current month '{current_month}' not found. Available: {month_cols[:5]}")
+        current_col = month_cols[0]
+
+    # Extract LPN and current month's shipped qty
+    result = df[['LPN', current_col]].copy()
+    result.columns = ['product_lpn', 'asn_qty']
+
+    # Fill NaN with 0
+    result['asn_qty'] = result['asn_qty'].fillna(0).astype(int)
+
+    # Remove zero rows for clarity
+    result = result[result['asn_qty'] > 0].reset_index(drop=True)
+
+    return result
+
+
 def process_asn_file(filepath: str, start_date: str, end_date: str, cm: str = 'unified') -> pd.DataFrame:
     """
-    Process ASN file and aggregate by product.
+    Process legacy ASN file and aggregate by product.
 
     Args:
         filepath: Path to ASN CSV

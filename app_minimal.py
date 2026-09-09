@@ -413,16 +413,28 @@ def load_cost_frames():
 # --- ASN adjustment ---
 @st.cache_data(ttl=3600)
 def load_asn_adjustments():
-    """Load ASN adjustments for build plan.
+    """Load ASN adjustments for build plan from Google Sheet.
 
-    For 2026-09-03 snapshot: only 90-07675A has 288 units shipped.
+    Reads from data/cloud/asn_latest.csv (synced from Google Sheet).
+    Uses process_asn_pivot() to extract current month's shipped quantities.
     """
-    # Hardcoded for 2026-09-03 snapshot: only 90-07675A = 288 units
-    asn_agg = pd.DataFrame({
-        'product_lpn': ['90-07675A'],
-        'asn_qty': [288]
-    })
-    return asn_agg
+    from src.asn_processor import process_asn_pivot
+
+    asn_path = 'data/cloud/asn_latest.csv'
+
+    try:
+        # Try to load from synced Google Sheet
+        asn_agg = process_asn_pivot(asn_path)
+        if len(asn_agg) > 0:
+            st.write(f"✓ Loaded ASN from Google Sheet: {len(asn_agg)} products")
+            return asn_agg
+    except FileNotFoundError:
+        st.warning(f"ASN file not found at {asn_path}. Sync may not have run yet.")
+    except Exception as e:
+        st.warning(f"Could not load ASN: {e}")
+
+    # Fallback: empty ASN (no deductions)
+    return pd.DataFrame(columns=['product_lpn', 'asn_qty'])
 
 
 def apply_asn_to_build_plan(build_plan_df: pd.DataFrame, asn_df: pd.DataFrame, bom: pd.DataFrame = None, snapshot_date: pd.Timestamp = None) -> pd.DataFrame:
@@ -571,7 +583,7 @@ asn_data = load_asn_adjustments()
 # Extract snapshot date dynamically from data files
 # The "Updated at" column shows the snapshot date (format: MM-DD-YYYY)
 # Use the first file that has the column to extract date
-snapshot_date = pd.Timestamp('2026-09-03')  # Default
+snapshot_date = pd.Timestamp('2026-09-09')  # Fallback (today)
 for file_key in ['bom_stitched.csv', 'onhand.csv', 'onorder.csv']:
     if file_key in frames and 'Updated at' in frames[file_key].columns:
         try:

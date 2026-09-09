@@ -33,8 +33,17 @@ log = logging.getLogger(__name__)
 # Detect environment: Streamlit Cloud vs localhost
 # Streamlit Cloud sets STREAMLIT environment variable
 is_cloud = 'STREAMLIT' in os.environ or os.getenv('STREAMLIT_SERVER_HEADLESS') == 'true'
-data_folder = "cloud" if is_cloud else ""
-DATA = Path(__file__).resolve().parent.parent / "data" / data_folder if is_cloud else Path(__file__).resolve().parent.parent / "data"
+
+# Primary data path: data/cloud (synced from Google Sheets)
+DATA = Path(__file__).resolve().parent.parent / "data" / "cloud"
+DATA_FALLBACK = Path(__file__).resolve().parent.parent / "data"  # For non-synced files like build_plan
+
+if not DATA.exists():
+    raise FileNotFoundError(
+        f"Data folder not found: {DATA}\n"
+        "Run: python scripts/sync_gsheets.py\n"
+        "Or manually sync Google Sheets and save to data/cloud/"
+    )
 
 # Debug: log which environment we're running in
 log.info(f"Running in {'Cloud' if is_cloud else 'localhost'} mode. Data path: {DATA}")
@@ -226,8 +235,11 @@ def _read_hand(name: str) -> pd.DataFrame:
 
     The glob was also too loose — build_plan_*.csv matched build_plan_with_asn.csv,
     which is not a dated variant at all.
+
+    Hand-maintained files (build_plan, plan_to_date, in_transit, exclusions) live in
+    data/ not data/cloud (they are not synced from Google Sheets).
     """
-    path = DATA / name
+    path = DATA_FALLBACK / name
     spec = HAND_COLS[name]
     comments = {
         i for i, ln in enumerate(path.read_text().splitlines())
