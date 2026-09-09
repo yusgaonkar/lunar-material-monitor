@@ -2783,7 +2783,10 @@ elif st.session_state.active_tab == "Inventory Projection":
                 month_periods = [pd.Period(m, freq="M") for m in months]
 
                 # --- month-end PAB: drives CM depletion and the shortage B2 covers ---
-                _pab_eom = _pab.loc[_pab.groupby(["cm", "part", "month"])["period_date"].idxmax()]
+                _pab_with_month = _pab.copy()
+                _pab_with_month["period_date"] = pd.to_datetime(_pab_with_month["period"])
+                _pab_with_month["month"] = _pab_with_month["period_date"].dt.to_period("M")
+                _pab_eom = _pab_with_month.loc[_pab_with_month.groupby(["cm", "part", "month"])["period_date"].idxmax()]
                 cm_endpab = dict(
                     zip(zip(_pab_eom["cm"], _pab_eom["part"], _pab_eom["month"]), _pab_eom["pab"])
                 )
