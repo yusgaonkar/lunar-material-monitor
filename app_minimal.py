@@ -2805,6 +2805,23 @@ elif st.session_state.active_tab == "Inventory Projection":
 
                 lunar_receipt_lookup = _sum_lookup(lunar_oo_dated, ["lunar_lpn", "eta_month"])
                 cm_po_lookup = _sum_lookup(cm_orders_lunar_dated, ["cm_extracted", "lunar_lpn", "eta_month"])
+
+                # Past-due supply/commitments: anything with an ETA before the window is
+                # available (or already gone) as of period 1, not absent. Dropping these
+                # silently deleted most of Lunar's $42M on-order book from the pool.
+                first_month = month_periods[0] if month_periods else None
+                past_lunar_lookup, past_cm_po_lookup = {}, {}
+                if first_month is not None:
+                    if lunar_oo_dated is not None and len(lunar_oo_dated) > 0:
+                        past_lunar_lookup = _sum_lookup(
+                            lunar_oo_dated[lunar_oo_dated["eta_month"] < first_month], ["lunar_lpn"]
+                        )
+                    if cm_orders_lunar_dated is not None and len(cm_orders_lunar_dated) > 0:
+                        past_cm_po_lookup = _sum_lookup(
+                            cm_orders_lunar_dated[cm_orders_lunar_dated["eta_month"] < first_month],
+                            ["cm_extracted", "lunar_lpn"],
+                        )
+
                 # Safe dict creation from lunar_unrestricted DataFrame
                 lunar_oh_lookup = {}
                 if isinstance(lunar_unrestricted, pd.DataFrame) and len(lunar_unrestricted) > 0:
@@ -2824,10 +2841,18 @@ elif st.session_state.active_tab == "Inventory Projection":
                 for part, rows in rows_by_part.items():
                     cms = [cm for _, cm in rows if cm != "Lunar"]
 
-                    # Lunar pool: on-hand + all dated receipts landing in the window
+                    # Lunar pool: on-hand + past-due receipts (available now) + dated
+                    # receipts landing inside the window.
                     lunar_pool = float(lunar_oh_lookup.get(part, 0.0))
+                    lunar_pool += float(past_lunar_lookup.get(part, 0.0))
                     for mp in month_periods:
                         lunar_pool += float(lunar_receipt_lookup.get((part, mp), 0.0))
+
+                    # Past-due CM POs have already shipped — those units have left Lunar's
+                    # book, so they reduce the pool rather than sitting in a bucket.
+                    for cm in cms:
+                        lunar_pool -= float(past_cm_po_lookup.get((cm, part), 0.0))
+                    lunar_pool = max(0.0, lunar_pool)
 
                     # ---- B1: Lunar stock committed against CM -> Lunar POs ----
                     b1_sched = {
