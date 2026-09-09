@@ -2783,9 +2783,7 @@ elif st.session_state.active_tab == "Inventory Projection":
                 month_periods = [pd.Period(m, freq="M") for m in months]
 
                 # --- month-end PAB: drives CM depletion and the shortage B2 covers ---
-                pab["period_date"] = pd.to_datetime(pab["period"])
-                pab["month"] = pab["period_date"].dt.to_period("M")
-                _pab_eom = pab.loc[pab.groupby(["cm", "part", "month"])["period_date"].idxmax()]
+                _pab_eom = _pab.loc[_pab.groupby(["cm", "part", "month"])["period_date"].idxmax()]
                 cm_endpab = dict(
                     zip(zip(_pab_eom["cm"], _pab_eom["part"], _pab_eom["month"]), _pab_eom["pab"])
                 )
@@ -2804,7 +2802,10 @@ elif st.session_state.active_tab == "Inventory Projection":
 
                 lunar_receipt_lookup = _sum_lookup(lunar_oo_dated, ["lunar_lpn", "eta_month"])
                 cm_po_lookup = _sum_lookup(cm_orders_lunar_dated, ["cm_extracted", "lunar_lpn", "eta_month"])
-                lunar_oh_lookup = dict(zip(lunar_unrestricted["part"], lunar_unrestricted["unrestricted"]))
+                # Safe dict creation from lunar_unrestricted DataFrame
+                lunar_oh_lookup = {}
+                if isinstance(lunar_unrestricted, pd.DataFrame) and len(lunar_unrestricted) > 0:
+                    lunar_oh_lookup = dict(zip(lunar_unrestricted["part"], lunar_unrestricted["unrestricted"]))
 
                 cm_arr = balance_table["cm"].tolist()
                 part_arr = balance_table["part"].tolist()
