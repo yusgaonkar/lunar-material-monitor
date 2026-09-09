@@ -2751,111 +2751,170 @@ elif st.session_state.active_tab == "Inventory Projection":
                 lunar_alloc_df = pd.DataFrame(lunar_allocated_rows)
                 balance_table = balance_table.merge(lunar_alloc_df, on=["cm", "part"], how="left")
 
-                # NOW calculate lunar depletion using the allocated amounts
-                # Extract month columns from balance_table
+                # ============================================================
+                # INVENTORY DEPLETION MODEL
+                # ============================================================
+                # CM Depletion (the plain month columns, already month-end PAB
+                #   from the engine = opening(raw + WIP) + receipts - BOM demand).
+                #   Only fix here: a (cm, part) with inventory but NO demand has no
+                #   PAB rows, left-joins to NaN, and previously fell to 0 - i.e. real
+                #   CM stock silently vanished from the projection. Those now hold
+                #   flat at their opening balance.
+                #
+                # Lunar Depletion - Lunar's book split into three buckets per part:
+                #   B1  committed against CM->Lunar POs  -> row cm=<CM>,  depletes on PO ETA
+                #   B2  covering residual CM shortage    -> row cm=<CM>,  depletes as the
+                #                                           shortage actually lands
+                #   B3  free / uncommitted remainder     -> row cm="Lunar", stays flat
+                #   Lunar chart = B1 + B2 + B3.
+                #
+                # Lunar on-order is phased in by ETA month (you cannot ship a CM
+                # material that has not arrived). Allocation is B1 first, then B2,
+                # pro-rata within a bucket when the pool cannot cover it.
+                #
+                # Replaces a model that depleted against *open POs only*. Open POs
+                # are a rolling ~4-month book (4.1M units Jan-27 -> ~0 by May-27), so
+                # once it ran dry the subtrahend stopped growing and every line went
+                # flat by construction - recognising <10% of real consumption while
+                # the build plan ramps 4.7x. Demand now drives depletion.
+                # ============================================================
                 static_cols_exclude = ["cm", "part", "description", "item_category", "cm_on_hand", "cm_on_order", "cm_unit_price", "cm_unit_price_source", "lunar_on_hand_alloc", "lunar_on_order_alloc", "lunar_unit_price", "obsolescence_state"]
                 months = sorted([col for col in balance_table.columns if col not in static_cols_exclude and not col.startswith("Lunar_")])
+                month_periods = [pd.Period(m, freq="M") for m in months]
 
-                # Pre-compute PAB minimums by (cm, part, month) for efficiency
-                # This avoids repeated filtering in the loop
+                # --- month-end PAB: drives CM depletion and the shortage B2 covers ---
                 pab["period_date"] = pd.to_datetime(pab["period"])
                 pab["month"] = pab["period_date"].dt.to_period("M")
-                pab_min_by_month = (
-                    pab.groupby(["cm", "part", "month"])["pab"].min().reset_index()
+                _pab_eom = pab.loc[pab.groupby(["cm", "part", "month"])["period_date"].idxmax()]
+                cm_endpab = dict(
+                    zip(zip(_pab_eom["cm"], _pab_eom["part"], _pab_eom["month"]), _pab_eom["pab"])
                 )
-                pab_min_by_month.columns = ["cm", "part", "month", "min_pab"]
 
-                # Calculate Lunar depletion balances month-by-month for each (cm, part)
-                # For CMs: Balance = allocated_to_cm - cumulative_consumption_by_cm
-                # For Lunar: Balance = allocated_to_lunar + on_order - cumulative_total_consumption
-                #
-                # PERF: this was a nested iterrows() x months loop (~136k cells), each cell
-                # doing 2-3 full boolean-mask scans AND a .loc scalar write into a 38-column
-                # mixed-dtype frame. That was the entire 391s Inventory Projection render.
-                # Now: every lookup is precomputed into a dict once, the loop is pure Python
-                # arithmetic, and the month columns are written as whole columns at the end.
-                # Arithmetic is identical to the version above it replaced.
-                month_periods = [pd.Period(m, freq="M") for m in months]
-                first_month = month_periods[0] if month_periods else None
+                # Opening (raw + WIP) so no-demand parts hold flat instead of vanishing
+                opening_lookup = {}
+                _op = result.get("opening")
+                if _op is not None and len(_op) > 0:
+                    opening_lookup = dict(zip(zip(_op["cm"], _op["part"]), _op["opening"]))
 
                 def _sum_lookup(df, keys):
-                    """groupby(keys)['quantity_open'].sum() as a plain dict (tuple keys if len(keys)>1)."""
+                    """groupby(keys)['quantity_open'].sum() as a plain dict."""
                     if df is None or len(df) == 0:
                         return {}
                     return df.groupby(keys)["quantity_open"].sum().to_dict()
 
                 lunar_receipt_lookup = _sum_lookup(lunar_oo_dated, ["lunar_lpn", "eta_month"])
-                cms_consumption_lookup = _sum_lookup(cm_orders_lunar_dated, ["lunar_lpn", "eta_month"])
                 cm_po_lookup = _sum_lookup(cm_orders_lunar_dated, ["cm_extracted", "lunar_lpn", "eta_month"])
-
-                # Receipts / CM consumption that already landed before the projection window
-                if first_month is not None and len(lunar_oo_dated) > 0:
-                    past_lunar_lookup = _sum_lookup(
-                        lunar_oo_dated[lunar_oo_dated["eta_month"] < first_month], ["lunar_lpn"]
-                    )
-                else:
-                    past_lunar_lookup = {}
-                if first_month is not None and len(cm_orders_lunar_dated) > 0:
-                    past_cms_lookup = _sum_lookup(
-                        cm_orders_lunar_dated[cm_orders_lunar_dated["eta_month"] < first_month], ["lunar_lpn"]
-                    )
-                else:
-                    past_cms_lookup = {}
-
-                # (cm, part, month) -> min PAB. The original took min over all months <=
-                # current, which is reproduced below by carrying a running minimum.
-                pab_min_lookup = dict(
-                    zip(
-                        zip(pab_min_by_month["cm"], pab_min_by_month["part"], pab_min_by_month["month"]),
-                        pab_min_by_month["min_pab"],
-                    )
-                )
+                lunar_oh_lookup = dict(zip(lunar_unrestricted["part"], lunar_unrestricted["unrestricted"]))
 
                 cm_arr = balance_table["cm"].tolist()
                 part_arr = balance_table["part"].tolist()
-                alloc_arr = balance_table["lunar_on_hand_alloc"].fillna(0).tolist()
                 n_rows = len(balance_table)
-                balance_cols = {m: [0.0] * n_rows for m in months}
+                cm_cols = {m: [None] * n_rows for m in months}  # None = keep existing PAB value
+                lunar_cols = {m: [0.0] * n_rows for m in months}
+                lunar_bucket_total = [0.0] * n_rows
 
-                for i in range(n_rows):
-                    cm = cm_arr[i]
-                    part = part_arr[i]
-                    lunar_on_hand_alloc = alloc_arr[i]
-                    is_lunar = cm == "Lunar"
+                rows_by_part = {}
+                for i, (cm, part) in enumerate(zip(cm_arr, part_arr)):
+                    rows_by_part.setdefault(part, []).append((i, cm))
 
-                    cumulative_lunar_received = past_lunar_lookup.get(part, 0) if is_lunar else 0
-                    cumulative_all_cms_po = past_cms_lookup.get(part, 0) if is_lunar else 0
-                    cumulative_po_received = 0
-                    running_min_pab = None
+                for part, rows in rows_by_part.items():
+                    cms = [cm for _, cm in rows if cm != "Lunar"]
 
-                    for month, month_period in zip(months, month_periods):
-                        if is_lunar:
-                            # Balance = allocated - total_consumed_by_cms + lunar_replenishment
-                            cumulative_lunar_received += lunar_receipt_lookup.get((part, month_period), 0)
-                            cumulative_all_cms_po += cms_consumption_lookup.get((part, month_period), 0)
-                            balance = lunar_on_hand_alloc + cumulative_lunar_received - cumulative_all_cms_po
-                        else:
-                            # Balance = allocated - (PO received + shortage covered)
-                            cumulative_po_received += cm_po_lookup.get((cm, part, month_period), 0)
+                    # Lunar pool: on-hand + all dated receipts landing in the window
+                    lunar_pool = float(lunar_oh_lookup.get(part, 0.0))
+                    for mp in month_periods:
+                        lunar_pool += float(lunar_receipt_lookup.get((part, mp), 0.0))
 
-                            # Shortage coverage (worst PAB up to and including this month)
-                            v = pab_min_lookup.get((cm, part, month_period))
-                            if v is not None and pd.notna(v) and (running_min_pab is None or v < running_min_pab):
-                                running_min_pab = v
-                            cumulative_shortage_covered = (
-                                abs(running_min_pab)
-                                if running_min_pab is not None and running_min_pab < 0
-                                else 0
-                            )
+                    # ---- B1: Lunar stock committed against CM -> Lunar POs ----
+                    b1_sched = {
+                        cm: {mp: float(cm_po_lookup.get((cm, part, mp), 0.0)) for mp in month_periods}
+                        for cm in cms
+                    }
+                    b1_want = {cm: sum(v.values()) for cm, v in b1_sched.items()}
+                    b1_total = sum(b1_want.values())
 
-                            balance = lunar_on_hand_alloc - cumulative_po_received - cumulative_shortage_covered
+                    avail = lunar_pool
+                    if b1_total <= avail:
+                        b1_alloc = dict(b1_want)
+                        avail -= b1_total
+                    else:
+                        sc = (avail / b1_total) if b1_total > 0 else 0.0
+                        b1_alloc = {cm: b1_want[cm] * sc for cm in cms}
+                        avail = 0.0
 
-                        balance_cols[month][i] = balance if balance > 0 else 0  # Floor at 0
+                    # ---- B2: Lunar stock covering the CM's residual shortage ----
+                    # Per-month increment of the running worst shortage, so the draw
+                    # on Lunar happens in the month the shortage actually appears.
+                    short_inc, b2_want = {}, {}
+                    for cm in cms:
+                        worst, inc = 0.0, {}
+                        for mp in month_periods:
+                            v = cm_endpab.get((cm, part, mp))
+                            sh = -float(v) if (v is not None and pd.notna(v) and v < 0) else 0.0
+                            inc[mp] = max(0.0, sh - worst)
+                            worst = max(worst, sh)
+                        short_inc[cm] = inc
+                        b2_want[cm] = worst
+                    b2_total = sum(b2_want.values())
+
+                    if b2_total <= avail:
+                        b2_alloc = dict(b2_want)
+                        avail -= b2_total
+                    else:
+                        sc = (avail / b2_total) if b2_total > 0 else 0.0
+                        b2_alloc = {cm: b2_want[cm] * sc for cm in cms}
+                        avail = 0.0
+
+                    b3 = avail  # free remainder — stays on Lunar's book, flat
+
+                    for i, cm in rows:
+                        if cm == "Lunar":
+                            # B3: flat across the horizon. Holds no CM stock.
+                            for m in months:
+                                lunar_cols[m][i] = b3
+                                cm_cols[m][i] = 0.0
+                            lunar_bucket_total[i] = b3
+                            continue
+
+                        # ---- CM depletion: month-end PAB, floored; flat if no demand ----
+                        has_demand = any((cm, part, mp) in cm_endpab for mp in month_periods)
+                        if not has_demand:
+                            flat = max(0.0, float(opening_lookup.get((cm, part), 0.0)))
+                            for m in months:
+                                cm_cols[m][i] = flat
+                        # else: leave the existing signed PAB month columns untouched —
+                        # the shortage report and drill-down read them as signed.
+
+                        # ---- Lunar depletion: B1 + B2 remaining ----
+                        b1_rem = b1_alloc.get(cm, 0.0)
+                        b2_rem = b2_alloc.get(cm, 0.0)
+                        b1_sc = (b1_alloc.get(cm, 0.0) / b1_want[cm]) if b1_want.get(cm, 0) > 0 else 0.0
+                        b2_sc = (b2_alloc.get(cm, 0.0) / b2_want[cm]) if b2_want.get(cm, 0) > 0 else 0.0
+                        lunar_bucket_total[i] = b1_alloc.get(cm, 0.0) + b2_alloc.get(cm, 0.0)
+                        for m, mp in zip(months, month_periods):
+                            b1_rem -= b1_sched[cm].get(mp, 0.0) * b1_sc
+                            b2_rem -= short_inc[cm].get(mp, 0.0) * b2_sc
+                            lunar_cols[m][i] = max(0.0, b1_rem) + max(0.0, b2_rem)
+
+                balance_table = balance_table.reset_index(drop=True)
+
+                # Write back only the CM cells we overrode (no-demand parts held flat)
+                for m in months:
+                    col = cm_cols[m]
+                    if any(v is not None for v in col):
+                        base = balance_table[m].tolist()
+                        balance_table[m] = [
+                            (base[i] if col[i] is None else col[i]) for i in range(n_rows)
+                        ]
+
+                # lunar_on_hand_alloc now means "Lunar stock held in this row's buckets",
+                # so the displayed allocation column matches the projection it drives.
+                balance_table["lunar_on_hand_alloc"] = lunar_bucket_total
 
                 balance_table = pd.concat(
                     [
-                        balance_table.reset_index(drop=True),
-                        pd.DataFrame({f"Lunar_balance_{m}": v for m, v in balance_cols.items()}),
+                        balance_table,
+                        pd.DataFrame({f"Lunar_balance_{m}": v for m, v in lunar_cols.items()}),
                     ],
                     axis=1,
                 )
@@ -2962,7 +3021,7 @@ elif st.session_state.active_tab == "Inventory Projection":
             # It's baked into the cache key below so a logic change forces recomputation
             # even though _pab/_onhand/_onorder are unhashed and inventory_source_key alone
             # wouldn't change.
-            PRICING_LOGIC_VERSION = 4
+            PRICING_LOGIC_VERSION = 5  # v5: demand-driven depletion + 3-bucket Lunar model
 
             with st.spinner("Loading inventory projection..."):
                 try:
