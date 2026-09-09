@@ -809,25 +809,29 @@ filter_cache = _build_filter_options(
 # Main filters on left + Checkboxes on extreme right
 col_left, col_right = st.columns([5.5, 1.5], gap="large")
 
-# LEFT COLUMN: CM, Products, Part Number, Planning Horizon
+# LEFT COLUMN: Filters (CM, Products, Part Number, Category, Generation) with Planning Horizon below
 with col_left:
-    filter_cols = st.columns([1, 1.5, 1.5, 1.5, 1.3, 1.5])
+    # Top row filters - wider columns
+    filter_cols = st.columns([1, 1.8, 1.8, 1.8, 1.8])
 
     cm_filter = filter_cols[0].selectbox("CM", filter_cache["cms"])
     prod_filter = filter_cols[1].multiselect("Products", filter_cache["products"])
     part_filter = filter_cols[2].multiselect("Part Number", filter_cache["parts"])
     category_filter = filter_cols[3].multiselect("Category", filter_cache["categories"])
 
-    weeks_window = filter_cols[4].slider(
-        "Planning Horizon (weeks)",
-        min_value=1,
-        max_value=cfg.horizon_weeks,
-        value=12,
-        step=1
-    )
-
     generation_filter_options = ["Active in Both", "Gen 1 Only", "Gen 2 Only", "Obsolete"]
-    generation_filter = filter_cols[5].multiselect("Product Generation", generation_filter_options)
+    generation_filter = filter_cols[4].multiselect("Product Generation", generation_filter_options)
+
+    # Planning Horizon - separate row, left-indented
+    horizon_cols = st.columns([0.5, 2.5])  # 0.5 for indent, 2.5 for the slider
+    with horizon_cols[1]:
+        weeks_window = st.slider(
+            "Planning Horizon (weeks)",
+            min_value=1,
+            max_value=cfg.horizon_weeks,
+            value=12,
+            step=1
+        )
 
 _record_timing("Filters built")
 
@@ -3245,7 +3249,7 @@ elif st.session_state.active_tab == "Inventory Projection":
                                 )
 
                                 if lunar_view == "Chart":
-                                    st.plotly_chart(fig_lunar, use_container_width=True)
+                                    st.plotly_chart(fig_lunar, use_container_width=True, key="lunar_inventory_chart")
                                 else:
                                     st.dataframe(lunar_df, use_container_width=True)
 
@@ -3288,7 +3292,7 @@ elif st.session_state.active_tab == "Inventory Projection":
                                 )
 
                                 if cm_view == "Chart":
-                                    st.plotly_chart(fig_cm, use_container_width=True)
+                                    st.plotly_chart(fig_cm, use_container_width=True, key="cm_inventory_chart")
                                 else:
                                     st.dataframe(cm_df, use_container_width=True)
                         else:
