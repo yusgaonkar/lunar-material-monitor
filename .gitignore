@@ -7,14 +7,11 @@ __pycache__/
 
 # Source extracts — confidential (supplier pricing, BOMs, build plans).
 # Never commit these — EXCEPT data/cloud/* for Streamlit Cloud deployment.
-# Ignore data/ FIRST, then un-ignore specific files (order matters!)
-data/
-
-# Un-ignore data/cloud/ for synced Google Sheets
+# Ignore everything in data/ EXCEPT what we explicitly allow
+data/*
 !data/cloud/
+data/cloud/*
 !data/cloud/*.csv
-
-# Un-ignore hand-maintained files
 !data/build_plan.csv
 !data/plan_to_date.csv
 !data/in_transit.csv
