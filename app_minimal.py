@@ -628,7 +628,9 @@ def apply_data_overrides(frames: dict) -> dict:
 
     changes, detailed_changes, failures = [], [], []
     bulk_override_count, bulk_override_units, bulk_override_cost = 0, 0, 0
-    bom_changes_by_product = {}  # Track BOM changes by product for consolidation
+    bom_makebuy_count = 0  # Count parts with makebuy changes
+    bom_sourcing_count = 0  # Count parts with sourcing_flat_qty changes
+    bom_key_products = set()  # Track which products had changes (for summary)
 
     for _, row in ovr.iterrows():
         part = str(row["part_lpn"]).strip()
@@ -705,11 +707,9 @@ def apply_data_overrides(frames: dict) -> dict:
                     continue
                 was = sorted(set(bom.loc[mask, "makebuy"].dropna().astype(str).unique()))
                 bom.loc[mask, "makebuy"] = str(ovalue)
-                # Track this change by product for consolidated display
-                if product not in bom_changes_by_product:
-                    bom_changes_by_product[product] = {"makebuy": 0, "sourcing_flat_qty": 0}
-                bom_changes_by_product[product]["makebuy"] += 1
-                # Still add to changes for logging
+                # Track for BOM summary (not detailed display)
+                bom_makebuy_count += 1
+                bom_key_products.add(part)  # Store part LPN as key product
                 changes.append(f"{part} (in {product}) makebuy -> {ovalue}")
 
             elif otype == "sourcing_flat_qty":
@@ -729,11 +729,9 @@ def apply_data_overrides(frames: dict) -> dict:
                     continue
                 before = pd.to_numeric(bom.loc[mask, "Sourcing Flat Qty"], errors="coerce").sum()
                 bom.loc[mask, "Sourcing Flat Qty"] = float(ovalue)
-                # Track this change by product for consolidated display
-                if product not in bom_changes_by_product:
-                    bom_changes_by_product[product] = {"makebuy": 0, "sourcing_flat_qty": 0}
-                bom_changes_by_product[product]["sourcing_flat_qty"] += 1
-                # Still add to changes for logging
+                # Track for BOM summary (not detailed display)
+                bom_sourcing_count += 1
+                bom_key_products.add(part)  # Store part LPN as key product
                 changes.append(f"{part} (in {product}) sourcing_flat_qty {before:,.0f} -> {float(ovalue):,.0f}")
 
             else:
@@ -742,50 +740,51 @@ def apply_data_overrides(frames: dict) -> dict:
         except Exception as e:
             failures.append(f"{part} ({otype}): {e}")
 
-    # Build product descriptions for consolidated BOM changes
-    bom_desc_map = {}
-    if "stitch_list.csv" in frames:
-        sl = frames["stitch_list.csv"]
-        if "Parent Product LPN" in sl.columns and "Description" in sl.columns:
-            for _, r in sl.iterrows():
-                bom_desc_map[str(r["Parent Product LPN"]).strip()] = str(r["Description"]).strip()
+    # Build part descriptions for BOM summary
+    part_desc_map = {}
+    if oh is not None and "lpn" in oh.columns and "description" in oh.columns:
+        for _, r in oh[["lpn", "description"]].drop_duplicates().iterrows():
+            part_desc_map[str(r["lpn"]).strip()] = str(r["description"]).strip()
 
     # Render with expander
-    if changes or bulk_override_count > 0 or bom_changes_by_product:
+    if changes or bulk_override_count > 0 or bom_makebuy_count > 0 or bom_sourcing_count > 0:
         with st.expander("**✓ Data overrides applied**", expanded=False):
             if bulk_override_count > 0:
                 st.success(
-                    f"**Corrected Lunar on-order overstatement:** {bulk_override_count} parts, "
-                    f"{bulk_override_units:,.0f} units, ~${bulk_override_cost/1e6:.1f}m "
-                    f"(PO line duplication in NetSuite/LunarDB — temporary override)"
+                    f"**{bulk_override_count} parts** Lunar on order updated due to on order PO line duplication in LunarDB"
                 )
                 log.info(
                     f"bulk override applied: {bulk_override_count} parts, "
                     f"{bulk_override_units:,.0f} units, ~${bulk_override_cost/1e6:.1f}m"
                 )
 
-            # Display consolidated BOM changes by product
-            if bom_changes_by_product:
-                bom_summary = []
-                for prod_lpn in sorted(bom_changes_by_product.keys()):
-                    changes_info = bom_changes_by_product[prod_lpn]
-                    prod_desc = bom_desc_map.get(prod_lpn, "(no description)")
-                    # Format as: "10-07781A LFP Module, Cell Array, Gen 2 switched from Buy to Make"
-                    if changes_info["makebuy"] > 0 and changes_info["sourcing_flat_qty"] > 0:
-                        summary = f"`{prod_lpn}` {prod_desc} — make/buy classification and sourcing corrected ({changes_info['makebuy']} + {changes_info['sourcing_flat_qty']} parts updated)"
-                    elif changes_info["makebuy"] > 0:
-                        summary = f"`{prod_lpn}` {prod_desc} — make/buy classification corrected ({changes_info['makebuy']} parts)"
-                    else:
-                        summary = f"`{prod_lpn}` {prod_desc} — sourcing quantities corrected ({changes_info['sourcing_flat_qty']} parts)"
-                    bom_summary.append(summary)
-                    log.info(f"BOM override in {prod_lpn}: {changes_info}")
-
-                st.success("**Product BOM corrections:**\n\n" + "\n".join(f"- {s}" for s in bom_summary))
-
-            # Display individual non-BOM changes
+            # Display individual on_order and item_category changes (detailed)
             for c in detailed_changes:
                 st.success(f"- {c}")
                 log.info(f"override applied: {c}")
+
+            # Display BOM changes as a single summary line
+            if bom_makebuy_count > 0 or bom_sourcing_count > 0:
+                # Format key products with descriptions for the summary
+                key_parts_desc = []
+                for part_lpn in sorted(bom_key_products):
+                    desc = part_desc_map.get(part_lpn, "")
+                    if desc:
+                        key_parts_desc.append(f"`{part_lpn}` ({desc})")
+                    else:
+                        key_parts_desc.append(f"`{part_lpn}`")
+
+                total_bom_parts = bom_makebuy_count + bom_sourcing_count
+                if len(key_parts_desc) > 0:
+                    key_parts_str = " and ".join(key_parts_desc[:2])  # Show first 2 key parts
+                    if len(key_parts_desc) > 2:
+                        key_parts_str += f" (and {len(key_parts_desc) - 2} more)"
+                    bom_summary = f"**{total_bom_parts} parts** sourcing updated due to {key_parts_str} switch from Buy to Make"
+                else:
+                    bom_summary = f"**{total_bom_parts} parts** sourcing updated (BOM make/buy classification and sourcing flat qty corrections)"
+
+                st.success(f"- {bom_summary}")
+                log.info(f"BOM overrides applied: {total_bom_parts} parts ({bom_makebuy_count} makebuy, {bom_sourcing_count} sourcing_flat_qty)")
 
     return frames
 
