@@ -628,6 +628,7 @@ def apply_data_overrides(frames: dict) -> dict:
 
     changes, detailed_changes, failures = [], [], []
     bulk_override_count, bulk_override_units, bulk_override_cost = 0, 0, 0
+    bom_changes_by_product = {}  # Track BOM changes by product for consolidation
 
     for _, row in ovr.iterrows():
         part = str(row["part_lpn"]).strip()
@@ -704,11 +705,12 @@ def apply_data_overrides(frames: dict) -> dict:
                     continue
                 was = sorted(set(bom.loc[mask, "makebuy"].dropna().astype(str).unique()))
                 bom.loc[mask, "makebuy"] = str(ovalue)
-                desc = desc_map.get(part, "")
-                desc_str = f" — {desc}" if desc else ""
-                change_str = f"`{part}` (in {product}) makebuy -> {ovalue} in bom_stitched ({n} rows, was {'/'.join(was)}){desc_str}"
-                detailed_changes.append(change_str)
-                changes.append(change_str)
+                # Track this change by product for consolidated display
+                if product not in bom_changes_by_product:
+                    bom_changes_by_product[product] = {"makebuy": 0, "sourcing_flat_qty": 0}
+                bom_changes_by_product[product]["makebuy"] += 1
+                # Still add to changes for logging
+                changes.append(f"{part} (in {product}) makebuy -> {ovalue}")
 
             elif otype == "sourcing_flat_qty":
                 bom = frames.get("bom_stitched.csv")
@@ -727,11 +729,12 @@ def apply_data_overrides(frames: dict) -> dict:
                     continue
                 before = pd.to_numeric(bom.loc[mask, "Sourcing Flat Qty"], errors="coerce").sum()
                 bom.loc[mask, "Sourcing Flat Qty"] = float(ovalue)
-                desc = desc_map.get(part, "")
-                desc_str = f" — {desc}" if desc else ""
-                change_str = f"`{part}` (in {product}) sourcing_flat_qty {before:,.0f} -> {float(ovalue):,.0f} in bom_stitched ({n} rows){desc_str}"
-                detailed_changes.append(change_str)
-                changes.append(change_str)
+                # Track this change by product for consolidated display
+                if product not in bom_changes_by_product:
+                    bom_changes_by_product[product] = {"makebuy": 0, "sourcing_flat_qty": 0}
+                bom_changes_by_product[product]["sourcing_flat_qty"] += 1
+                # Still add to changes for logging
+                changes.append(f"{part} (in {product}) sourcing_flat_qty {before:,.0f} -> {float(ovalue):,.0f}")
 
             else:
                 failures.append(f"{part}: unknown override_type '{otype}'")
@@ -739,8 +742,16 @@ def apply_data_overrides(frames: dict) -> dict:
         except Exception as e:
             failures.append(f"{part} ({otype}): {e}")
 
+    # Build product descriptions for consolidated BOM changes
+    bom_desc_map = {}
+    if "stitch_list.csv" in frames:
+        sl = frames["stitch_list.csv"]
+        if "Parent Product LPN" in sl.columns and "Description" in sl.columns:
+            for _, r in sl.iterrows():
+                bom_desc_map[str(r["Parent Product LPN"]).strip()] = str(r["Description"]).strip()
+
     # Render with expander
-    if changes or bulk_override_count > 0:
+    if changes or bulk_override_count > 0 or bom_changes_by_product:
         with st.expander("**✓ Data overrides applied**", expanded=False):
             if bulk_override_count > 0:
                 st.success(
@@ -752,14 +763,29 @@ def apply_data_overrides(frames: dict) -> dict:
                     f"bulk override applied: {bulk_override_count} parts, "
                     f"{bulk_override_units:,.0f} units, ~${bulk_override_cost/1e6:.1f}m"
                 )
+
+            # Display consolidated BOM changes by product
+            if bom_changes_by_product:
+                bom_summary = []
+                for prod_lpn in sorted(bom_changes_by_product.keys()):
+                    changes_info = bom_changes_by_product[prod_lpn]
+                    prod_desc = bom_desc_map.get(prod_lpn, "(no description)")
+                    # Format as: "10-07781A LFP Module, Cell Array, Gen 2 switched from Buy to Make"
+                    if changes_info["makebuy"] > 0 and changes_info["sourcing_flat_qty"] > 0:
+                        summary = f"`{prod_lpn}` {prod_desc} — make/buy classification and sourcing corrected ({changes_info['makebuy']} + {changes_info['sourcing_flat_qty']} parts updated)"
+                    elif changes_info["makebuy"] > 0:
+                        summary = f"`{prod_lpn}` {prod_desc} — make/buy classification corrected ({changes_info['makebuy']} parts)"
+                    else:
+                        summary = f"`{prod_lpn}` {prod_desc} — sourcing quantities corrected ({changes_info['sourcing_flat_qty']} parts)"
+                    bom_summary.append(summary)
+                    log.info(f"BOM override in {prod_lpn}: {changes_info}")
+
+                st.success("**Product BOM corrections:**\n\n" + "\n".join(f"- {s}" for s in bom_summary))
+
+            # Display individual non-BOM changes
             for c in detailed_changes:
                 st.success(f"- {c}")
                 log.info(f"override applied: {c}")
-
-    if failures:
-        st.warning("**Overrides that did NOT apply**\n\n" + "\n".join(f"- {f}" for f in failures))
-        for f in failures:
-            log.warning(f"override failed: {f}")
 
     return frames
 
@@ -3295,7 +3321,7 @@ elif st.session_state.active_tab == "Inventory Projection":
             # It's baked into the cache key below so a logic change forces recomputation
             # even though _pab/_onhand/_onorder are unhashed and inventory_source_key alone
             # wouldn't change.
-            PRICING_LOGIC_VERSION = 14  # v14: scope makebuy/sourcing_flat_qty overrides to (product_lpn, part_lpn) — item_number is not unique across the BOM, a part-only mask was rewriting every product sharing that part number
+            PRICING_LOGIC_VERSION = 15  # v15: consolidate BOM override display by product, remove failures list, transpose chart tables
 
             with st.spinner("Loading inventory projection..."):
                 try:
@@ -3585,7 +3611,7 @@ elif st.session_state.active_tab == "Inventory Projection":
                                 if lunar_view == "Chart":
                                     st.plotly_chart(fig_lunar, use_container_width=True, key="lunar_inventory_chart")
                                 else:
-                                    st.dataframe(lunar_df, use_container_width=True)
+                                    st.dataframe(lunar_df.T, use_container_width=True)
 
                             with col2:
                                 st.subheader("CM Inventory Projection")
@@ -3628,7 +3654,7 @@ elif st.session_state.active_tab == "Inventory Projection":
                                 if cm_view == "Chart":
                                     st.plotly_chart(fig_cm, use_container_width=True, key="cm_inventory_chart")
                                 else:
-                                    st.dataframe(cm_df, use_container_width=True)
+                                    st.dataframe(cm_df.T, use_container_width=True)
                         else:
                             st.info("No data to display in charts")
 
