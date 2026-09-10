@@ -619,12 +619,27 @@ def apply_data_overrides(frames: dict) -> dict:
         st.warning(f"overrides.csv missing column(s) {sorted(missing)} — no overrides applied.")
         return frames
 
-    # Build description lookup from onhand
+    # Build description lookups FIRST (before override loop)
+    # Try onhand first, then fall back to BOM
     oh = frames.get("onhand.csv")
+    bom = frames.get("bom_stitched.csv")
     desc_map = {}
+    part_desc_map = {}
+
     if oh is not None and "lpn" in oh.columns and "description" in oh.columns:
         for _, r in oh[["lpn", "description"]].drop_duplicates().iterrows():
-            desc_map[str(r["lpn"])] = str(r["description"])
+            lpn = str(r["lpn"]).strip()
+            description = str(r["description"]).strip()
+            desc_map[lpn] = description
+            part_desc_map[lpn] = description
+
+    # Add BOM descriptions as fallback for parts not in onhand
+    if bom is not None and "item_number" in bom.columns and "item_name" in bom.columns:
+        for _, r in bom[["item_number", "item_name"]].drop_duplicates().iterrows():
+            part = str(r["item_number"]).strip()
+            description = str(r["item_name"]).strip()
+            if part not in part_desc_map:
+                part_desc_map[part] = description
 
     changes, detailed_changes, failures = [], [], []
     bulk_override_count, bulk_override_units, bulk_override_cost = 0, 0, 0
@@ -740,12 +755,6 @@ def apply_data_overrides(frames: dict) -> dict:
 
         except Exception as e:
             failures.append(f"{part} ({otype}): {e}")
-
-    # Build part descriptions for BOM summary
-    part_desc_map = {}
-    if oh is not None and "lpn" in oh.columns and "description" in oh.columns:
-        for _, r in oh[["lpn", "description"]].drop_duplicates().iterrows():
-            part_desc_map[str(r["lpn"]).strip()] = str(r["description"]).strip()
 
     # Render with expander
     if changes or bulk_override_count > 0 or bom_makebuy_count > 0 or bom_sourcing_count > 0:
