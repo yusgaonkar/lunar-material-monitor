@@ -1133,6 +1133,14 @@ with col_left:
     generation_filter_options = ["Active in Both", "Gen 1 Only", "Gen 2 Only", "Obsolete"]
     generation_filter = filter_cols[4].multiselect("Product Generation", generation_filter_options)
 
+    # Exclude mode toggles for each filter
+    exclude_cols = st.columns([1, 1.8, 1.8, 1.8, 1.8])
+    exclude_cols[0].write("")  # Spacer under CM (no exclude for CM)
+    prod_exclude = exclude_cols[1].checkbox("Exclude", key="prod_exclude", help="Exclude selected products instead of including them")
+    part_exclude = exclude_cols[2].checkbox("Exclude", key="part_exclude", help="Exclude selected parts instead of including them")
+    cat_exclude = exclude_cols[3].checkbox("Exclude", key="cat_exclude", help="Exclude selected categories instead of including them")
+    gen_exclude = exclude_cols[4].checkbox("Exclude", key="gen_exclude", help="Exclude selected generations instead of including them")
+
     # Planning Horizon - separate row, left-indented
     horizon_cols = st.columns([0.5, 2.5])  # 0.5 for indent, 2.5 for the slider
     with horizon_cols[1]:
@@ -1186,17 +1194,36 @@ if prod_filter:
         parts_in_products.update(get_buy_parts_under_product(product_lpn, bom_stitched))
 
     # Filter to show only parts in selected products AND in the selected products' CMs
-    filtered = filtered[
-        (filtered["part"].isin(parts_in_products)) &
-        (filtered["cm"].isin(selected_cms))
-    ]
+    if prod_exclude:
+        # Exclude mode: show everything EXCEPT selected products
+        filtered = filtered[
+            ~(filtered["part"].isin(parts_in_products)) |
+            ~(filtered["cm"].isin(selected_cms))
+        ]
+    else:
+        # Include mode: show only selected products
+        filtered = filtered[
+            (filtered["part"].isin(parts_in_products)) &
+            (filtered["cm"].isin(selected_cms))
+        ]
 
 if part_filter:
-    filtered = filtered[filtered["part"].isin(part_filter)]
+    if part_exclude:
+        filtered = filtered[~filtered["part"].isin(part_filter)]
+    else:
+        filtered = filtered[filtered["part"].isin(part_filter)]
+
 if category_filter:
-    filtered = filtered[filtered["item_category"].isin(category_filter)]
+    if cat_exclude:
+        filtered = filtered[~filtered["item_category"].isin(category_filter)]
+    else:
+        filtered = filtered[filtered["item_category"].isin(category_filter)]
+
 if generation_filter and "obsolescence_state" in filtered.columns:
-    filtered = filtered[filtered["obsolescence_state"].isin(generation_filter)]
+    if gen_exclude:
+        filtered = filtered[~filtered["obsolescence_state"].isin(generation_filter)]
+    else:
+        filtered = filtered[filtered["obsolescence_state"].isin(generation_filter)]
 if show_short_only:
     filtered = filtered[filtered["is_shortage"]]
 
@@ -2458,9 +2485,15 @@ elif st.session_state.active_tab == "Excess Monitor":
         if prod_filter:
             # Extract aliases from display_names for matching
             aliases = [dn.split(" - ", 1)[1] if " - " in dn else dn for dn in prod_filter]
-            excess_filtered = excess_filtered[
-                excess_filtered["products"].str.contains("|".join(aliases), na=False)
-            ]
+            pattern = "|".join(aliases)
+            if prod_exclude:
+                excess_filtered = excess_filtered[
+                    ~excess_filtered["products"].str.contains(pattern, na=False)
+                ]
+            else:
+                excess_filtered = excess_filtered[
+                    excess_filtered["products"].str.contains(pattern, na=False)
+                ]
 
         if len(excess_filtered) == 0:
             st.info("No excess supply for selected filters.")
@@ -3404,12 +3437,22 @@ elif st.session_state.active_tab == "Inventory Projection":
                     filtered_balance = filtered_balance[filtered_balance["cm"] == cm_filter]
 
                 if part_filter:
-                    filtered_balance = filtered_balance[filtered_balance["part"].isin(part_filter)]
+                    if part_exclude:
+                        filtered_balance = filtered_balance[~filtered_balance["part"].isin(part_filter)]
+                    else:
+                        filtered_balance = filtered_balance[filtered_balance["part"].isin(part_filter)]
 
                 if category_filter:
-                    filtered_balance = filtered_balance[filtered_balance["item_category"].isin(category_filter)]
+                    if cat_exclude:
+                        filtered_balance = filtered_balance[~filtered_balance["item_category"].isin(category_filter)]
+                    else:
+                        filtered_balance = filtered_balance[filtered_balance["item_category"].isin(category_filter)]
+
                 if generation_filter:
-                    filtered_balance = filtered_balance[filtered_balance["obsolescence_state"].isin(generation_filter)]
+                    if gen_exclude:
+                        filtered_balance = filtered_balance[~filtered_balance["obsolescence_state"].isin(generation_filter)]
+                    else:
+                        filtered_balance = filtered_balance[filtered_balance["obsolescence_state"].isin(generation_filter)]
 
                 # Display the CM runout and Lunar depletion table
                 if len(filtered_balance) > 0:
