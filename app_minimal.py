@@ -11,6 +11,7 @@ import logging
 import os
 import time
 from datetime import datetime
+from pathlib import Path
 import json
 import hashlib
 
@@ -411,8 +412,8 @@ def load_cost_frames():
 
 
 # --- ASN adjustment ---
-@st.cache_data(ttl=3600)
-def load_asn_adjustments():
+@st.cache_data(show_spinner="Loading ASN data...")
+def load_asn_adjustments(cache_key):
     """Load ASN adjustments for build plan from Google Sheet.
 
     Reads from data/cloud/asn_latest.csv (synced from Google Sheet).
@@ -424,17 +425,43 @@ def load_asn_adjustments():
         # Fallback if module not available
         return pd.DataFrame(columns=['product_lpn', 'asn_qty'])
 
+    import os
+
     asn_path = 'data/cloud/asn_latest.csv'
+
+    # Surface staleness: an ASN file older than the inventory export means the
+    # last sync did not refresh it, and the build plan will silently deduct
+    # yesterday's shipped quantities.
+    try:
+        if os.path.exists(asn_path) and os.path.exists('data/cloud/onhand.csv'):
+            asn_mtime = os.path.getmtime(asn_path)
+            oh_mtime = os.path.getmtime('data/cloud/onhand.csv')
+            if oh_mtime - asn_mtime > 3600:  # more than an hour behind
+                msg = (
+                    f"asn_latest.csv is {(oh_mtime - asn_mtime) / 3600:.1f}h older than "
+                    f"onhand.csv — the last sync did not refresh ASN. Shipped-to-date "
+                    f"figures are stale."
+                )
+                log.warning(msg)
+                st.warning(f"Stale ASN data: {msg}")
+    except Exception:
+        pass
 
     try:
         # Try to load from synced Google Sheet
         asn_agg = process_asn_pivot(asn_path)
         if len(asn_agg) > 0:
             return asn_agg
+        log.warning(f"{asn_path} parsed to 0 rows — no ASN deductions applied.")
+        st.warning("ASN file parsed to 0 rows — no shipped-to-date deductions applied.")
     except FileNotFoundError:
-        pass  # File not synced yet
+        log.warning(f"{asn_path} not found — no ASN deductions applied.")
+        st.warning("ASN file not found — no shipped-to-date deductions applied. Run scripts/sync_gsheets.py.")
     except Exception as e:
-        pass  # Other errors
+        # Never fail silently: an unreadable ASN file is indistinguishable from
+        # "nothing shipped" in the output, which understates completed builds.
+        log.warning(f"ASN load failed ({asn_path}): {e}")
+        st.warning(f"ASN load failed, no deductions applied: {e}")
 
     # Fallback: empty ASN (no deductions)
     return pd.DataFrame(columns=['product_lpn', 'asn_qty'])
@@ -506,9 +533,152 @@ def apply_asn_to_build_plan(build_plan_df: pd.DataFrame, asn_df: pd.DataFrame, b
 
 
 # --- Load and run (split for performance) ---
+def compute_data_cache_key():
+    """Fingerprint of every synced CSV in data/cloud.
+
+    Globs the directory rather than listing filenames so a renamed or newly
+    added source file cannot silently drop out of the key (a hardcoded list
+    that named a non-existent file is exactly how stale ASN data survived a
+    resync). Uses (name, mtime, size) per file — mtime alone can collide when
+    a rewrite lands inside the same filesystem timestamp granularity.
+
+    Files beginning with "_" are excluded: the app itself writes _unmatched.csv
+    and _lunar_debug.csv into this directory, and including them would make the
+    key change as a side effect of rendering, invalidating the cache every run.
+    """
+    import os
+    from pathlib import Path
+
+    try:
+        cloud = Path("data/cloud")
+        if not cloud.is_dir():
+            return "nodir"
+
+        parts = []
+        for p in sorted(cloud.glob("*.csv")):
+            if p.name.startswith("_"):
+                continue
+            st_ = p.stat()
+            parts.append(f"{p.name}:{st_.st_mtime_ns}:{st_.st_size}")
+
+        # overrides.csv rewrites the loaded frames, so it belongs in the key just
+        # as much as the source exports — otherwise editing an override changes
+        # nothing on screen and looks like the override was ignored.
+        ovr = Path("data/overrides.csv")
+        if ovr.exists():
+            st_ = ovr.stat()
+            parts.append(f"overrides:{st_.st_mtime_ns}:{st_.st_size}")
+
+        if not parts:
+            return "empty"
+        return hashlib.md5("|".join(parts).encode()).hexdigest()[:12]
+    except Exception as e:
+        # Never silently return a constant — that would re-freeze the cache.
+        log.warning(f"compute_data_cache_key failed: {e}")
+        return f"err-{pd.Timestamp.now().value}"
+
+
+# Which frame/column each override touches. load_all() keys carry the ".csv"
+# suffix — writing frames["onorder"] raises KeyError, and an earlier version of
+# this function did exactly that inside a bare except, so every override logged a
+# warning and silently did nothing.
+_CATEGORY_TARGETS = [
+    ("onhand.csv", "lpn", "item_category"),
+    ("onorder.csv", "lunar_lpn", "item_category_"),   # trailing underscore: CLAUDE.md 4
+    ("bom_stitched.csv", "item_number", "category_name"),
+]
+
+
+def apply_data_overrides(frames: dict) -> dict:
+    """Apply manual overrides from data/overrides.csv to the loaded frames.
+
+    Supported override_type values:
+      lunar_onorder_qty  set quantity_open on Lunar Netsuite lines for the part
+                         (use 0 to retire a PO that will never land)
+      item_category      reclassify the part across on-hand, on-order and BOM
+
+    Overrides are applied before validation and before the engine runs, so every
+    downstream number reflects them. Anything that fails to apply is reported in
+    the UI rather than swallowed — a silent override is worse than none, because
+    the number looks adjusted when it is not.
+    """
+    overrides_path = Path("data/overrides.csv")
+    if not overrides_path.exists():
+        return frames
+
+    try:
+        ovr = pd.read_csv(overrides_path)
+    except Exception as e:
+        log.warning(f"could not read overrides.csv: {e}")
+        st.warning(f"Overrides file unreadable, none applied: {e}")
+        return frames
+
+    required = {"part_lpn", "override_type", "override_value"}
+    missing = required - set(ovr.columns)
+    if missing:
+        st.warning(f"overrides.csv missing column(s) {sorted(missing)} — no overrides applied.")
+        return frames
+
+    changes, failures = [], []
+
+    for _, row in ovr.iterrows():
+        part = str(row["part_lpn"]).strip()
+        otype = str(row["override_type"]).strip()
+        ovalue = row["override_value"]
+        reason = str(row.get("reason", "") or "")
+
+        try:
+            if otype == "lunar_onorder_qty":
+                oo = frames["onorder.csv"]
+                mask = (oo["source_report"] == "Lunar Netsuite") & (oo["lunar_lpn"] == part)
+                n = int(mask.sum())
+                if n == 0:
+                    failures.append(f"{part}: no Lunar on-order lines matched")
+                    continue
+                before = pd.to_numeric(oo.loc[mask, "quantity_open"], errors="coerce").sum()
+                oo.loc[mask, "quantity_open"] = float(ovalue)
+                changes.append(
+                    f"`{part}` on-order {before:,.0f} -> {float(ovalue):,.0f} "
+                    f"across {n} line(s){' — ' + reason if reason else ''}"
+                )
+
+            elif otype == "item_category":
+                hits = []
+                for fname, pk, col in _CATEGORY_TARGETS:
+                    df = frames.get(fname)
+                    if df is None or pk not in df.columns or col not in df.columns:
+                        continue
+                    mask = df[pk] == part
+                    if mask.any():
+                        was = sorted(set(df.loc[mask, col].dropna().astype(str)))
+                        df.loc[mask, col] = ovalue
+                        hits.append(f"{fname.replace('.csv', '')} ({int(mask.sum())} rows, was {'/'.join(was) or 'blank'})")
+                if hits:
+                    changes.append(f"`{part}` category -> {ovalue} in " + "; ".join(hits))
+                else:
+                    failures.append(f"{part}: no rows matched for item_category")
+
+            else:
+                failures.append(f"{part}: unknown override_type '{otype}'")
+
+        except Exception as e:
+            failures.append(f"{part} ({otype}): {e}")
+
+    if changes:
+        st.success("**Data overrides applied**\n\n" + "\n".join(f"- {c}" for c in changes))
+        for c in changes:
+            log.info(f"override applied: {c}")
+    if failures:
+        st.warning("**Overrides that did NOT apply**\n\n" + "\n".join(f"- {f}" for f in failures))
+        for f in failures:
+            log.warning(f"override failed: {f}")
+
+    return frames
+
+
 @st.cache_data(show_spinner="Loading data...")
-def load_data():
-    """Cached forever: load all CSV files. Rarely changes."""
+def load_data(data_cache_key):
+    """Cached by data file mtime hash: invalidates when files update."""
     return lio.load_all()
 
 
@@ -550,8 +720,13 @@ def run_engine(frames, cache_key, horizon_weeks=52):
 
 # Load data once - io.py automatically detects Cloud vs localhost
 _record_timing("Starting data load")
-frames = load_data()
+data_cache_key = compute_data_cache_key()
+frames = load_data(data_cache_key)
 _record_timing("Data load complete")
+
+# Apply manual overrides (e.g., cancel stale POs, reclassify parts)
+frames = apply_data_overrides(frames)
+_record_timing("Overrides applied")
 
 # VALIDATION: Check data consistency
 def validate_snapshot_consistency(frames):
@@ -581,7 +756,7 @@ except Exception as e:
 
 # Load and adjust build plan (apply ASN deductions)
 build_plan = lio.load_build_plan()
-asn_data = load_asn_adjustments()
+asn_data = load_asn_adjustments(data_cache_key)
 
 # Extract snapshot date dynamically from data files
 # The "Updated at" column shows the snapshot date (format: MM-DD-YYYY)
@@ -2649,116 +2824,8 @@ elif st.session_state.active_tab == "Inventory Projection":
                             shortage = 0
                         total_shortages_by_part[part][cm] = shortage
 
-                    # Calculate total shortage and remaining Lunar inventory for this part
-                    total_shortage_this_part = sum(total_shortages_by_part[part].values())
-                    remaining_lunar = lunar_unrestricted - stage1_total_by_part
-                    remaining_lunar = max(0, remaining_lunar)
-
-                    # SCENARIO DETECTION and allocation
-                    if total_shortage_this_part == 0:
-                        # Scenario 1: No shortage
-                        # CMs get only Stage 1 POs, Lunar keeps remainder
-                        scenario = 1
-                    elif total_shortage_this_part <= remaining_lunar:
-                        # Scenario 2: Shortage exists, but Lunar has enough
-                        # Allocate exact shortage to each CM, remainder to Lunar
-                        scenario = 2
-                    else:
-                        # Scenario 3: Shortage exists, Lunar insufficient
-                        # Proportional allocation based on net shortages
-                        scenario = 3
-
-                    # Store scenario for logging
-                    if not hasattr(balance_table, '_scenarios'):
-                        balance_table._scenarios = {}
-                    balance_table._scenarios[part] = {
-                        'scenario': scenario,
-                        'total_shortage': total_shortage_this_part,
-                        'remaining_lunar': remaining_lunar,
-                        'stage1_total': stage1_total_by_part
-                    }
-
-                # Build lunar_allocated_rows with 3-scenario logic
-                lunar_allocated_rows = []
-                for part in balance_table["part"].unique():
-                    part_rows = balance_table[balance_table["part"] == part]
-                    lunar_data = lunar_start[lunar_start["part"] == part]
-
-                    if len(lunar_data) > 0:
-                        lunar_unrestricted = lunar_data["unrestricted"].values[0]
-                        uncommitted = lunar_data["uncommitted"].values[0]
-                    else:
-                        lunar_unrestricted = 0
-                        uncommitted = 0
-
-                    # Get Lunar on-order for this part
-                    lunar_oo_qty = lunar_oo_by_part[lunar_oo_by_part["part"] == part]["lunar_on_order_total"].values
-                    lunar_oo_qty = lunar_oo_qty[0] if len(lunar_oo_qty) > 0 else 0
-
-                    # Get scenario for this part
-                    scenario_info = balance_table._scenarios.get(part, {})
-                    scenario = scenario_info.get('scenario', 1)
-                    total_shortage_this_part = scenario_info.get('total_shortage', 0)
-                    remaining_lunar = scenario_info.get('remaining_lunar', 0)
-
-                    stage1_by_part_dict = stage1_by_part.get(part, {})
-                    shortages = total_shortages_by_part.get(part, {})
-
-                    for _, row in part_rows.iterrows():
-                        cm = row["cm"]
-
-                        if cm == "Lunar":
-                            # Lunar row: allocation depends on scenario
-                            # Use stage1_total from scenario_info, not the loop variable (which gets overwritten)
-                            stage1_total = scenario_info.get('stage1_total', 0)
-
-                            if scenario == 1:
-                                # Scenario 1: No shortage, Lunar gets remainder after Stage 1 allocations
-                                lunar_on_hand_alloc = max(0, lunar_unrestricted - stage1_total)
-                            elif scenario == 2:
-                                # Scenario 2: Allocate exact shortages, remainder to Lunar
-                                total_allocated_to_cms = sum([
-                                    stage1_by_part_dict.get(c, 0) + shortages.get(c, 0)
-                                    for c in [row["cm"] for _, row in part_rows.iterrows() if row["cm"] != "Lunar"]
-                                ])
-                                lunar_on_hand_alloc = max(0, lunar_unrestricted - total_allocated_to_cms)
-                            else:  # scenario == 3
-                                # Scenario 3: All Lunar inventory is allocated to CMs
-                                lunar_on_hand_alloc = 0
-
-                            lunar_on_order_alloc = lunar_oo_qty
-                        else:
-                            # CM row: allocation depends on scenario
-                            stage1_qty = stage1_by_part_dict.get(cm, 0)
-                            shortage_qty = shortages.get(cm, 0)
-
-                            if scenario == 1:
-                                # Scenario 1: No shortage, CMs get only Stage 1 POs
-                                lunar_on_hand_alloc = stage1_qty
-                                lunar_on_order_alloc = 0
-                            elif scenario == 2:
-                                # Scenario 2: Allocate exact shortage + Stage 1 POs
-                                lunar_on_hand_alloc = stage1_qty + shortage_qty
-                                lunar_on_order_alloc = 0
-                            else:  # scenario == 3
-                                # Scenario 3: Proportional allocation based on shortage
-                                if total_shortage_this_part > 0:
-                                    shortage_share = shortage_qty / total_shortage_this_part
-                                    lunar_on_hand_alloc = stage1_qty + (remaining_lunar * shortage_share)
-                                else:
-                                    lunar_on_hand_alloc = stage1_qty
-                                lunar_on_order_alloc = 0
-
-                        lunar_allocated_rows.append({
-                            "cm": cm,
-                            "part": part,
-                            "lunar_on_hand_alloc": lunar_on_hand_alloc,
-                            "lunar_on_order_alloc": lunar_on_order_alloc,
-                            "lunar_unit_price": 0
-                        })
-
-                lunar_alloc_df = pd.DataFrame(lunar_allocated_rows)
-                balance_table = balance_table.merge(lunar_alloc_df, on=["cm", "part"], how="left")
+                    # NOTE: Old scenario-based allocation logic removed.
+                    # The B1/B2/B3 model (below) now handles all Lunar allocation.
 
                 # ============================================================
                 # INVENTORY DEPLETION MODEL
@@ -2843,11 +2910,15 @@ elif st.session_state.active_tab == "Inventory Projection":
                 lunar_cols = {m: [0.0] * n_rows for m in months}
                 lunar_bucket_total = [0.0] * n_rows
 
-                _LUNAR_DBG = []  # diagnostic: (part, pool, B1, B2, B3, lunar_on_hand)
-
                 rows_by_part = {}
                 for i, (cm, part) in enumerate(zip(cm_arr, part_arr)):
                     rows_by_part.setdefault(part, []).append((i, cm))
+
+                # Composition of each part's Lunar pool, captured here because only this
+                # loop knows it. The pool is on-hand PLUS receipts; the allocation columns
+                # must therefore split a row's allocation between those two sources rather
+                # than reporting the pool as on-hand and the receipts a second time on top.
+                pool_mix = {}  # part -> (pool_total, pool_onhand_component)
 
                 for part, rows in rows_by_part.items():
                     cms = [cm for _, cm in rows if cm != "Lunar"]
@@ -2864,6 +2935,11 @@ elif st.session_state.active_tab == "Inventory Projection":
                     for cm in cms:
                         lunar_pool -= float(past_cm_po_lookup.get((cm, part), 0.0))
                     lunar_pool = max(0.0, lunar_pool)
+
+                    # On-hand can never exceed the pool it sits in (shipped CM POs are
+                    # netted out above), so cap it before deriving the mix.
+                    _oh_component = min(float(lunar_oh_lookup.get(part, 0.0)), lunar_pool)
+                    pool_mix[part] = (lunar_pool, _oh_component)
 
                     # ---- B1: Lunar stock committed against CM -> Lunar POs ----
                     b1_sched = {
@@ -2907,11 +2983,6 @@ elif st.session_state.active_tab == "Inventory Projection":
 
                     b3 = avail  # free remainder — stays on Lunar's book, flat
 
-                    _LUNAR_DBG.append((
-                        part, lunar_pool, sum(b1_alloc.values()), sum(b2_alloc.values()), b3,
-                        float(lunar_oh_lookup.get(part, 0.0)),
-                    ))
-
                     for i, cm in rows:
                         if cm == "Lunar":
                             # B3: flat across the horizon. Holds no CM stock.
@@ -2952,20 +3023,33 @@ elif st.session_state.active_tab == "Inventory Projection":
                             (base[i] if col[i] is None else col[i]) for i in range(n_rows)
                         ]
 
-                # lunar_on_hand_alloc now means "Lunar stock held in this row's buckets",
-                # so the displayed allocation column matches the projection it drives.
-                balance_table["lunar_on_hand_alloc"] = lunar_bucket_total
+                # Split each row's bucket total into its on-hand and on-order components.
+                #
+                # `lunar_bucket_total` is a slice of the Lunar POOL, and the pool is
+                # on-hand + receipts. Assigning it wholesale to lunar_on_hand_alloc while
+                # lunar_on_order_alloc separately carried the receipts counted the receipts
+                # twice: 10-003933 showed on_hand 191,952 (= 1,872 on-hand + 190,080
+                # receipts) alongside on_order 190,080, so the price denominator was
+                # 382,032 instead of 191,952 and the blended price came out at half the
+                # true figure.
+                #
+                # Split in the pool's own proportions. Every row of a part draws from the
+                # same pool, so one ratio applies to all of them and the components sum
+                # back to the bucket total — no row can claim more on-hand than exists.
+                _oh_alloc, _oo_alloc = [0.0] * n_rows, [0.0] * n_rows
+                for _i, (_cm, _part) in enumerate(zip(cm_arr, part_arr)):
+                    _alloc = float(lunar_bucket_total[_i])
+                    _pool, _pool_oh = pool_mix.get(_part, (0.0, 0.0))
+                    if _pool > 0:
+                        _frac = _pool_oh / _pool
+                        _oh_alloc[_i] = _alloc * _frac
+                        _oo_alloc[_i] = _alloc - _oh_alloc[_i]
+                    else:
+                        _oh_alloc[_i] = _alloc
+                        _oo_alloc[_i] = 0.0
 
-                # --- DIAGNOSTIC: where does the Lunar pool actually go, by category? ---
-                try:
-                    _dbg = pd.DataFrame(_LUNAR_DBG, columns=["part", "pool", "B1", "B2", "B3", "lunar_oh"])
-                    _pmap = dict(zip(balance_table["part"], balance_table.get("item_category", "")))
-                    _dbg["cat"] = _dbg["part"].map(_pmap).fillna("(none)")
-                    _dbg.to_csv("data/cloud/_lunar_debug.csv", index=False)
-                    log.warning("LUNAR POOL DIAG (qty):\n" +
-                                _dbg.groupby("cat")[["lunar_oh", "pool", "B1", "B2", "B3"]].sum().to_string())
-                except Exception as _e:
-                    log.warning(f"lunar diag failed: {_e}")
+                balance_table["lunar_on_hand_alloc"] = _oh_alloc
+                balance_table["lunar_on_order_alloc"] = _oo_alloc
 
                 balance_table = pd.concat(
                     [
@@ -3077,7 +3161,7 @@ elif st.session_state.active_tab == "Inventory Projection":
             # It's baked into the cache key below so a logic change forces recomputation
             # even though _pab/_onhand/_onorder are unhashed and inventory_source_key alone
             # wouldn't change.
-            PRICING_LOGIC_VERSION = 8  # v8: fix shadowed lunar_unrestricted -> Lunar pool was empty
+            PRICING_LOGIC_VERSION = 9  # v9: split bucket total into on-hand/on-order (was double-counting receipts, halving blended price)
 
             with st.spinner("Loading inventory projection..."):
                 try:
@@ -3131,6 +3215,7 @@ elif st.session_state.active_tab == "Inventory Projection":
                 # Display Lunar allocation validation
                 # Apply global filters to balance_table
                 filtered_balance = balance_table.copy()
+                output_table = pd.DataFrame()  # Initialize to prevent NameError if filters result in empty set
                 _record_timing("Balance table copied")
 
                 if cm_filter != "All":
