@@ -1,0 +1,522 @@
+part_lpn,override_type,override_value,reason
+10-003933,lunar_onorder_qty,0,Old stale PO - marked for cancellation
+10-00522D,item_category,Top Level Assembly,Individual maximizer - functionally equivalent to 90-xxx top level
+10-00522E,item_category,Top Level Assembly,Individual maximizer - functionally equivalent to 90-xxx top level
+10-06103C,item_category,Top Level Assembly,Terminal PCBA (IPC) - shipped as top-level to customer
+10-06105C,item_category,Top Level Assembly,Power PCBA (TRM) - shipped as top-level to customer
+10-06950A,lunar_onorder_qty,2376,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+90-003540,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-002278,lunar_onorder_qty,4846,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006998,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006790,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006820,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006928,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006962,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006981,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-08002A,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006793,lunar_onorder_qty,250,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001303,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006852,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-002171,lunar_onorder_qty,20000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006698,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006750,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000711,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006926,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006730,lunar_onorder_qty,-3,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006941,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-002002,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006949,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006653,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006762,lunar_onorder_qty,968,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000634,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-07199A,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004557,lunar_onorder_qty,2006,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006721,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006906,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006627,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006933,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-003227,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006763,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006898,lunar_onorder_qty,50,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006999,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006877,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-07247A,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006950,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006584,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006878,lunar_onorder_qty,7,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-003232,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006846,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-002141,lunar_onorder_qty,-1505,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004538,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004612,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006901,lunar_onorder_qty,8918,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006983,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-005005,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-007002,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006835,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-007009,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006710,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006656,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006890,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-07840A,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-003914,lunar_onorder_qty,31,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-002508,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006677,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001738,lunar_onorder_qty,2340000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006780,lunar_onorder_qty,718,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001676,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006925,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-07278A,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000616,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-007010,lunar_onorder_qty,796,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-003362,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-003226,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000340,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-002532,lunar_onorder_qty,68100,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006578,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001277,lunar_onorder_qty,20000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001323,lunar_onorder_qty,3000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006744,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-002009,lunar_onorder_qty,2000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001712,lunar_onorder_qty,136000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006197,lunar_onorder_qty,1630,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006948,lunar_onorder_qty,-200,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000641,lunar_onorder_qty,6000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006804,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000660,lunar_onorder_qty,30000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-007006,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004681,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004534,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006875,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006826,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001585,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006945,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000605,lunar_onorder_qty,30100,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006671,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-003778,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004177,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006996,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004163,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-003374,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000991,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006560,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006759,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-002859,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-007008,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006819,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006791,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006173,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006761,lunar_onorder_qty,10,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-06549A,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006896,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006968,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-003701,lunar_onorder_qty,77,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006782,lunar_onorder_qty,100142,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006741,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006748,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006806,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006995,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006951,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006817,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-07886A,lunar_onorder_qty,90,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004454,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-07654A,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006567,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-07972A,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006747,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006724,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006818,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006989,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001716,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-007004,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001714,lunar_onorder_qty,112000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006823,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001173,lunar_onorder_qty,5000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-06958A,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-005406,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004540,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-005579,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-003488,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006872,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006582,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001007,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001720,lunar_onorder_qty,32000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006177,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006149,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000560,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006887,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-07268A,lunar_onorder_qty,7,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001711,lunar_onorder_qty,12000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006659,lunar_onorder_qty,745,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006678,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-003215,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-003418,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-07384A,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-06971A,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001065,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000842,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006886,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004578,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001127,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-001926,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006870,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006972,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-002331,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006723,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004852,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006684,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-004927,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-002474,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000650,lunar_onorder_qty,20000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-006443,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-000572,lunar_onorder_qty,10000,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-002138,lunar_onorder_qty,0,PO line duplication (NetSuite/LunarDB) - validated 2026-08-04 snapshot
+10-07781A,makebuy,Make,"Product BOM fix (CM name mistakenly set as vendor; part is internal make, not CM buy) — temporary override"
+10-07781A,sourcing_flat_qty,0,"Product BOM fix (CM name mistakenly set as vendor; part is internal make, not CM buy) — temporary override"
+10-06591E,makebuy,Make,"Product BOM fix (CM name mistakenly set as vendor; part is internal make, not CM buy) — temporary override"
+10-06591E,sourcing_flat_qty,0,"Product BOM fix (CM name mistakenly set as vendor; part is internal make, not CM buy) — temporary override"
+10-07781A,makebuy,Make,"Product BOM fix: LFP Module, Cell Array, Gen 2 (CM name incorrectly assigned as vendor) — temporary"
+10-07781A,sourcing_flat_qty,0,"Product BOM fix: LFP Module, Cell Array, Gen 2 (CM name incorrectly assigned as vendor) — temporary"
+10-07946A,makebuy,Buy,"Product BOM fix: Assy, Cell Array, w/o CCS, L2.1 (CM name incorrectly assigned as vendor) — temporary"
+10-07946A,sourcing_flat_qty,1,"Product BOM fix: Assy, Cell Array, w/o CCS, L2.1 (CM name incorrectly assigned as vendor) — temporary"
+10-08335A,makebuy,Buy,Product BOM fix: CCA Positive Side L2.1 (CM name incorrectly assigned as vendor) — temporary
+10-08335A,sourcing_flat_qty,1,Product BOM fix: CCA Positive Side L2.1 (CM name incorrectly assigned as vendor) — temporary
+10-08336A,makebuy,Buy,Product BOM fix: CCA Negative Side L2.1 (CM name incorrectly assigned as vendor) — temporary
+10-08336A,sourcing_flat_qty,1,Product BOM fix: CCA Negative Side L2.1 (CM name incorrectly assigned as vendor) — temporary
+10-08119A,makebuy,Buy,"Product BOM fix: Push Clip, Barbed, 4.0 DIA Hole, 10.5 DIA Head (CM name incorrectly assigned as vendor) — temporary"
+10-08119A,sourcing_flat_qty,8,"Product BOM fix: Push Clip, Barbed, 4.0 DIA Hole, 10.5 DIA Head (CM name incorrectly assigned as vendor) — temporary"
+10-08337A,makebuy,Buy,"Product BOM fix: PP Insulation plate, CCA 2.1 (CM name incorrectly assigned as vendor) — temporary"
+10-08337A,sourcing_flat_qty,2,"Product BOM fix: PP Insulation plate, CCA 2.1 (CM name incorrectly assigned as vendor) — temporary"
+10-08370A,makebuy,Buy,"Product BOM fix: LPF GEN 2 Harness, DCDC to Cell Array, L2.1 (CM name incorrectly assigned as vendor) — temporary"
+10-08370A,sourcing_flat_qty,1,"Product BOM fix: LPF GEN 2 Harness, DCDC to Cell Array, L2.1 (CM name incorrectly assigned as vendor) — temporary"
+10-004422,makebuy,Buy,"Product BOM fix: Label, 7x7 mm QR (CM name incorrectly assigned as vendor) — temporary"
+10-004422,sourcing_flat_qty,1,"Product BOM fix: Label, 7x7 mm QR (CM name incorrectly assigned as vendor) — temporary"
+10-08378A,makebuy,Buy,Product BOM fix: Edge Trim Protector CA 2.1 (CM name incorrectly assigned as vendor) — temporary
+10-08378A,sourcing_flat_qty,1,Product BOM fix: Edge Trim Protector CA 2.1 (CM name incorrectly assigned as vendor) — temporary
+10-06591E,makebuy,Make,"Product BOM fix: DCDC Sub-assy, LFP DC ESS (CM name incorrectly assigned as vendor) — temporary"
+10-06591E,sourcing_flat_qty,0,"Product BOM fix: DCDC Sub-assy, LFP DC ESS (CM name incorrectly assigned as vendor) — temporary"
+10-07937A,makebuy,Buy,"Product BOM fix: Heat Sink with Seals, DCDC, LFP DC ESS (CM name incorrectly assigned as vendor) — temporary"
+10-07937A,sourcing_flat_qty,1,"Product BOM fix: Heat Sink with Seals, DCDC, LFP DC ESS (CM name incorrectly assigned as vendor) — temporary"
+10-06930D,makebuy,Buy,"Product BOM fix: TIM, PCBA, DCDC, LFP DC ESS (CM name incorrectly assigned as vendor) — temporary"
+10-06930D,sourcing_flat_qty,1,"Product BOM fix: TIM, PCBA, DCDC, LFP DC ESS (CM name incorrectly assigned as vendor) — temporary"
+10-004341,makebuy,Buy,"Product BOM fix: Screw,M3X6.5mm,SEMS and spring washer, BHT,T-8,ZiNi BC (CM name incorrectly assigned as vendor) — temporary"
+10-004341,sourcing_flat_qty,12,"Product BOM fix: Screw,M3X6.5mm,SEMS and spring washer, BHT,T-8,ZiNi BC (CM name incorrectly assigned as vendor) — temporary"
+10-004340,makebuy,Buy,"Product BOM fix: Screw,M4X34mm,SEMS and spring washer, BHT,T-15,ZiNi BC (CM name incorrectly assigned as vendor) — temporary"
+10-004340,sourcing_flat_qty,2,"Product BOM fix: Screw,M4X34mm,SEMS and spring washer, BHT,T-15,ZiNi BC (CM name incorrectly assigned as vendor) — temporary"
+10-004422,makebuy,Buy,"Product BOM fix: Label, 7x7 mm QR (CM name incorrectly assigned as vendor) — temporary"
+10-004422,sourcing_flat_qty,1,"Product BOM fix: Label, 7x7 mm QR (CM name incorrectly assigned as vendor) — temporary"
+10-06914E,makebuy,Make,"Product BOM fix: PCBA DCDC/BMS, with Heat Spreader, LFP DC ESS (CM name incorrectly assigned as vendor) — temporary"
+10-06647E,makebuy,Make,"Product BOM fix: PCBA DCDC/BMS, with Conformal Coat, LFP DC ESS (CM name incorrectly assigned as vendor) — temporary"
+10-003754,makebuy,Buy,Product BOM fix: UV Curable Polyurethane Conformal Coating (CM name incorrectly assigned as vendor) — temporary
+10-003754,sourcing_flat_qty,1,Product BOM fix: UV Curable Polyurethane Conformal Coating (CM name incorrectly assigned as vendor) — temporary
+30-07555C,makebuy,Make,Product BOM fix: Lunar 2.1 DCDC-BMS PCBA (CM name incorrectly assigned as vendor) — temporary
+10-000603,makebuy,Buy,Product BOM fix: LED RED CLEAR 2SMD (CM name incorrectly assigned as vendor) — temporary
+10-000603,sourcing_flat_qty,1,Product BOM fix: LED RED CLEAR 2SMD (CM name incorrectly assigned as vendor) — temporary
+10-000614,makebuy,Buy,Product BOM fix: DIODE SCHOTTKY 20V 500MA SOD123 (CM name incorrectly assigned as vendor) — temporary
+10-000614,sourcing_flat_qty,3,Product BOM fix: DIODE SCHOTTKY 20V 500MA SOD123 (CM name incorrectly assigned as vendor) — temporary
+10-000658,makebuy,Buy,Product BOM fix: RES SMD 10K OHM 1% 1/16W 0402 (CM name incorrectly assigned as vendor) — temporary
+10-000658,sourcing_flat_qty,20,Product BOM fix: RES SMD 10K OHM 1% 1/16W 0402 (CM name incorrectly assigned as vendor) — temporary
+10-000671,makebuy,Buy,Product BOM fix: DIODE SCHOTTKY 30V 1A SMA (CM name incorrectly assigned as vendor) — temporary
+10-000671,sourcing_flat_qty,1,Product BOM fix: DIODE SCHOTTKY 30V 1A SMA (CM name incorrectly assigned as vendor) — temporary
+10-000711,makebuy,Buy,Product BOM fix: CMC 100UH 150MA 2LN SMD AEC-Q200 (CM name incorrectly assigned as vendor) — temporary
+10-000711,sourcing_flat_qty,1,Product BOM fix: CMC 100UH 150MA 2LN SMD AEC-Q200 (CM name incorrectly assigned as vendor) — temporary
+10-000729,makebuy,Buy,"Product BOM fix: Interface Circuit, CMOS, PDSO8 (CM name incorrectly assigned as vendor) — temporary"
+10-000729,sourcing_flat_qty,1,"Product BOM fix: Interface Circuit, CMOS, PDSO8 (CM name incorrectly assigned as vendor) — temporary"
+10-000989,makebuy,Buy,Product BOM fix: OPTOISOLATOR 5KV TRANSISTOR 4SMD (CM name incorrectly assigned as vendor) — temporary
+10-000989,sourcing_flat_qty,1,Product BOM fix: OPTOISOLATOR 5KV TRANSISTOR 4SMD (CM name incorrectly assigned as vendor) — temporary
+10-001011,makebuy,Buy,Product BOM fix: RES 5.1K OHM 1% 1/10W 75V 0603 (CM name incorrectly assigned as vendor) — temporary
+10-001011,sourcing_flat_qty,9,Product BOM fix: RES 5.1K OHM 1% 1/10W 75V 0603 (CM name incorrectly assigned as vendor) — temporary
+10-001057,makebuy,Buy,Product BOM fix: RES SMD 3.9 OHM 1% 1/3W 0805 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001057,sourcing_flat_qty,1,Product BOM fix: RES SMD 3.9 OHM 1% 1/3W 0805 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001072,makebuy,Buy,Product BOM fix: DIODE GEN PURP 200V 3A SOD128 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001072,sourcing_flat_qty,3,Product BOM fix: DIODE GEN PURP 200V 3A SOD128 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001075,makebuy,Buy,Product BOM fix: DIODE SCHOTTKY 100V 3A DO214AB AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001075,sourcing_flat_qty,3,Product BOM fix: DIODE SCHOTTKY 100V 3A DO214AB AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001129,makebuy,Buy,Product BOM fix: RES SMD 1K OHM 1% 1/10W 0603 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001129,sourcing_flat_qty,2,Product BOM fix: RES SMD 1K OHM 1% 1/10W 0603 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001153,makebuy,Buy,Product BOM fix: RES SMD 10 OHM 1% 1/3W 0603 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001153,sourcing_flat_qty,8,Product BOM fix: RES SMD 10 OHM 1% 1/3W 0603 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001161,makebuy,Buy,Product BOM fix: RES SMD 16K OHM 5% 1/4W 0603 ANTI-SURGE AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001161,sourcing_flat_qty,1,Product BOM fix: RES SMD 16K OHM 5% 1/4W 0603 ANTI-SURGE AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001191,makebuy,Buy,"Product BOM fix: DUAL, ZERO-DRIFT OP AMP, E TEMP (CM name incorrectly assigned as vendor) — temporary"
+10-001191,sourcing_flat_qty,3,"Product BOM fix: DUAL, ZERO-DRIFT OP AMP, E TEMP (CM name incorrectly assigned as vendor) — temporary"
+10-001286,makebuy,Buy,Product BOM fix: IC GATE DRVR HALF-BRIDGE HI SPD (CM name incorrectly assigned as vendor) — temporary
+10-001286,sourcing_flat_qty,6,Product BOM fix: IC GATE DRVR HALF-BRIDGE HI SPD (CM name incorrectly assigned as vendor) — temporary
+10-001369,makebuy,Buy,Product BOM fix: MOSFET N-CH 600V 23A 8HSOF (CM name incorrectly assigned as vendor) — temporary
+10-001369,sourcing_flat_qty,2,Product BOM fix: MOSFET N-CH 600V 23A 8HSOF (CM name incorrectly assigned as vendor) — temporary
+10-001401,makebuy,Buy,Product BOM fix: CONN HEADER SMD 6POS 2.54MM (CM name incorrectly assigned as vendor) — temporary
+10-001401,sourcing_flat_qty,1,Product BOM fix: CONN HEADER SMD 6POS 2.54MM (CM name incorrectly assigned as vendor) — temporary
+10-001434,makebuy,Buy,Product BOM fix: CRYSTAL 12.0000MHZ 8PF SMD (CM name incorrectly assigned as vendor) — temporary
+10-001434,sourcing_flat_qty,1,Product BOM fix: CRYSTAL 12.0000MHZ 8PF SMD (CM name incorrectly assigned as vendor) — temporary
+10-001437,makebuy,Buy,Product BOM fix: DIODE RECT 100V 20A DPAK (CM name incorrectly assigned as vendor) — temporary
+10-001437,sourcing_flat_qty,1,Product BOM fix: DIODE RECT 100V 20A DPAK (CM name incorrectly assigned as vendor) — temporary
+10-001548,makebuy,Buy,Product BOM fix: RES 0 OHM JUMPER 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-001548,sourcing_flat_qty,5,Product BOM fix: RES 0 OHM JUMPER 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-001580,makebuy,Buy,Product BOM fix: IC CURRENT SENSOR 8TISON AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001580,sourcing_flat_qty,1,Product BOM fix: IC CURRENT SENSOR 8TISON AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001598,makebuy,Buy,Product BOM fix: RES SMD 1K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-001598,sourcing_flat_qty,1,Product BOM fix: RES SMD 1K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-001602,makebuy,Buy,Product BOM fix: RES SMD 115K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-001602,sourcing_flat_qty,1,Product BOM fix: RES SMD 115K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-001610,makebuy,Buy,Product BOM fix: DIODE SCHOTTKY 80V 1A SOD123 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001610,sourcing_flat_qty,1,Product BOM fix: DIODE SCHOTTKY 80V 1A SOD123 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-001611,makebuy,Buy,Product BOM fix: DIODE ZENER 16V 500MW SOD123 (CM name incorrectly assigned as vendor) — temporary
+10-001611,sourcing_flat_qty,2,Product BOM fix: DIODE ZENER 16V 500MW SOD123 (CM name incorrectly assigned as vendor) — temporary
+10-001644,makebuy,Buy,Product BOM fix: FUSE BOARD MNT 2A 63VAC/VDC 1206 (CM name incorrectly assigned as vendor) — temporary
+10-001644,sourcing_flat_qty,1,Product BOM fix: FUSE BOARD MNT 2A 63VAC/VDC 1206 (CM name incorrectly assigned as vendor) — temporary
+10-001645,makebuy,Buy,"Product BOM fix: Screw,4-20X PLAST 0.375 in,BHT,T/F,Steel (CM name incorrectly assigned as vendor) — temporary"
+10-001645,sourcing_flat_qty,8,"Product BOM fix: Screw,4-20X PLAST 0.375 in,BHT,T/F,Steel (CM name incorrectly assigned as vendor) — temporary"
+10-001716,makebuy,Buy,Product BOM fix: CAP CER 10NF 25V X7R 0402 (CM name incorrectly assigned as vendor) — temporary
+10-001716,sourcing_flat_qty,21,Product BOM fix: CAP CER 10NF 25V X7R 0402 (CM name incorrectly assigned as vendor) — temporary
+10-001720,makebuy,Buy,Product BOM fix: CAP CER 0.22UF 50V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-001720,sourcing_flat_qty,3,Product BOM fix: CAP CER 0.22UF 50V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-001809,makebuy,Buy,Product BOM fix: Thick Film Resistors 0805 2Kohms 0.5W 1% AEC-Q200 (CM name incorrectly assigned as vendor) — temporary
+10-001809,sourcing_flat_qty,2,Product BOM fix: Thick Film Resistors 0805 2Kohms 0.5W 1% AEC-Q200 (CM name incorrectly assigned as vendor) — temporary
+10-001851,makebuy,Buy,Product BOM fix: IC TRANSFORMER DRIVER SOT23-6 (CM name incorrectly assigned as vendor) — temporary
+10-001851,sourcing_flat_qty,1,Product BOM fix: IC TRANSFORMER DRIVER SOT23-6 (CM name incorrectly assigned as vendor) — temporary
+10-002138,makebuy,Buy,Product BOM fix: IC REG BUCK ADJ 3A 8HTSOP-J (CM name incorrectly assigned as vendor) — temporary
+10-002138,sourcing_flat_qty,3,Product BOM fix: IC REG BUCK ADJ 3A 8HTSOP-J (CM name incorrectly assigned as vendor) — temporary
+10-002280,makebuy,Buy,Product BOM fix: FIXED IND 33UH 3A 60 MOHM SMD AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-002280,sourcing_flat_qty,3,Product BOM fix: FIXED IND 33UH 3A 60 MOHM SMD AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-002287,makebuy,Buy,Product BOM fix: RES SMD 4.99KOHM 0.1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-002287,sourcing_flat_qty,12,Product BOM fix: RES SMD 4.99KOHM 0.1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-002290,makebuy,Buy,Product BOM fix: IC REG LINEAR 2.5V 200MA 8SOIC (CM name incorrectly assigned as vendor) — temporary
+10-002290,sourcing_flat_qty,1,Product BOM fix: IC REG LINEAR 2.5V 200MA 8SOIC (CM name incorrectly assigned as vendor) — temporary
+10-002291,makebuy,Buy,Product BOM fix: RES SMD 28.7K OHM 1% 1/10W 0603 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-002291,sourcing_flat_qty,2,Product BOM fix: RES SMD 28.7K OHM 1% 1/10W 0603 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-002293,makebuy,Buy,Product BOM fix: IC GATE DRVR HIGH-SIDE 10MSOP (CM name incorrectly assigned as vendor) — temporary
+10-002293,sourcing_flat_qty,1,Product BOM fix: IC GATE DRVR HIGH-SIDE 10MSOP (CM name incorrectly assigned as vendor) — temporary
+10-002302,makebuy,Buy,Product BOM fix: SENSOR THERMISTOR NTC (CM name incorrectly assigned as vendor) — temporary
+10-002302,sourcing_flat_qty,1,Product BOM fix: SENSOR THERMISTOR NTC (CM name incorrectly assigned as vendor) — temporary
+10-002304,makebuy,Buy,"Product BOM fix: CONN, HEADER, 4P, GRAY, VETICAL , Ni/Cu, TE (CM name incorrectly assigned as vendor) — temporary"
+10-002304,sourcing_flat_qty,1,"Product BOM fix: CONN, HEADER, 4P, GRAY, VETICAL , Ni/Cu, TE (CM name incorrectly assigned as vendor) — temporary"
+10-002318,makebuy,Buy,Product BOM fix: Current Sensor 120A Channel 8-PowerTDFN AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-002318,sourcing_flat_qty,2,Product BOM fix: Current Sensor 120A Channel 8-PowerTDFN AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-002375,makebuy,Buy,Product BOM fix: CAP CER 0.1UF 250V X7R 1206 (CM name incorrectly assigned as vendor) — temporary
+10-002375,sourcing_flat_qty,8,Product BOM fix: CAP CER 0.1UF 250V X7R 1206 (CM name incorrectly assigned as vendor) — temporary
+10-002376,makebuy,Buy,Product BOM fix: CAP CER 1UF 25V X5R 0402 (CM name incorrectly assigned as vendor) — temporary
+10-002376,sourcing_flat_qty,4,Product BOM fix: CAP CER 1UF 25V X5R 0402 (CM name incorrectly assigned as vendor) — temporary
+10-002378,makebuy,Buy,Product BOM fix: CAP CER 100PF 50V X7R 0402 (CM name incorrectly assigned as vendor) — temporary
+10-002378,sourcing_flat_qty,8,Product BOM fix: CAP CER 100PF 50V X7R 0402 (CM name incorrectly assigned as vendor) — temporary
+10-002384,makebuy,Buy,Product BOM fix: DIODE SCHOTTKY 200V 1A SOD123W (CM name incorrectly assigned as vendor) — temporary
+10-002384,sourcing_flat_qty,6,Product BOM fix: DIODE SCHOTTKY 200V 1A SOD123W (CM name incorrectly assigned as vendor) — temporary
+10-002401,makebuy,Buy,Product BOM fix: ROUND STANDOFF M2X0.4 STEEL 1MM (CM name incorrectly assigned as vendor) — temporary
+10-002401,sourcing_flat_qty,3,Product BOM fix: ROUND STANDOFF M2X0.4 STEEL 1MM (CM name incorrectly assigned as vendor) — temporary
+10-002402,makebuy,Buy,Product BOM fix: GAN TRANS 200V 8MOHM BUMPED DIE (CM name incorrectly assigned as vendor) — temporary
+10-002402,sourcing_flat_qty,16,Product BOM fix: GAN TRANS 200V 8MOHM BUMPED DIE (CM name incorrectly assigned as vendor) — temporary
+10-002604,makebuy,Buy,Product BOM fix: LED GREEN CLEAR CHIP SMD (CM name incorrectly assigned as vendor) — temporary
+10-002604,sourcing_flat_qty,4,Product BOM fix: LED GREEN CLEAR CHIP SMD (CM name incorrectly assigned as vendor) — temporary
+10-002889,makebuy,Buy,Product BOM fix: RES SMD 47 OHM 5% 1/10W 0402 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-002889,sourcing_flat_qty,8,Product BOM fix: RES SMD 47 OHM 5% 1/10W 0402 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-002929,makebuy,Buy,"Product BOM fix: TIM, INDUCTOR, DCDC (CM name incorrectly assigned as vendor) — temporary"
+10-002929,sourcing_flat_qty,2,"Product BOM fix: TIM, INDUCTOR, DCDC (CM name incorrectly assigned as vendor) — temporary"
+10-002956,makebuy,Buy,Product BOM fix: IC REG LINEAR 3.3V 100MA 6DFN (CM name incorrectly assigned as vendor) — temporary
+10-002956,sourcing_flat_qty,1,Product BOM fix: IC REG LINEAR 3.3V 100MA 6DFN (CM name incorrectly assigned as vendor) — temporary
+10-002957,makebuy,Buy,Product BOM fix: MOSFET N-CH 100V 170MA SOT23-3 (CM name incorrectly assigned as vendor) — temporary
+10-002957,sourcing_flat_qty,2,Product BOM fix: MOSFET N-CH 100V 170MA SOT23-3 (CM name incorrectly assigned as vendor) — temporary
+10-002958,makebuy,Buy,Product BOM fix: MOSFET P-CH 100V 22A D2PAK (CM name incorrectly assigned as vendor) — temporary
+10-002958,sourcing_flat_qty,1,Product BOM fix: MOSFET P-CH 100V 22A D2PAK (CM name incorrectly assigned as vendor) — temporary
+10-003040,makebuy,Buy,Product BOM fix: CAP CER 0.1UF 50V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-003040,sourcing_flat_qty,3,Product BOM fix: CAP CER 0.1UF 50V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-003269,makebuy,Buy,Product BOM fix: CAP CER 0.1UF 50V X7R 0402 (CM name incorrectly assigned as vendor) — temporary
+10-003269,sourcing_flat_qty,82,Product BOM fix: CAP CER 0.1UF 50V X7R 0402 (CM name incorrectly assigned as vendor) — temporary
+10-003274,makebuy,Buy,Product BOM fix: CAP CER 10UF 100V X7S 10% 1210 (CM name incorrectly assigned as vendor) — temporary
+10-003274,sourcing_flat_qty,4,Product BOM fix: CAP CER 10UF 100V X7S 10% 1210 (CM name incorrectly assigned as vendor) — temporary
+10-003433,makebuy,Buy,"Product BOM fix: CAP CER 4700PF 250VAC X7R SAFETY X1, Y2 2220 (CM name incorrectly assigned as vendor) — temporary"
+10-003433,sourcing_flat_qty,1,"Product BOM fix: CAP CER 4700PF 250VAC X7R SAFETY X1, Y2 2220 (CM name incorrectly assigned as vendor) — temporary"
+10-003458,makebuy,Buy,Product BOM fix: MOSFET P-CH 100V 6.6A DPAK (CM name incorrectly assigned as vendor) — temporary
+10-003458,sourcing_flat_qty,1,Product BOM fix: MOSFET P-CH 100V 6.6A DPAK (CM name incorrectly assigned as vendor) — temporary
+10-003468,makebuy,Buy,Product BOM fix: CAP CER 0.1UF 100V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-003468,sourcing_flat_qty,8,Product BOM fix: CAP CER 0.1UF 100V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-003493,makebuy,Buy,Product BOM fix: RES 100 OHM 1% 1/4W 1206 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-003493,sourcing_flat_qty,2,Product BOM fix: RES 100 OHM 1% 1/4W 1206 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-003524,makebuy,Buy,Product BOM fix: CMC 1.5MH 18A 2LN TH (CM name incorrectly assigned as vendor) — temporary
+10-003524,sourcing_flat_qty,1,Product BOM fix: CMC 1.5MH 18A 2LN TH (CM name incorrectly assigned as vendor) — temporary
+10-003708,makebuy,Buy,Product BOM fix: CRYSTAL 32.7680KHZ 9PF SMD (CM name incorrectly assigned as vendor) — temporary
+10-003708,sourcing_flat_qty,1,Product BOM fix: CRYSTAL 32.7680KHZ 9PF SMD (CM name incorrectly assigned as vendor) — temporary
+10-003722,makebuy,Buy,Product BOM fix: CAP CER 9PF 50V C0G 0402 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-003722,sourcing_flat_qty,2,Product BOM fix: CAP CER 9PF 50V C0G 0402 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-003759,makebuy,Buy,Product BOM fix: IC FLASH 16MBIT SPI/QUAD 8SOIC (CM name incorrectly assigned as vendor) — temporary
+10-003759,sourcing_flat_qty,1,Product BOM fix: IC FLASH 16MBIT SPI/QUAD 8SOIC (CM name incorrectly assigned as vendor) — temporary
+10-004006,makebuy,Buy,"Product BOM fix: Fixed Resistor, Metal Glaze/thick Film, 0.1W, 10Mohm, 75V, 1% +/-Tol, 100ppm/Cel, Surface Mount,0603 (CM name incorrectly assigned as vendor) — temporary"
+10-004006,sourcing_flat_qty,3,"Product BOM fix: Fixed Resistor, Metal Glaze/thick Film, 0.1W, 10Mohm, 75V, 1% +/-Tol, 100ppm/Cel, Surface Mount,0603 (CM name incorrectly assigned as vendor) — temporary"
+10-004017,makebuy,Buy,Product BOM fix: RES SMD 49.9K OHM 1% 1/4W 1206 (CM name incorrectly assigned as vendor) — temporary
+10-004017,sourcing_flat_qty,4,Product BOM fix: RES SMD 49.9K OHM 1% 1/4W 1206 (CM name incorrectly assigned as vendor) — temporary
+10-004043,makebuy,Buy,Product BOM fix: RES 100K OHM 1% 1/4W 0603 150V AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-004043,sourcing_flat_qty,3,Product BOM fix: RES 100K OHM 1% 1/4W 0603 150V AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-004162,makebuy,Buy,Product BOM fix: RES SMD 20 OHM 1% 1/4W 1206 AEC-Q200 (CM name incorrectly assigned as vendor) — temporary
+10-004162,sourcing_flat_qty,2,Product BOM fix: RES SMD 20 OHM 1% 1/4W 1206 AEC-Q200 (CM name incorrectly assigned as vendor) — temporary
+10-004177,makebuy,Buy,Product BOM fix: RES SMD 1M OHM 1% 1/4W 1206 (CM name incorrectly assigned as vendor) — temporary
+10-004177,sourcing_flat_qty,1,Product BOM fix: RES SMD 1M OHM 1% 1/4W 1206 (CM name incorrectly assigned as vendor) — temporary
+10-004195,makebuy,Buy,Product BOM fix: CAP CER 1UF 100V X7R 1206 (CM name incorrectly assigned as vendor) — temporary
+10-004195,sourcing_flat_qty,1,Product BOM fix: CAP CER 1UF 100V X7R 1206 (CM name incorrectly assigned as vendor) — temporary
+10-004471,makebuy,Buy,Product BOM fix: CAP CER 4.7UF 100V X7S 1210 (CM name incorrectly assigned as vendor) — temporary
+10-004471,sourcing_flat_qty,5,Product BOM fix: CAP CER 4.7UF 100V X7S 1210 (CM name incorrectly assigned as vendor) — temporary
+10-004517,makebuy,Buy,Product BOM fix: IC MCU 32BIT 2MB FLASH 100LQFP (CM name incorrectly assigned as vendor) — temporary
+10-004517,sourcing_flat_qty,1,Product BOM fix: IC MCU 32BIT 2MB FLASH 100LQFP (CM name incorrectly assigned as vendor) — temporary
+10-004548,makebuy,Buy,Product BOM fix: RES SMD 3 OHM 5% 1/10W 0402 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-004548,sourcing_flat_qty,16,Product BOM fix: RES SMD 3 OHM 5% 1/10W 0402 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-004695,makebuy,Buy,"Product BOM fix: CAP CER 330PF SAFETY X1,Y2 250VAC X7R 1808 (CM name incorrectly assigned as vendor) — temporary"
+10-004695,sourcing_flat_qty,2,"Product BOM fix: CAP CER 330PF SAFETY X1,Y2 250VAC X7R 1808 (CM name incorrectly assigned as vendor) — temporary"
+10-004736,makebuy,Buy,Product BOM fix: RES 100K OHM 0.5% 1/2W 0805 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-004736,sourcing_flat_qty,4,Product BOM fix: RES 100K OHM 0.5% 1/2W 0805 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-004813,makebuy,Buy,Product BOM fix: CAP CER 4.7UF 25V X6S 0603 (CM name incorrectly assigned as vendor) — temporary
+10-004813,sourcing_flat_qty,4,Product BOM fix: CAP CER 4.7UF 25V X6S 0603 (CM name incorrectly assigned as vendor) — temporary
+10-004897,makebuy,Buy,Product BOM fix: CAP CER 47PF 250VAC SL 1808 (CM name incorrectly assigned as vendor) — temporary
+10-004897,sourcing_flat_qty,2,Product BOM fix: CAP CER 47PF 250VAC SL 1808 (CM name incorrectly assigned as vendor) — temporary
+10-005019,makebuy,Buy,Product BOM fix: RES SMD 4.7K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005019,sourcing_flat_qty,1,Product BOM fix: RES SMD 4.7K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005073,makebuy,Buy,Product BOM fix: CAP CER 10UF 10V X7R 0805 (CM name incorrectly assigned as vendor) — temporary
+10-005073,sourcing_flat_qty,1,Product BOM fix: CAP CER 10UF 10V X7R 0805 (CM name incorrectly assigned as vendor) — temporary
+10-005077,makebuy,Buy,Product BOM fix: CAP CER 1UF 50V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005077,sourcing_flat_qty,14,Product BOM fix: CAP CER 1UF 50V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005099,makebuy,Buy,Product BOM fix: DC DC CONVERTER 12V 1W (CM name incorrectly assigned as vendor) — temporary
+10-005099,sourcing_flat_qty,1,Product BOM fix: DC DC CONVERTER 12V 1W (CM name incorrectly assigned as vendor) — temporary
+10-005123,makebuy,Buy,Product BOM fix: IC COMPARATOR 1 GEN PUR 6UDFN (CM name incorrectly assigned as vendor) — temporary
+10-005123,sourcing_flat_qty,1,Product BOM fix: IC COMPARATOR 1 GEN PUR 6UDFN (CM name incorrectly assigned as vendor) — temporary
+10-005178,makebuy,Buy,Product BOM fix: RES 3.2K OHM 0.1% 1/10W 0603 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-005178,sourcing_flat_qty,1,Product BOM fix: RES 3.2K OHM 0.1% 1/10W 0603 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-005214,makebuy,Buy,Product BOM fix: TVS DIODE 376VWM 602VC DO214AB (CM name incorrectly assigned as vendor) — temporary
+10-005214,sourcing_flat_qty,1,Product BOM fix: TVS DIODE 376VWM 602VC DO214AB (CM name incorrectly assigned as vendor) — temporary
+10-005226,makebuy,Buy,Product BOM fix: IC Isolated Single-Channel Gate Driver With Split Outputs (CM name incorrectly assigned as vendor) — temporary
+10-005226,sourcing_flat_qty,1,Product BOM fix: IC Isolated Single-Channel Gate Driver With Split Outputs (CM name incorrectly assigned as vendor) — temporary
+10-005297,makebuy,Buy,Product BOM fix: CAP CER 2.2UF 10% 450V X6S 2220 (CM name incorrectly assigned as vendor) — temporary
+10-005297,sourcing_flat_qty,2,Product BOM fix: CAP CER 2.2UF 10% 450V X6S 2220 (CM name incorrectly assigned as vendor) — temporary
+10-005390,makebuy,Buy,Product BOM fix: RES 100K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005390,sourcing_flat_qty,6,Product BOM fix: RES 100K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005392,makebuy,Buy,Product BOM fix: RES 1M OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005392,sourcing_flat_qty,1,Product BOM fix: RES 1M OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005393,makebuy,Buy,Product BOM fix: RES 470 OHM 1% 1/10W 75V 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005393,sourcing_flat_qty,1,Product BOM fix: RES 470 OHM 1% 1/10W 75V 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005394,makebuy,Buy,Product BOM fix: RES SMD 249K OHM 0.1% 1/4W 1206 (CM name incorrectly assigned as vendor) — temporary
+10-005394,sourcing_flat_qty,16,Product BOM fix: RES SMD 249K OHM 0.1% 1/4W 1206 (CM name incorrectly assigned as vendor) — temporary
+10-005410,makebuy,Buy,Product BOM fix: RES SMD 200 OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005410,sourcing_flat_qty,17,Product BOM fix: RES SMD 200 OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005411,makebuy,Buy,Product BOM fix: RES 10K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005411,sourcing_flat_qty,30,Product BOM fix: RES 10K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005423,makebuy,Buy,Product BOM fix: TRANS NPN 80V 1A SOT223 (CM name incorrectly assigned as vendor) — temporary
+10-005423,sourcing_flat_qty,1,Product BOM fix: TRANS NPN 80V 1A SOT223 (CM name incorrectly assigned as vendor) — temporary
+10-005424,makebuy,Buy,Product BOM fix: DIODE ZENER 10V 500MW SOD123 (CM name incorrectly assigned as vendor) — temporary
+10-005424,sourcing_flat_qty,1,Product BOM fix: DIODE ZENER 10V 500MW SOD123 (CM name incorrectly assigned as vendor) — temporary
+10-005427,makebuy,Buy,Product BOM fix: RES 3K OHM 5% 1/4W 1206 (CM name incorrectly assigned as vendor) — temporary
+10-005427,sourcing_flat_qty,1,Product BOM fix: RES 3K OHM 5% 1/4W 1206 (CM name incorrectly assigned as vendor) — temporary
+10-005449,makebuy,Buy,Product BOM fix: RES 20 OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005449,sourcing_flat_qty,14,Product BOM fix: RES 20 OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005450,makebuy,Buy,Product BOM fix: RES 47K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005450,sourcing_flat_qty,7,Product BOM fix: RES 47K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005451,makebuy,Buy,Product BOM fix: RES 1.1K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005451,sourcing_flat_qty,9,Product BOM fix: RES 1.1K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005452,makebuy,Buy,Product BOM fix: RES 12.1K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005452,sourcing_flat_qty,2,Product BOM fix: RES 12.1K OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005459,makebuy,Buy,Product BOM fix: CAP CER 0.47UF 25V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005459,sourcing_flat_qty,19,Product BOM fix: CAP CER 0.47UF 25V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-005460,makebuy,Buy,Product BOM fix: CAP CER 15PF 50V C0G/NP0 0402 (CM name incorrectly assigned as vendor) — temporary
+10-005460,sourcing_flat_qty,6,Product BOM fix: CAP CER 15PF 50V C0G/NP0 0402 (CM name incorrectly assigned as vendor) — temporary
+10-005461,makebuy,Buy,Product BOM fix: FERRITE BEAD 1K OHM 1206 1LN (CM name incorrectly assigned as vendor) — temporary
+10-005461,sourcing_flat_qty,4,Product BOM fix: FERRITE BEAD 1K OHM 1206 1LN (CM name incorrectly assigned as vendor) — temporary
+10-005681,makebuy,Buy,Product BOM fix: FIXED IND 10UH 28A 2.5 MOHM SMD (CM name incorrectly assigned as vendor) — temporary
+10-005681,sourcing_flat_qty,1,Product BOM fix: FIXED IND 10UH 28A 2.5 MOHM SMD (CM name incorrectly assigned as vendor) — temporary
+10-006146,makebuy,Buy,"Product BOM fix: Bushing, DCDC (CM name incorrectly assigned as vendor) — temporary"
+10-006146,sourcing_flat_qty,2,"Product BOM fix: Bushing, DCDC (CM name incorrectly assigned as vendor) — temporary"
+10-006205,makebuy,Buy,Product BOM fix: IND 22.8μH±10％ Within (Typ.22.78μH) Custom (CM name incorrectly assigned as vendor) — temporary
+10-006205,sourcing_flat_qty,2,Product BOM fix: IND 22.8μH±10％ Within (Typ.22.78μH) Custom (CM name incorrectly assigned as vendor) — temporary
+10-006220,makebuy,Buy,Product BOM fix: IC VREF SERIES 0.1% 8SOIC (CM name incorrectly assigned as vendor) — temporary
+10-006220,sourcing_flat_qty,1,Product BOM fix: IC VREF SERIES 0.1% 8SOIC (CM name incorrectly assigned as vendor) — temporary
+10-006484,makebuy,Buy,"Product BOM fix: IC 16CH BATTERY MONITOR 64-WFQFN Exposed Pad, CSP (CM name incorrectly assigned as vendor) — temporary"
+10-006484,sourcing_flat_qty,1,"Product BOM fix: IC 16CH BATTERY MONITOR 64-WFQFN Exposed Pad, CSP (CM name incorrectly assigned as vendor) — temporary"
+10-006492,makebuy,Buy,Product BOM fix: PC TEST POINT COMPACT (CM name incorrectly assigned as vendor) — temporary
+10-006492,sourcing_flat_qty,2,Product BOM fix: PC TEST POINT COMPACT (CM name incorrectly assigned as vendor) — temporary
+10-006493,makebuy,Buy,Product BOM fix: THERMISTOR NTC 10KOHM B25/50=3380K 0603 (CM name incorrectly assigned as vendor) — temporary
+10-006493,sourcing_flat_qty,3,Product BOM fix: THERMISTOR NTC 10KOHM B25/50=3380K 0603 (CM name incorrectly assigned as vendor) — temporary
+10-006635,makebuy,Buy,Product BOM fix: RES SMD 2 OHM 1% 1/5W 0402 (CM name incorrectly assigned as vendor) — temporary
+10-006635,sourcing_flat_qty,6,Product BOM fix: RES SMD 2 OHM 1% 1/5W 0402 (CM name incorrectly assigned as vendor) — temporary
+10-006637,makebuy,Buy,Product BOM fix: DIODE SCHOTTKY 40V 500MA 0402 (CM name incorrectly assigned as vendor) — temporary
+10-006637,sourcing_flat_qty,6,Product BOM fix: DIODE SCHOTTKY 40V 500MA 0402 (CM name incorrectly assigned as vendor) — temporary
+10-006638,makebuy,Buy,Product BOM fix: CAP CER 10000PF 1KV X7R 1812 (CM name incorrectly assigned as vendor) — temporary
+10-006638,sourcing_flat_qty,1,Product BOM fix: CAP CER 10000PF 1KV X7R 1812 (CM name incorrectly assigned as vendor) — temporary
+10-006639,makebuy,Buy,Product BOM fix: CAP CER 1000PF 1KV X7R 1812 (CM name incorrectly assigned as vendor) — temporary
+10-006639,sourcing_flat_qty,1,Product BOM fix: CAP CER 1000PF 1KV X7R 1812 (CM name incorrectly assigned as vendor) — temporary
+10-006640,makebuy,Buy,Product BOM fix: CAP CER 1000PF 1KV X7R 1206 (CM name incorrectly assigned as vendor) — temporary
+10-006640,sourcing_flat_qty,4,Product BOM fix: CAP CER 1000PF 1KV X7R 1206 (CM name incorrectly assigned as vendor) — temporary
+10-006641,makebuy,Buy,Product BOM fix: CAP CER 10000PF 1KV X7R 1206 (CM name incorrectly assigned as vendor) — temporary
+10-006641,sourcing_flat_qty,4,Product BOM fix: CAP CER 10000PF 1KV X7R 1206 (CM name incorrectly assigned as vendor) — temporary
+10-006646,makebuy,Buy,Product BOM fix: RES 18K OHM 1% 1/10W 0603 AEC-Q200 (CM name incorrectly assigned as vendor) — temporary
+10-006646,sourcing_flat_qty,1,Product BOM fix: RES 18K OHM 1% 1/10W 0603 AEC-Q200 (CM name incorrectly assigned as vendor) — temporary
+10-006678,makebuy,Buy,Product BOM fix: CAP CER 10NF 100V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-006678,sourcing_flat_qty,3,Product BOM fix: CAP CER 10NF 100V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-006687,makebuy,Buy,Product BOM fix: CAP CER 330PF 25V X7R 0402 (CM name incorrectly assigned as vendor) — temporary
+10-006687,sourcing_flat_qty,2,Product BOM fix: CAP CER 330PF 25V X7R 0402 (CM name incorrectly assigned as vendor) — temporary
+10-006688,makebuy,Buy,Product BOM fix: RES SMD 500 UOHM 1% 10W 2512 (CM name incorrectly assigned as vendor) — temporary
+10-006688,sourcing_flat_qty,1,Product BOM fix: RES SMD 500 UOHM 1% 10W 2512 (CM name incorrectly assigned as vendor) — temporary
+10-006690,makebuy,Buy,Product BOM fix: FERRITE BEAD 2.2 KOHM 0603 1LN (CM name incorrectly assigned as vendor) — temporary
+10-006690,sourcing_flat_qty,2,Product BOM fix: FERRITE BEAD 2.2 KOHM 0603 1LN (CM name incorrectly assigned as vendor) — temporary
+10-006696,makebuy,Buy,Product BOM fix: RES SMD 2 OHM 5% 1W 2512 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-006696,sourcing_flat_qty,1,Product BOM fix: RES SMD 2 OHM 5% 1W 2512 AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-006790,makebuy,Buy,Product BOM fix: IC TRANSCEIVER HALF 1/1 8SOIC AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-006790,sourcing_flat_qty,1,Product BOM fix: IC TRANSCEIVER HALF 1/1 8SOIC AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-006791,makebuy,Buy,Product BOM fix: TVS DIODE 24VWM 40VC SOT23 (CM name incorrectly assigned as vendor) — temporary
+10-006791,sourcing_flat_qty,1,Product BOM fix: TVS DIODE 24VWM 40VC SOT23 (CM name incorrectly assigned as vendor) — temporary
+10-006799,makebuy,Buy,Product BOM fix: IC REG LINEAR 5V 150MA SOT23-5 (CM name incorrectly assigned as vendor) — temporary
+10-006799,sourcing_flat_qty,1,Product BOM fix: IC REG LINEAR 5V 150MA SOT23-5 (CM name incorrectly assigned as vendor) — temporary
+10-006807,makebuy,Buy,"Product BOM fix: XFMR FWD P-P DC/DC CONV SMD 0.485"" L x 0.410"" W (12.32mm x 10.41mm) (CM name incorrectly assigned as vendor) — temporary"
+10-006807,sourcing_flat_qty,1,"Product BOM fix: XFMR FWD P-P DC/DC CONV SMD 0.485"" L x 0.410"" W (12.32mm x 10.41mm) (CM name incorrectly assigned as vendor) — temporary"
+10-006954,makebuy,Buy,Product BOM fix: DIODE ZENER 20V 250MW SOT23-3 (2.9MM X 1.3MM) (CM name incorrectly assigned as vendor) — temporary
+10-006954,sourcing_flat_qty,1,Product BOM fix: DIODE ZENER 20V 250MW SOT23-3 (2.9MM X 1.3MM) (CM name incorrectly assigned as vendor) — temporary
+10-006955,makebuy,Buy,Product BOM fix: DIODE ZENER 3.3V 250MW SOT23-3 (2.9MM X 1.3MM) (CM name incorrectly assigned as vendor) — temporary
+10-006955,sourcing_flat_qty,1,Product BOM fix: DIODE ZENER 3.3V 250MW SOT23-3 (2.9MM X 1.3MM) (CM name incorrectly assigned as vendor) — temporary
+10-007018,makebuy,Buy,Product BOM fix: RES SMD 5.6 OHM 5% 1W 2512 (CM name incorrectly assigned as vendor) — temporary
+10-007018,sourcing_flat_qty,17,Product BOM fix: RES SMD 5.6 OHM 5% 1W 2512 (CM name incorrectly assigned as vendor) — temporary
+10-06717A,makebuy,Buy,Product BOM fix: MOSFET N-CH 30V 4A SOT23F (CM name incorrectly assigned as vendor) — temporary
+10-06717A,sourcing_flat_qty,1,Product BOM fix: MOSFET N-CH 30V 4A SOT23F (CM name incorrectly assigned as vendor) — temporary
+10-06752A,makebuy,Buy,"Product BOM fix: Thermal Bridge, GaN, DCDC (CM name incorrectly assigned as vendor) — temporary"
+10-06752A,sourcing_flat_qty,15,"Product BOM fix: Thermal Bridge, GaN, DCDC (CM name incorrectly assigned as vendor) — temporary"
+10-06958A,makebuy,Buy,Product BOM fix: CAP CER 2.2UF 16V X7S 0603 (CM name incorrectly assigned as vendor) — temporary
+10-06958A,sourcing_flat_qty,4,Product BOM fix: CAP CER 2.2UF 16V X7S 0603 (CM name incorrectly assigned as vendor) — temporary
+10-06981A,makebuy,Buy,Product BOM fix: RES 100 OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-06981A,sourcing_flat_qty,16,Product BOM fix: RES 100 OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-06998A,makebuy,Buy,Product BOM fix: CAP CER 1000PF 50V C0G/NP0 0603 (CM name incorrectly assigned as vendor) — temporary
+10-06998A,sourcing_flat_qty,13,Product BOM fix: CAP CER 1000PF 50V C0G/NP0 0603 (CM name incorrectly assigned as vendor) — temporary
+10-07026A,makebuy,Buy,Product BOM fix: CAP CER 10UF 25V X7R 0805 (CM name incorrectly assigned as vendor) — temporary
+10-07026A,sourcing_flat_qty,15,Product BOM fix: CAP CER 10UF 25V X7R 0805 (CM name incorrectly assigned as vendor) — temporary
+10-07038A,makebuy,Buy,Product BOM fix: CAP CER 8PF 50V C0G/NPO 0603 (CM name incorrectly assigned as vendor) — temporary
+10-07038A,sourcing_flat_qty,2,Product BOM fix: CAP CER 8PF 50V C0G/NPO 0603 (CM name incorrectly assigned as vendor) — temporary
+10-07206A,makebuy,Buy,Product BOM fix: MOSFET N-CH 80V 120A D2PAK (CM name incorrectly assigned as vendor) — temporary
+10-07206A,sourcing_flat_qty,3,Product BOM fix: MOSFET N-CH 80V 120A D2PAK (CM name incorrectly assigned as vendor) — temporary
+10-07238A,makebuy,Buy,Product BOM fix: CAP CER 0.33UF 16V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-07238A,sourcing_flat_qty,17,Product BOM fix: CAP CER 0.33UF 16V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-07267A,makebuy,Buy,Product BOM fix: CAP CER 1UF 450V X7T 2220 (CM name incorrectly assigned as vendor) — temporary
+10-07267A,sourcing_flat_qty,6,Product BOM fix: CAP CER 1UF 450V X7T 2220 (CM name incorrectly assigned as vendor) — temporary
+10-07346A,makebuy,Buy,Product BOM fix: CAP CER 0.1UF 450V X7T 1206 (CM name incorrectly assigned as vendor) — temporary
+10-07346A,sourcing_flat_qty,10,Product BOM fix: CAP CER 0.1UF 450V X7T 1206 (CM name incorrectly assigned as vendor) — temporary
+10-07368A,makebuy,Buy,Product BOM fix: CAP CER 6800PF 50V C0G/NP0 0603 (CM name incorrectly assigned as vendor) — temporary
+10-07368A,sourcing_flat_qty,3,Product BOM fix: CAP CER 6800PF 50V C0G/NP0 0603 (CM name incorrectly assigned as vendor) — temporary
+10-07384A,makebuy,Buy,Product BOM fix: RES 10 OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-07384A,sourcing_flat_qty,4,Product BOM fix: RES 10 OHM 1% 1/10W 0603 (CM name incorrectly assigned as vendor) — temporary
+10-07385A,makebuy,Buy,Product BOM fix: CAP CER 47UF 6.3V X7R 1210 (CM name incorrectly assigned as vendor) — temporary
+10-07385A,sourcing_flat_qty,2,Product BOM fix: CAP CER 47UF 6.3V X7R 1210 (CM name incorrectly assigned as vendor) — temporary
+10-07388A,makebuy,Buy,Product BOM fix: FERRITE BEAD 50 OHM 0603 1LN AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-07388A,sourcing_flat_qty,6,Product BOM fix: FERRITE BEAD 50 OHM 0603 1LN AEC-Q (CM name incorrectly assigned as vendor) — temporary
+10-07389A,makebuy,Buy,Product BOM fix: CAP CER 2200PF ±20% 100V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-07389A,sourcing_flat_qty,5,Product BOM fix: CAP CER 2200PF ±20% 100V X7R 0603 (CM name incorrectly assigned as vendor) — temporary
+10-07392A,makebuy,Buy,Product BOM fix: CAP CER 10UF 16V X7R 1206 (CM name incorrectly assigned as vendor) — temporary
+10-07392A,sourcing_flat_qty,6,Product BOM fix: CAP CER 10UF 16V X7R 1206 (CM name incorrectly assigned as vendor) — temporary
+10-07398A,makebuy,Buy,Product BOM fix: CAP CER 1UF 250V X7R 2220 (CM name incorrectly assigned as vendor) — temporary
+10-07398A,sourcing_flat_qty,46,Product BOM fix: CAP CER 1UF 250V X7R 2220 (CM name incorrectly assigned as vendor) — temporary
+10-07509A,makebuy,Buy,Product BOM fix: CONN HEADER VERT 35POS MALE 4MM PITCH (CM name incorrectly assigned as vendor) — temporary
+10-07509A,sourcing_flat_qty,1,Product BOM fix: CONN HEADER VERT 35POS MALE 4MM PITCH (CM name incorrectly assigned as vendor) — temporary
+10-07848A,makebuy,Buy,Product BOM fix: RES SMD 5.1 OHM 1% 1/5W 0402 (CM name incorrectly assigned as vendor) — temporary
+10-07848A,sourcing_flat_qty,16,Product BOM fix: RES SMD 5.1 OHM 1% 1/5W 0402 (CM name incorrectly assigned as vendor) — temporary
+10-07957A,makebuy,Buy,Product BOM fix: CONN HEADER R/A 40POS 2.54MM 2 ROWS 54.68MML X 12.51MMD (CM name incorrectly assigned as vendor) — temporary
+10-07957A,sourcing_flat_qty,1,Product BOM fix: CONN HEADER R/A 40POS 2.54MM 2 ROWS 54.68MML X 12.51MMD (CM name incorrectly assigned as vendor) — temporary
+20-07554C,makebuy,Buy,Product BOM fix: Lunar 2.1 DCDC-BMS PCB (CM name incorrectly assigned as vendor) — temporary
+20-07554C,sourcing_flat_qty,1,Product BOM fix: Lunar 2.1 DCDC-BMS PCB (CM name incorrectly assigned as vendor) — temporary
+10-06886A,makebuy,Buy,"Product BOM fix: Heat Spreader, DCDC, LFP DC ESS (CM name incorrectly assigned as vendor) — temporary"
+10-06886A,sourcing_flat_qty,1,"Product BOM fix: Heat Spreader, DCDC, LFP DC ESS (CM name incorrectly assigned as vendor) — temporary"
+10-07682A,makebuy,Buy,"Product BOM fix: Thermal gap filler, Non-Curing, 6.2 W/mK, Dispensed, Single Part (CM name incorrectly assigned as vendor) — temporary"
+10-07682A,sourcing_flat_qty,1,"Product BOM fix: Thermal gap filler, Non-Curing, 6.2 W/mK, Dispensed, Single Part (CM name incorrectly assigned as vendor) — temporary"
+10-07823A,makebuy,Buy,"Product BOM fix: Screw M2x0.4, 6mmL, RENY (CM name incorrectly assigned as vendor) — temporary"
+10-07823A,sourcing_flat_qty,3,"Product BOM fix: Screw M2x0.4, 6mmL, RENY (CM name incorrectly assigned as vendor) — temporary"
+10-003055,makebuy,Buy,"Product BOM fix: Threadlocking Adhesive, Low Strength (CM name incorrectly assigned as vendor) — temporary"
+10-003055,sourcing_flat_qty,1,"Product BOM fix: Threadlocking Adhesive, Low Strength (CM name incorrectly assigned as vendor) — temporary"
+10-07682A,makebuy,Buy,"Product BOM fix: Thermal gap filler, Non-Curing, 6.2 W/mK, Dispensed, Single Part (CM name incorrectly assigned as vendor) — temporary"
+10-07682A,sourcing_flat_qty,1,"Product BOM fix: Thermal gap filler, Non-Curing, 6.2 W/mK, Dispensed, Single Part (CM name incorrectly assigned as vendor) — temporary"

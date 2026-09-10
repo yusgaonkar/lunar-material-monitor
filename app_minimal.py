@@ -684,6 +684,42 @@ def apply_data_overrides(frames: dict) -> dict:
                 else:
                     failures.append(f"{part}: no rows matched for item_category")
 
+            elif otype == "makebuy":
+                bom = frames.get("bom_stitched.csv")
+                if bom is None or "item_number" not in bom.columns or "makebuy" not in bom.columns:
+                    failures.append(f"{part} (makebuy): BOM not available")
+                    continue
+                mask = bom["item_number"] == part
+                n = int(mask.sum())
+                if n == 0:
+                    failures.append(f"{part}: no BOM rows matched")
+                    continue
+                was = sorted(set(bom.loc[mask, "makebuy"].dropna().astype(str).unique()))
+                bom.loc[mask, "makebuy"] = str(ovalue)
+                desc = desc_map.get(part, "")
+                desc_str = f" — {desc}" if desc else ""
+                change_str = f"`{part}` makebuy -> {ovalue} in bom_stitched ({n} rows, was {'/'.join(was)}){desc_str}"
+                detailed_changes.append(change_str)
+                changes.append(change_str)
+
+            elif otype == "sourcing_flat_qty":
+                bom = frames.get("bom_stitched.csv")
+                if bom is None or "item_number" not in bom.columns or "Sourcing Flat Qty" not in bom.columns:
+                    failures.append(f"{part} (sourcing_flat_qty): BOM not available")
+                    continue
+                mask = bom["item_number"] == part
+                n = int(mask.sum())
+                if n == 0:
+                    failures.append(f"{part}: no BOM rows matched")
+                    continue
+                before = pd.to_numeric(bom.loc[mask, "Sourcing Flat Qty"], errors="coerce").sum()
+                bom.loc[mask, "Sourcing Flat Qty"] = float(ovalue)
+                desc = desc_map.get(part, "")
+                desc_str = f" — {desc}" if desc else ""
+                change_str = f"`{part}` sourcing_flat_qty {before:,.0f} -> {float(ovalue):,.0f} in bom_stitched ({n} rows){desc_str}"
+                detailed_changes.append(change_str)
+                changes.append(change_str)
+
             else:
                 failures.append(f"{part}: unknown override_type '{otype}'")
 
@@ -3232,7 +3268,7 @@ elif st.session_state.active_tab == "Inventory Projection":
             # It's baked into the cache key below so a logic change forces recomputation
             # even though _pab/_onhand/_onorder are unhashed and inventory_source_key alone
             # wouldn't change.
-            PRICING_LOGIC_VERSION = 11  # v11: improve override display—collapsible expander, descriptions, bulk PO correction summarized
+            PRICING_LOGIC_VERSION = 12  # v12: add makebuy and sourcing_flat_qty override types for 173-part product BOM fix
 
             with st.spinner("Loading inventory projection..."):
                 try:
