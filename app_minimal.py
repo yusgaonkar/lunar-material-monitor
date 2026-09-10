@@ -2923,45 +2923,43 @@ elif st.session_state.active_tab == "Inventory Projection":
                 for part, rows in rows_by_part.items():
                     cms = [cm for _, cm in rows if cm != "Lunar"]
 
-                    # Lunar pool: on-hand + past-due receipts (available now) + dated
-                    # receipts landing inside the window.
-                    lunar_pool = float(lunar_oh_lookup.get(part, 0.0))
-                    lunar_pool += float(past_lunar_lookup.get(part, 0.0))
-                    for mp in month_periods:
-                        lunar_pool += float(lunar_receipt_lookup.get((part, mp), 0.0))
-
-                    # Past-due CM POs have already shipped — those units have left Lunar's
-                    # book, so they reduce the pool rather than sitting in a bucket.
+                    # ---- Lunar supply, TIME-PHASED ----
+                    # `seed` is what Lunar can actually touch in period 1: on-hand plus
+                    # receipts whose ETA has already passed. Past-due CM POs have already
+                    # shipped, so those units have left Lunar's book and net out here.
+                    seed = float(lunar_oh_lookup.get(part, 0.0))
+                    seed += float(past_lunar_lookup.get(part, 0.0))
                     for cm in cms:
-                        lunar_pool -= float(past_cm_po_lookup.get((cm, part), 0.0))
-                    lunar_pool = max(0.0, lunar_pool)
+                        seed -= float(past_cm_po_lookup.get((cm, part), 0.0))
+                    seed = max(0.0, seed)
 
-                    # On-hand can never exceed the pool it sits in (shipped CM POs are
-                    # netted out above), so cap it before deriving the mix.
+                    # `inflow[mp]` lands IN month mp and is not available before it.
+                    # The previous model summed every month's receipts into one scalar
+                    # available from period 1, so a December PO funded an August
+                    # commitment and the Aug-26 opening position carried the entire
+                    # forward on-order book. That is the bug this replaces.
+                    inflow = {
+                        mp: float(lunar_receipt_lookup.get((part, mp), 0.0))
+                        for mp in month_periods
+                    }
+
+                    # Pool total is still the whole horizon — it drives the on-hand /
+                    # on-order price split further down, which is a mix question, not a
+                    # timing one.
+                    lunar_pool = seed + sum(inflow.values())
                     _oh_component = min(float(lunar_oh_lookup.get(part, 0.0)), lunar_pool)
                     pool_mix[part] = (lunar_pool, _oh_component)
 
-                    # ---- B1: Lunar stock committed against CM -> Lunar POs ----
+                    # ---- B1 demand: Lunar stock committed against CM -> Lunar POs ----
                     b1_sched = {
                         cm: {mp: float(cm_po_lookup.get((cm, part, mp), 0.0)) for mp in month_periods}
                         for cm in cms
                     }
-                    b1_want = {cm: sum(v.values()) for cm, v in b1_sched.items()}
-                    b1_total = sum(b1_want.values())
 
-                    avail = lunar_pool
-                    if b1_total <= avail:
-                        b1_alloc = dict(b1_want)
-                        avail -= b1_total
-                    else:
-                        sc = (avail / b1_total) if b1_total > 0 else 0.0
-                        b1_alloc = {cm: b1_want[cm] * sc for cm in cms}
-                        avail = 0.0
-
-                    # ---- B2: Lunar stock covering the CM's residual shortage ----
+                    # ---- B2 demand: Lunar stock covering the CM's residual shortage ----
                     # Per-month increment of the running worst shortage, so the draw
                     # on Lunar happens in the month the shortage actually appears.
-                    short_inc, b2_want = {}, {}
+                    short_inc = {}
                     for cm in cms:
                         worst, inc = 0.0, {}
                         for mp in month_periods:
@@ -2970,26 +2968,61 @@ elif st.session_state.active_tab == "Inventory Projection":
                             inc[mp] = max(0.0, sh - worst)
                             worst = max(worst, sh)
                         short_inc[cm] = inc
-                        b2_want[cm] = worst
-                    b2_total = sum(b2_want.values())
 
-                    if b2_total <= avail:
-                        b2_alloc = dict(b2_want)
-                        avail -= b2_total
-                    else:
-                        sc = (avail / b2_total) if b2_total > 0 else 0.0
-                        b2_alloc = {cm: b2_want[cm] * sc for cm in cms}
-                        avail = 0.0
+                    # ---- Chronological allocation against running availability ----
+                    # Walk the horizon in order. Only stock that has arrived by month mp
+                    # can be drawn in mp; B1 (firm PO commitments) outranks B2 (shortage
+                    # cover) within a month, and a shortfall scales pro-rata across CMs.
+                    avail = seed
+                    b1_drawn = {cm: {} for cm in cms}
+                    b2_drawn = {cm: {} for cm in cms}
+                    for mp in month_periods:
+                        avail += inflow[mp]
+                        for want_src, drawn in ((b1_sched, b1_drawn), (short_inc, b2_drawn)):
+                            want = {cm: want_src[cm].get(mp, 0.0) for cm in cms}
+                            tot = sum(want.values())
+                            if tot <= avail:
+                                got, avail = dict(want), avail - tot
+                            else:
+                                sc = (avail / tot) if tot > 0 else 0.0
+                                got, avail = {cm: want[cm] * sc for cm in cms}, 0.0
+                            for cm in cms:
+                                drawn[cm][mp] = got[cm]
 
-                    b3 = avail  # free remainder — stays on Lunar's book, flat
+                    # ---- Month-end position actually sitting on Lunar's book ----
+                    # bal(t) = seed + receipts through t - draws through t. Attributed to
+                    # each CM as the earmark it has not yet taken delivery of (nearest
+                    # commitment first), with whatever is left over free on Lunar's book.
+                    earmark_by_month, free_by_month = {}, {}
+                    cum_in, cum_out = seed, 0.0
+                    for t_idx, mp in enumerate(month_periods):
+                        cum_in += inflow[mp]
+                        cum_out += sum(b1_drawn[cm][mp] + b2_drawn[cm][mp] for cm in cms)
+                        rem = max(0.0, cum_in - cum_out)
+                        res = {cm: 0.0 for cm in cms}
+                        for stage in (b1_drawn, b2_drawn):
+                            for fmp in month_periods[t_idx + 1:]:
+                                if rem <= 0:
+                                    break
+                                for cm in cms:
+                                    take = min(rem, stage[cm].get(fmp, 0.0))
+                                    res[cm] += take
+                                    rem -= take
+                                    if rem <= 0:
+                                        break
+                        earmark_by_month[mp] = res
+                        free_by_month[mp] = rem
 
                     for i, cm in rows:
                         if cm == "Lunar":
-                            # B3: flat across the horizon. Holds no CM stock.
-                            for m in months:
-                                lunar_cols[m][i] = b3
+                            # B3: free remainder. No longer flat — it starts at whatever
+                            # is unspoken-for out of `seed` and steps up as receipts land.
+                            for m, mp in zip(months, month_periods):
+                                lunar_cols[m][i] = free_by_month[mp]
                                 cm_cols[m][i] = 0.0
-                            lunar_bucket_total[i] = b3
+                            lunar_bucket_total[i] = (
+                                free_by_month[month_periods[-1]] if month_periods else 0.0
+                            )
                             continue
 
                         # ---- CM depletion: month-end PAB, floored; flat if no demand ----
@@ -3001,16 +3034,15 @@ elif st.session_state.active_tab == "Inventory Projection":
                         # else: leave the existing signed PAB month columns untouched —
                         # the shortage report and drill-down read them as signed.
 
-                        # ---- Lunar depletion: B1 + B2 remaining ----
-                        b1_rem = b1_alloc.get(cm, 0.0)
-                        b2_rem = b2_alloc.get(cm, 0.0)
-                        b1_sc = (b1_alloc.get(cm, 0.0) / b1_want[cm]) if b1_want.get(cm, 0) > 0 else 0.0
-                        b2_sc = (b2_alloc.get(cm, 0.0) / b2_want[cm]) if b2_want.get(cm, 0) > 0 else 0.0
-                        lunar_bucket_total[i] = b1_alloc.get(cm, 0.0) + b2_alloc.get(cm, 0.0)
+                        # ---- Lunar depletion: earmark Lunar physically holds at t ----
+                        # Only stock that has arrived can be earmarked, so this now
+                        # starts from the seed position and rises with receipts instead
+                        # of opening at the full horizon commitment.
+                        lunar_bucket_total[i] = (
+                            sum(b1_drawn[cm].values()) + sum(b2_drawn[cm].values())
+                        )
                         for m, mp in zip(months, month_periods):
-                            b1_rem -= b1_sched[cm].get(mp, 0.0) * b1_sc
-                            b2_rem -= short_inc[cm].get(mp, 0.0) * b2_sc
-                            lunar_cols[m][i] = max(0.0, b1_rem) + max(0.0, b2_rem)
+                            lunar_cols[m][i] = earmark_by_month[mp].get(cm, 0.0)
 
                 balance_table = balance_table.reset_index(drop=True)
 
@@ -3161,7 +3193,7 @@ elif st.session_state.active_tab == "Inventory Projection":
             # It's baked into the cache key below so a logic change forces recomputation
             # even though _pab/_onhand/_onorder are unhashed and inventory_source_key alone
             # wouldn't change.
-            PRICING_LOGIC_VERSION = 9  # v9: split bucket total into on-hand/on-order (was double-counting receipts, halving blended price)
+            PRICING_LOGIC_VERSION = 10  # v10: time-phase the Lunar pool (receipts land in their own month; opening no longer carries the whole forward on-order book)
 
             with st.spinner("Loading inventory projection..."):
                 try:
