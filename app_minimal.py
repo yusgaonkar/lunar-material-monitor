@@ -619,13 +619,22 @@ def apply_data_overrides(frames: dict) -> dict:
         st.warning(f"overrides.csv missing column(s) {sorted(missing)} — no overrides applied.")
         return frames
 
-    changes, failures = [], []
+    # Build description lookup from onhand
+    oh = frames.get("onhand.csv")
+    desc_map = {}
+    if oh is not None and "lpn" in oh.columns and "description" in oh.columns:
+        for _, r in oh[["lpn", "description"]].drop_duplicates().iterrows():
+            desc_map[str(r["lpn"])] = str(r["description"])
+
+    changes, detailed_changes, failures = [], [], []
+    bulk_override_count, bulk_override_units, bulk_override_cost = 0, 0, 0
 
     for _, row in ovr.iterrows():
         part = str(row["part_lpn"]).strip()
         otype = str(row["override_type"]).strip()
         ovalue = row["override_value"]
         reason = str(row.get("reason", "") or "")
+        is_bulk = "PO line duplication" in reason
 
         try:
             if otype == "lunar_onorder_qty":
@@ -637,10 +646,23 @@ def apply_data_overrides(frames: dict) -> dict:
                     continue
                 before = pd.to_numeric(oo.loc[mask, "quantity_open"], errors="coerce").sum()
                 oo.loc[mask, "quantity_open"] = float(ovalue)
-                changes.append(
-                    f"`{part}` on-order {before:,.0f} -> {float(ovalue):,.0f} "
-                    f"across {n} line(s){' — ' + reason if reason else ''}"
-                )
+                delta = before - float(ovalue)
+
+                desc = desc_map.get(part, "")
+                desc_str = f" — {desc}" if desc else ""
+                change_str = f"`{part}` on-order {before:,.0f} -> {float(ovalue):,.0f} across {n} line(s){desc_str}"
+
+                if is_bulk:
+                    bulk_override_count += 1
+                    bulk_override_units += delta
+                    # Estimate cost from unit price
+                    prices = pd.to_numeric(oo.loc[mask, "unit_price"], errors="coerce")
+                    if len(prices) > 0 and prices.mean() > 0:
+                        bulk_override_cost += delta * prices.mean()
+                else:
+                    change_str += f"{' — ' + reason if reason else ''}"
+                    detailed_changes.append(change_str)
+                    changes.append(change_str)
 
             elif otype == "item_category":
                 hits = []
@@ -654,7 +676,11 @@ def apply_data_overrides(frames: dict) -> dict:
                         df.loc[mask, col] = ovalue
                         hits.append(f"{fname.replace('.csv', '')} ({int(mask.sum())} rows, was {'/'.join(was) or 'blank'})")
                 if hits:
-                    changes.append(f"`{part}` category -> {ovalue} in " + "; ".join(hits))
+                    desc = desc_map.get(part, "")
+                    desc_str = f" — {desc}" if desc else ""
+                    change_str = f"`{part}` category -> {ovalue} in " + "; ".join(hits) + desc_str
+                    detailed_changes.append(change_str)
+                    changes.append(change_str)
                 else:
                     failures.append(f"{part}: no rows matched for item_category")
 
@@ -664,10 +690,23 @@ def apply_data_overrides(frames: dict) -> dict:
         except Exception as e:
             failures.append(f"{part} ({otype}): {e}")
 
-    if changes:
-        st.success("**Data overrides applied**\n\n" + "\n".join(f"- {c}" for c in changes))
-        for c in changes:
-            log.info(f"override applied: {c}")
+    # Render with expander
+    if changes or bulk_override_count > 0:
+        with st.expander("**✓ Data overrides applied**", expanded=False):
+            if bulk_override_count > 0:
+                st.success(
+                    f"**Corrected Lunar on-order overstatement:** {bulk_override_count} parts, "
+                    f"{bulk_override_units:,.0f} units, ~${bulk_override_cost/1e6:.1f}m "
+                    f"(PO line duplication in NetSuite/LunarDB — temporary override)"
+                )
+                log.info(
+                    f"bulk override applied: {bulk_override_count} parts, "
+                    f"{bulk_override_units:,.0f} units, ~${bulk_override_cost/1e6:.1f}m"
+                )
+            for c in detailed_changes:
+                st.success(f"- {c}")
+                log.info(f"override applied: {c}")
+
     if failures:
         st.warning("**Overrides that did NOT apply**\n\n" + "\n".join(f"- {f}" for f in failures))
         for f in failures:
@@ -3193,7 +3232,7 @@ elif st.session_state.active_tab == "Inventory Projection":
             # It's baked into the cache key below so a logic change forces recomputation
             # even though _pab/_onhand/_onorder are unhashed and inventory_source_key alone
             # wouldn't change.
-            PRICING_LOGIC_VERSION = 10  # v10: time-phase the Lunar pool (receipts land in their own month; opening no longer carries the whole forward on-order book)
+            PRICING_LOGIC_VERSION = 11  # v11: improve override display—collapsible expander, descriptions, bulk PO correction summarized
 
             with st.spinner("Loading inventory projection..."):
                 try:
