@@ -633,6 +633,7 @@ def apply_data_overrides(frames: dict) -> dict:
         part = str(row["part_lpn"]).strip()
         otype = str(row["override_type"]).strip()
         ovalue = row["override_value"]
+        product = str(row.get("product_lpn", "") or "").strip()
         reason = str(row.get("reason", "") or "")
         is_bulk = "PO line duplication" in reason
 
@@ -689,16 +690,23 @@ def apply_data_overrides(frames: dict) -> dict:
                 if bom is None or "item_number" not in bom.columns or "makebuy" not in bom.columns:
                     failures.append(f"{part} (makebuy): BOM not available")
                     continue
-                mask = bom["item_number"] == part
+                # item_number is NOT unique across the BOM — 11+ items sit at multiple
+                # positions under different products (CLAUDE.md 5.4). A part-only mask
+                # would silently rewrite makebuy for every product that shares this
+                # part number, not just the one product.csv this override targets.
+                if not product:
+                    failures.append(f"{part} (makebuy): override missing product_lpn — refusing to apply part-number-wide to avoid corrupting other products' BOM positions")
+                    continue
+                mask = (bom["item_number"] == part) & (bom["Parent Product LPN"] == product)
                 n = int(mask.sum())
                 if n == 0:
-                    failures.append(f"{part}: no BOM rows matched")
+                    failures.append(f"{part} ({product}): no BOM rows matched")
                     continue
                 was = sorted(set(bom.loc[mask, "makebuy"].dropna().astype(str).unique()))
                 bom.loc[mask, "makebuy"] = str(ovalue)
                 desc = desc_map.get(part, "")
                 desc_str = f" — {desc}" if desc else ""
-                change_str = f"`{part}` makebuy -> {ovalue} in bom_stitched ({n} rows, was {'/'.join(was)}){desc_str}"
+                change_str = f"`{part}` (in {product}) makebuy -> {ovalue} in bom_stitched ({n} rows, was {'/'.join(was)}){desc_str}"
                 detailed_changes.append(change_str)
                 changes.append(change_str)
 
@@ -707,16 +715,21 @@ def apply_data_overrides(frames: dict) -> dict:
                 if bom is None or "item_number" not in bom.columns or "Sourcing Flat Qty" not in bom.columns:
                     failures.append(f"{part} (sourcing_flat_qty): BOM not available")
                     continue
-                mask = bom["item_number"] == part
+                # Same item_number-not-unique concern as makebuy above — must scope to
+                # the specific product this correction applies to.
+                if not product:
+                    failures.append(f"{part} (sourcing_flat_qty): override missing product_lpn — refusing to apply part-number-wide to avoid corrupting other products' BOM positions")
+                    continue
+                mask = (bom["item_number"] == part) & (bom["Parent Product LPN"] == product)
                 n = int(mask.sum())
                 if n == 0:
-                    failures.append(f"{part}: no BOM rows matched")
+                    failures.append(f"{part} ({product}): no BOM rows matched")
                     continue
                 before = pd.to_numeric(bom.loc[mask, "Sourcing Flat Qty"], errors="coerce").sum()
                 bom.loc[mask, "Sourcing Flat Qty"] = float(ovalue)
                 desc = desc_map.get(part, "")
                 desc_str = f" — {desc}" if desc else ""
-                change_str = f"`{part}` sourcing_flat_qty {before:,.0f} -> {float(ovalue):,.0f} in bom_stitched ({n} rows){desc_str}"
+                change_str = f"`{part}` (in {product}) sourcing_flat_qty {before:,.0f} -> {float(ovalue):,.0f} in bom_stitched ({n} rows){desc_str}"
                 detailed_changes.append(change_str)
                 changes.append(change_str)
 
@@ -2690,6 +2703,20 @@ elif st.session_state.active_tab == "Inventory Projection":
                 # Normalize CM names in base_table to match engine PAB CM names
                 base_table["cm"] = base_table["cm"].map(cm_name_map).fillna(base_table["cm"])
 
+                # base_table so far is built purely from on-hand/on-order INVENTORY
+                # presence per CM. That misses any (cm, part) the engine generated
+                # real demand for but which has no physical CM inventory record yet —
+                # exactly the case for a part just flipped make->buy in a BOM override
+                # (10-07946A: Qualitel now owes demand for it, but Qualitel has never
+                # received a unit, so no on-hand/on-order row exists to seed the CM
+                # universe). Union in every (cm, part) the engine's own PAB output
+                # knows about so a left-join below can't silently drop it.
+                if len(cm_pab) > 0:
+                    engine_cm_part = cm_pab[["cm", "part"]].drop_duplicates()
+                    base_table = pd.concat(
+                        [base_table, engine_cm_part], ignore_index=True
+                    ).drop_duplicates(subset=["cm", "part"])
+
                 # Left-join PAB data (parts without demand will have NaN in PAB columns)
                 cm_pab_full = base_table.merge(cm_pab, on=["cm", "part"], how="left")
 
@@ -3268,7 +3295,7 @@ elif st.session_state.active_tab == "Inventory Projection":
             # It's baked into the cache key below so a logic change forces recomputation
             # even though _pab/_onhand/_onorder are unhashed and inventory_source_key alone
             # wouldn't change.
-            PRICING_LOGIC_VERSION = 12  # v12: add makebuy and sourcing_flat_qty override types for 173-part product BOM fix
+            PRICING_LOGIC_VERSION = 14  # v14: scope makebuy/sourcing_flat_qty overrides to (product_lpn, part_lpn) — item_number is not unique across the BOM, a part-only mask was rewriting every product sharing that part number
 
             with st.spinner("Loading inventory projection..."):
                 try:
