@@ -15,6 +15,7 @@ half-written CSV that the app would happily load.
 import json
 import os
 import random
+import re
 import sys
 import time
 from pathlib import Path
@@ -52,6 +53,68 @@ def with_retry(fn, what, attempts=4, base_delay=2.0):
             time.sleep(delay)
     raise last
 
+MONTH_RE = re.compile(r"^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2}$")
+
+
+def build_plan_wide_to_long(data):
+    """Convert the Build & Ship Plan pivot into the flat schema the app reads.
+
+    The sheet is a planner-facing grid: one row per product, one column per
+    month (MMM-YY). The engine wants product_lpn / period_start / qty, so the
+    month columns are melted and each becomes the first day of that month.
+
+    Two shape quirks in the sheet, both load-bearing:
+      - row 1 is a spacer, so the real header is found by locating 'LPN'
+        rather than assumed to be first (io.py 5.5 — a wrong header row here
+        surfaces as "expected columns absent", which is how this broke before);
+      - the header has blank leading and trailing columns, which pandas keeps
+        as duplicate '' names. Selecting by explicit name avoids them.
+
+    Columns left of the first month (Description, CM, received/shipped to date)
+    are planner context, not forward demand, and are dropped. Zero-qty months
+    are kept: a planned zero and an absent product are different states.
+    """
+    header_idx = next(
+        (i for i, row in enumerate(data) if "LPN" in [str(c).strip() for c in row]),
+        None,
+    )
+    if header_idx is None:
+        raise ValueError("no header row containing 'LPN' found")
+
+    header = [str(c).strip() for c in data[header_idx]]
+    df = pd.DataFrame(data[header_idx + 1:], columns=header)
+
+    month_cols = [c for c in header if MONTH_RE.match(c)]
+    if not month_cols:
+        raise ValueError(f"no MMM-YY month columns found in header: {header[:12]}")
+
+    out = df[["LPN"] + month_cols].melt(
+        id_vars="LPN", var_name="month", value_name="qty"
+    )
+    out["product_lpn"] = out["LPN"].astype(str).str.strip()
+    out = out[out["product_lpn"] != ""]
+
+    out["period_start"] = pd.to_datetime(
+        out["month"], format="%b-%y"
+    ).dt.strftime("%Y-%m-%d")
+
+    # Blank cell = nothing planned that month. Commas survive the display-format
+    # export, so strip them before the numeric cast (same trap as asn_qty).
+    qty = out["qty"].astype(str).str.replace(",", "", regex=False).str.strip()
+    out["qty"] = pd.to_numeric(qty.replace("", "0"), errors="coerce").fillna(0).astype(int)
+
+    return (
+        out[["product_lpn", "period_start", "qty"]]
+        .sort_values(["product_lpn", "period_start"])
+        .reset_index(drop=True)
+    )
+
+
+# Sheets whose raw grid needs reshaping before it is usable. Keyed by output file.
+TRANSFORMS = {
+    "build_plan.csv": build_plan_wide_to_long,
+}
+
 SHEETS = {
     "1pG27sAAmhe-xDRuC2XTZkrdgW2ytnFCowV8Cn8UqVU0": [
         ("Stitched Indented BOMs", "bom_stitched.csv"),
@@ -82,7 +145,10 @@ MIN_ROWS = {
     "onhand.csv": 3000,
     "onorder.csv": 1500,
     "asn_latest.csv": 10,
-    "build_plan.csv": 5,
+    # Measured after the wide->long melt: ~26 products x 12-17 forward months.
+    # The month count shrinks as the horizon rolls, so the floor is set against
+    # the narrow end (26 x 12 = 312), not today's width.
+    "build_plan.csv": 200,
 }
 
 DATA_CLOUD = Path("data/cloud")
@@ -120,7 +186,14 @@ def main() -> int:
                     print(f"x {output_file}: no data rows")
                     continue
 
-                df = pd.DataFrame(data[1:], columns=data[0])
+                transform = TRANSFORMS.get(output_file)
+                if transform:
+                    # A reshape failure must not fall through to an unreshaped
+                    # write — the app would load a grid where it expects a flat
+                    # table and fail on missing columns at import time.
+                    df = transform(data)
+                else:
+                    df = pd.DataFrame(data[1:], columns=data[0])
 
                 floor = MIN_ROWS.get(output_file, 0)
                 if len(df) < floor:

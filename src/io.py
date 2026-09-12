@@ -236,10 +236,16 @@ def _read_hand(name: str) -> pd.DataFrame:
     The glob was also too loose — build_plan_*.csv matched build_plan_with_asn.csv,
     which is not a dated variant at all.
 
-    Hand-maintained files (build_plan, plan_to_date, in_transit, exclusions) live in
-    data/ not data/cloud (they are not synced from Google Sheets).
+    build_plan is now synced from the live Build & Ship Plan sheet and lands in
+    data/cloud already melted into this flat schema, so data/cloud wins when the
+    file is there. The data/ copy stays as the fallback: it is what a developer
+    has before the first sync, and what the app falls back to if a sync is
+    skipped. The remaining hand-maintained files (plan_to_date, in_transit,
+    exclusions) are not synced and only ever resolve to data/.
     """
-    path = DATA_FALLBACK / name
+    path = DATA / name
+    if not path.exists():
+        path = DATA_FALLBACK / name
     spec = HAND_COLS[name]
     comments = {
         i for i, ln in enumerate(path.read_text().splitlines())

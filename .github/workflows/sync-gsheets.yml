@@ -29,6 +29,6 @@ jobs:
         run: |
           git config user.name "Lunar Auto-Sync"
           git config user.email "bot@lunar.energy"
-          git add -f data/cloud/*.csv data/build_plan.csv
+          git add -f data/cloud/*.csv
           git commit -m "data: auto-sync from google sheets" || echo "no changes"
           git push
