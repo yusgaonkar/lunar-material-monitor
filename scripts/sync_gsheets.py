@@ -64,6 +64,9 @@ SHEETS = {
     "13k_pyhns2mBSxZRzISTGRknbY8cJSIxFrgcmCcBlZdI": [
         ("ASN Data", "asn_latest.csv"),
     ],
+    "1is9Rv0-IK4timRd_JTnBrYyLZzGcthae08WIo3aNi2g": [
+        ("Build & Ship Plan", "build_plan.csv"),
+    ],
     # Cost sheets disabled: file is Excel, not Google Sheet
     # "19gN1nME70YOSsEwXgJ52iTb3lGuJxScb": [
     #     ("2026 EE costs", "2026 Product Cost Database.xlsx - 2026 EE costs.csv"),
@@ -79,6 +82,7 @@ MIN_ROWS = {
     "onhand.csv": 3000,
     "onorder.csv": 1500,
     "asn_latest.csv": 10,
+    "build_plan.csv": 5,
 }
 
 DATA_CLOUD = Path("data/cloud")
