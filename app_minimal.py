@@ -1075,7 +1075,6 @@ _record_timing("Obsolescence state computed")
 
 # --- Header ---
 st.title("Lunar Material Monitor")
-st.warning("⚠️ **PILOT / NOT IN PRODUCTION** — Data not yet validated. Use for planning only.")
 st.caption(f"Component runout tracking | Snapshot: {result['snapshot'].date()}")
 
 # DATA AUDIT: Show which files are being loaded (helps catch data inconsistencies)
@@ -2643,9 +2642,6 @@ elif st.session_state.active_tab == "Excess Monitor":
 # INVENTORY DEPLETION
 # ============================================================================
 elif st.session_state.active_tab == "Inventory Projection":
-    # Warning banner
-    st.warning("⚠️ PILOT / NOT IN PRODUCTION — Data not yet validated. Use for planning only.")
-
     # Initialize session state for inventory source if not present
     if "inventory_source_selection" not in st.session_state:
         st.session_state.inventory_source_selection = "On Hand + On Order"
