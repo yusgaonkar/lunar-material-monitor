@@ -57,8 +57,8 @@ def process_asn_pivot(filepath: str) -> pd.DataFrame:
     result = df[['LPN', current_col]].copy()
     result.columns = ['product_lpn', 'asn_qty']
 
-    # Fill NaN with 0
-    result['asn_qty'] = result['asn_qty'].fillna(0).astype(int)
+    # Fill NaN with 0; handle comma-formatted strings
+    result['asn_qty'] = result['asn_qty'].astype(str).str.replace(',', '').pipe(lambda x: pd.to_numeric(x, errors='coerce')).fillna(0).astype(int)
 
     # Remove zero rows for clarity
     result = result[result['asn_qty'] > 0].reset_index(drop=True)
@@ -139,7 +139,7 @@ def create_build_plan_pivot(build_plan_df: pd.DataFrame, asn_sienna: pd.DataFram
 
     # Merge with build plan
     result = result.merge(asn_combined, left_on='product_lpn', right_on='product_lpn', how='left')
-    result['asn_qty'] = result['asn_qty'].fillna(0).astype(int)
+    result['asn_qty'] = result['asn_qty'].astype(str).str.replace(',', '').pipe(lambda x: pd.to_numeric(x, errors='coerce')).fillna(0).astype(int)
 
     # Find position of month column
     month_col = month

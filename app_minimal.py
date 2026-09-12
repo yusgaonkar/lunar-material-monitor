@@ -496,7 +496,7 @@ def apply_asn_to_build_plan(build_plan_df: pd.DataFrame, asn_df: pd.DataFrame, b
         for idx, row in result.iterrows():
             if row['product_lpn'] == '90-06831D' and row['period_start'] == first_month:
                 # Look up 10-00522D ASN (qty 20 per box)
-                comp_asn = asn_df[asn_df['product_lpn'] == '10-00522D']['asn_qty'].sum()
+                comp_asn = asn_df[asn_df['product_lpn'] == '10-00522D']['asn_qty'].astype(str).str.replace(',', '').pipe(lambda x: pd.to_numeric(x, errors='coerce')).sum()
                 if comp_asn > 0:
                     result.loc[idx, 'asn_qty'] = int(comp_asn / 20)  # Convert units to boxes
 
