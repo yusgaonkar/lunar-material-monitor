@@ -791,12 +791,13 @@ def apply_data_overrides(frames: dict) -> dict:
 
         if bom_part_count > 0:
             trig = []
-            for p in bom_trigger_parts[:2]:
+            for p in bom_trigger_parts:
                 d = part_desc_map.get(p, "")
                 trig.append(f"`{p}` ({d})" if d else f"`{p}`")
-            trig_str = " and ".join(trig)
-            if len(bom_trigger_parts) > 2:
-                trig_str += f" (and {len(bom_trigger_parts) - 2} more)"
+            if len(trig) > 1:
+                trig_str = ", ".join(trig[:-1]) + f", and {trig[-1]}"
+            else:
+                trig_str = trig[0]
             lines.append(
                 f"- **{bom_part_count} parts** sourcing updated due to {trig_str} "
                 f"switch from Buy to Make"
